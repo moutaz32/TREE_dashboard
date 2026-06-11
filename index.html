@@ -167,6 +167,11 @@
                     <i data-lucide="scan-line" class="w-5 h-5"></i>
                     استعلام الباركود الفوري
                 </button>
+
+                <button onclick="switchTab('logs')" id="tab-logs" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="history" class="w-5 h-5"></i>
+                    سجل العمليات التفصيلي
+                </button>
             </nav>
         </div>
 
@@ -237,14 +242,18 @@
                             لوحة التحكم اللوجستية المخصصة لبراند الملابس TREE. متصلة حالياً بقاعدة بيانات **Supabase** لتخزين البضائع في الرفوف واستعلام المخزون وتوجيه عمال المخزن لتحضير طلبات شوبيفاي.
                         </p>
                     </div>
-                    <div class="flex gap-3 flex-shrink-0">
-                        <button onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
+                    <div class="flex flex-wrap gap-3 flex-shrink-0">
+                        <button onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             مركز الرفع
                         </button>
-                        <button onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                        <button onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="package-check" class="w-4 h-4"></i>
                             شاشة التحضير
+                        </button>
+                        <button onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                            <i data-lucide="history" class="w-4 h-4"></i>
+                            سجل العمليات
                         </button>
                     </div>
                 </div>
@@ -416,7 +425,9 @@
                                     <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
                                     سجل العمليات الأخير (Supabase Logs)
                                 </h4>
-                                <span class="text-[10px] text-slate-400 font-semibold uppercase">مزامنة فورية</span>
+                                <button onclick="switchTab('logs')" class="text-xs text-brand-accent hover:text-emerald-400 font-bold transition">
+                                    عرض الكل &larr;
+                                </button>
                             </div>
                             <!-- Logs stack -->
                             <div id="dashboard-activity-logs" class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
@@ -876,6 +887,80 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ================= AUDIT LOGS TAB ================= -->
+            <section id="section-logs" class="hidden space-y-6">
+                <!-- Header Card -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">سجل حركات المخزن التفصيلي (Inventory Audit Logs)</h3>
+                        <p class="text-sm text-slate-500">متابعة كافة حركات الإيداع والتعديل والرفع والتحضير المنفذة على قاعدة البيانات لضمان الشفافية الكاملة.</p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <button onclick="fetchAuditLogs()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 border border-slate-200">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            تحديث السجل
+                        </button>
+                        <button onclick="exportAuditLogsToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-600/10">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            تصدير السجل لـ Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters bar -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center gap-4">
+                    <!-- Search Input -->
+                    <div class="relative w-full flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute right-3.5 top-3.5 text-slate-400"></i>
+                        <input type="text" id="audit-logs-search-input" onkeyup="handleAuditLogsSearch(event)" placeholder="بحث بالباركود، رقم الرف، رقم الأوردر أو أي تفاصيل..." 
+                               class="w-full pr-10 pl-4 py-2.5 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-brand-accent rounded-xl text-xs font-medium transition">
+                    </div>
+                    <!-- Type Filter -->
+                    <div class="w-full md:w-60 flex items-center gap-2">
+                        <label for="audit-logs-type-filter" class="text-xs font-bold text-slate-500 whitespace-nowrap">نوع الحركة:</label>
+                        <select id="audit-logs-type-filter" onchange="handleAuditLogsFilter(this.value)" 
+                                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-brand-accent focus:border-brand-accent focus:outline-none">
+                            <option value="all">الكل</option>
+                            <option value="تعديل يدوي للمخزون">التعديل اليدوي للمخزون</option>
+                            <option value="رفع كتالوج المنتجات">رفع كتالوج المنتجات</option>
+                            <option value="رفع مواقع الرفوف">رفع مواقع الرفوف</option>
+                            <option value="رفع تسكين المخزون">رفع تسكين المخزون</option>
+                            <option value="رفع صور شوبيفاي">رفع صور شوبيفاي</option>
+                            <option value="رفع طلبات شوبيفاي">رفع طلبات شوبيفاي (تحديث)</option>
+                            <option value="تحضير طلب شوبيفاي">تحضير أوردرات شوبيفاي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table Card -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/75 border-b border-slate-200 text-slate-500 text-xs font-bold">
+                                    <th class="px-6 py-4">التاريخ والوقت</th>
+                                    <th class="px-6 py-4">نوع الحركة</th>
+                                    <th class="px-6 py-4">تفاصيل العملية</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-logs-table-body" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                                <!-- Dynamic logs table rows go here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="bg-slate-50/50 border-t border-slate-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="text-xs text-slate-500 font-medium" id="audit-logs-page-info">
+                            عرض 0 - 0 من أصل 0 حركة
+                        </div>
+                        <div class="flex items-center gap-2" id="audit-logs-pagination-buttons">
+                            <!-- Prev/Next buttons will go here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -913,6 +998,13 @@
         let printQuantities = {};
         let printSearchQuery = "";
         let activeEditRecord = null;
+
+        // Audit Logs state variables
+        let auditLogsData = [];
+        let auditLogsSearchQuery = "";
+        let auditLogsTypeFilter = "all";
+        let auditLogsCurrentPage = 1;
+        const auditLogsPerPage = 15;
 
         // Live collections arrays (Fetched from Supabase)
         let liveInventoryData = [];
@@ -1024,7 +1116,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['dashboard', 'upload', 'inventory', 'picker', 'query'];
+            const sections = ['dashboard', 'upload', 'inventory', 'picker', 'query', 'logs'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -1059,7 +1151,8 @@
                 upload: 'بوابة رفع جداول المخازن وشوبيفاي',
                 inventory: 'المخازن والكتالوجات الحية',
                 picker: 'تحضير وفرز طلبات شوبيفاي',
-                query: 'استعلام الباركود السريع'
+                query: 'استعلام الباركود السريع',
+                logs: 'سجل حركات المخزن التفصيلي (Audit Logs)'
             };
             document.getElementById('current-section-title').textContent = titles[tabId];
 
@@ -1070,6 +1163,9 @@
                     const input = document.getElementById('query-barcode-input');
                     if (input) input.focus();
                 }, 100);
+            } else if (tabId === 'logs') {
+                auditLogsCurrentPage = 1;
+                fetchAuditLogs();
             }
         }
 
@@ -1129,6 +1225,9 @@
             activeChannels.activityLogs = supabaseClient.channel('realtime-activity-logs')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, payload => {
                     loadActivityLogs();
+                    if (activeTab === 'logs') {
+                        fetchAuditLogs();
+                    }
                 })
                 .subscribe();
         }
@@ -2987,6 +3086,235 @@
 
         function printInventoryTable() {
             window.print();
+        }
+
+        // =========================================================================
+        // ==================== 6. DETAILED AUDIT LOGS SYSTEM ====================
+        // =========================================================================
+        async function fetchAuditLogs() {
+            if (!supabaseClient) return;
+
+            const tableBody = document.getElementById('audit-logs-table-body');
+            if (tableBody && auditLogsCurrentPage === 1 && auditLogsData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 font-semibold">جاري جلب سجل العمليات من Supabase...</td></tr>';
+            }
+
+            try {
+                let queryBuilder = supabaseClient
+                    .from('activity_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                let { data, error } = await queryBuilder.limit(500);
+
+                if (error) {
+                    let { data: altData, error: altError } = await supabaseClient
+                        .from('activity_logs')
+                        .select('*')
+                        .order('timestamp', { ascending: false })
+                        .limit(500);
+                    
+                    if (altError) throw altError;
+                    data = altData;
+                }
+
+                auditLogsData = data || [];
+                renderAuditLogsUI();
+            } catch (err) {
+                console.error("Error fetching audit logs:", err);
+                if (tableBody) {
+                    tableBody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-rose-500 font-semibold">فشل جلب السجلات: ${err.message}</td></tr>`;
+                }
+            }
+        }
+
+        function renderAuditLogsUI() {
+            const tableBody = document.getElementById('audit-logs-table-body');
+            const pageInfo = document.getElementById('audit-logs-page-info');
+            const paginationContainer = document.getElementById('audit-logs-pagination-buttons');
+            if (!tableBody) return;
+
+            let filtered = auditLogsData;
+
+            if (auditLogsTypeFilter !== 'all') {
+                filtered = filtered.filter(log => log.action === auditLogsTypeFilter);
+            }
+
+            if (auditLogsSearchQuery.trim() !== '') {
+                const query = auditLogsSearchQuery.toLowerCase().trim();
+                filtered = filtered.filter(log => 
+                    (log.action && log.action.toLowerCase().includes(query)) ||
+                    (log.details && log.details.toLowerCase().includes(query))
+                );
+            }
+
+            const totalRecords = filtered.length;
+
+            if (totalRecords === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 font-semibold">لا توجد عمليات مطابقة لخيارات البحث الحالية.</td></tr>';
+                if (pageInfo) pageInfo.textContent = 'عرض 0 - 0 من أصل 0 حركة';
+                if (paginationContainer) paginationContainer.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(totalRecords / auditLogsPerPage);
+            auditLogsCurrentPage = Math.min(auditLogsCurrentPage, totalPages);
+            auditLogsCurrentPage = Math.max(1, auditLogsCurrentPage);
+
+            const startIndex = (auditLogsCurrentPage - 1) * auditLogsPerPage;
+            const endIndex = Math.min(startIndex + auditLogsPerPage, totalRecords);
+            const pageData = filtered.slice(startIndex, endIndex);
+
+            let html = '';
+            pageData.forEach(log => {
+                const ts = log.created_at || log.timestamp;
+                const dateObj = ts ? new Date(ts) : new Date();
+                
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const hours = String(dateObj.getHours()).padStart(2, '0');
+                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+                let icon = 'info';
+                let badgeClass = 'bg-slate-100 text-slate-700';
+                
+                if (log.action.includes('رفع') || log.action.includes('كتالوج') || log.action.includes('ملف') || log.action.includes('تحديث')) {
+                    icon = 'upload-cloud';
+                    badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                } else if (log.action.includes('تعديل يدوي')) {
+                    icon = 'edit-3';
+                    badgeClass = 'bg-blue-50 text-blue-700 border border-blue-100';
+                } else if (log.action.includes('تحضير') || log.action.includes('خصم') || log.action.includes('طلب') || log.action.includes('تعبئة')) {
+                    icon = 'package-check';
+                    badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100';
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50/50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-500 font-mono tracking-wide">${dateStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${badgeClass}">
+                                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+                                ${log.action}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-600 font-bold">${log.details}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+            lucide.createIcons();
+
+            if (pageInfo) {
+                pageInfo.textContent = `عرض ${(startIndex + 1).toLocaleString('ar-EG')} - ${endIndex.toLocaleString('ar-EG')} من أصل ${totalRecords.toLocaleString('ar-EG')} حركة`;
+            }
+
+            if (paginationContainer) {
+                let paginationHtml = '';
+                
+                const prevDisabled = auditLogsCurrentPage === 1 ? 'disabled opacity-50 cursor-not-allowed' : '';
+                paginationHtml += `
+                    <button onclick="changeAuditLogsPage(${auditLogsCurrentPage - 1})" ${prevDisabled} 
+                            class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 transition flex items-center gap-1">
+                        السابق
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+
+                let startPage = Math.max(1, auditLogsCurrentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let p = startPage; p <= endPage; p++) {
+                    const activeClass = p === auditLogsCurrentPage 
+                        ? 'bg-brand-deep text-white border-brand-deep font-extrabold shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                    paginationHtml += `
+                        <button onclick="changeAuditLogsPage(${p})" 
+                                class="w-8 h-8 border rounded-lg text-xs font-bold transition ${activeClass}">
+                            ${p.toLocaleString('ar-EG')}
+                        </button>
+                    `;
+                }
+
+                const nextDisabled = auditLogsCurrentPage === totalPages ? 'disabled opacity-50 cursor-not-allowed' : '';
+                paginationHtml += `
+                    <button onclick="changeAuditLogsPage(${auditLogsCurrentPage + 1})" ${nextDisabled} 
+                            class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 transition flex items-center gap-1">
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        التالي
+                    </button>
+                `;
+
+                paginationContainer.innerHTML = paginationHtml;
+                lucide.createIcons();
+            }
+        }
+
+        function changeAuditLogsPage(p) {
+            auditLogsCurrentPage = p;
+            renderAuditLogsUI();
+        }
+
+        function handleAuditLogsSearch(event) {
+            auditLogsSearchQuery = event.target.value;
+            auditLogsCurrentPage = 1;
+            renderAuditLogsUI();
+        }
+
+        function handleAuditLogsFilter(val) {
+            auditLogsTypeFilter = val;
+            auditLogsCurrentPage = 1;
+            renderAuditLogsUI();
+        }
+
+        function exportAuditLogsToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة SheetJS غير متوفرة.");
+                return;
+            }
+
+            let filtered = auditLogsData;
+            if (auditLogsTypeFilter !== 'all') {
+                filtered = filtered.filter(log => log.action === auditLogsTypeFilter);
+            }
+            if (auditLogsSearchQuery.trim() !== '') {
+                const query = auditLogsSearchQuery.toLowerCase().trim();
+                filtered = filtered.filter(log => 
+                    (log.action && log.action.toLowerCase().includes(query)) ||
+                    (log.details && log.details.toLowerCase().includes(query))
+                );
+            }
+
+            if (filtered.length === 0) {
+                alert("لا توجد بيانات لتصديرها.");
+                return;
+            }
+
+            const exportData = filtered.map(log => {
+                const ts = log.created_at || log.timestamp;
+                const dateObj = ts ? new Date(ts) : new Date();
+                const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+
+                return {
+                    "التاريخ والوقت": dateStr,
+                    "نوع الحركة": log.action,
+                    "تفاصيل العملية اللوجستية": log.details
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "سجل حركات المخزن");
+            
+            const filename = `سجل_حركات_المستودع_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+            logToConsole('success', `تم تصدير سجل العمليات بنجاح إلى ملف: ${filename}`);
         }
 
         // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
