@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستودع الشجرة TREE - نظام اللوجستيات المتكامل (Supabase)</title>
+    <title>مستودع  TREE - نظام اللوجستيات المتكامل (Supabase)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -52,6 +52,9 @@
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- JsBarcode CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
     <style>
         body {
             font-family: 'Tajawal', sans-serif;
@@ -69,6 +72,56 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+
+        /* Print formatting */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            /* Hide normal dashboard layout when printing barcodes */
+            body > *:not(#print-barcode-area) {
+                display: none !important;
+            }
+            #print-barcode-area {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 15px !important;
+                width: 210mm; /* A4 Width */
+                margin: 0 auto;
+                padding: 10mm;
+                box-sizing: border-box;
+                direction: ltr !important;
+            }
+            .barcode-print-card {
+                border: 1px dashed #bbb;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                box-sizing: border-box;
+                page-break-inside: avoid;
+            }
+            .barcode-print-card svg {
+                max-width: 100%;
+                height: auto;
+            }
+            .barcode-print-card .label-text {
+                font-family: 'Tajawal', sans-serif;
+                font-size: 10px;
+                font-weight: bold;
+                margin-top: 4px;
+                color: black;
+                text-align: center;
+                direction: rtl;
+            }
+        }
+        
+        #print-barcode-area {
+            display: none;
         }
     </style>
 </head>
@@ -244,6 +297,31 @@
                         <div class="bg-amber-50 p-4 rounded-xl text-amber-600">
                             <i data-lucide="shopping-cart" class="w-6 h-6"></i>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Low Stock Alert and Safety Threshold Card -->
+                <div id="low-stock-alert-panel" class="hidden bg-white border border-rose-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-rose-50 p-2.5 rounded-xl text-rose-600 border border-rose-100 animate-pulse">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">نواقص وتنبيهات المخازن (حد الأمان)</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">المنتجات التي يقل رصيدها بالرفوف عن حد الأمان المطلوب.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                            <span class="text-xs text-slate-500 font-bold">حد الأمان:</span>
+                            <input type="number" id="low-stock-threshold-input" value="5" min="1" onchange="updateLowStockThreshold(this.value)" 
+                                   class="w-16 px-2 py-1 border border-slate-300 rounded-lg text-center text-xs font-bold focus:ring-1 focus:ring-rose-500 focus:outline-none">
+                            <span class="text-xs text-slate-400">قطعة</span>
+                        </div>
+                    </div>
+                    <!-- Low Stock Alert Grid -->
+                    <div id="low-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
+                        <!-- Dynamic low stock alerts will go here -->
                     </div>
                 </div>
 
@@ -566,15 +644,21 @@
             <!-- ================= LIVE INVENTORY & CATALOG TAB ================= -->
             <section id="section-inventory" class="hidden space-y-6">
                 <!-- Inner Sub tabs -->
-                <div class="flex items-center gap-2 border-b border-slate-200 pb-px">
-                    <button onclick="switchInventorySubTab('stock')" id="subtab-stock" class="px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all">
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto scrollbar-none">
+                    <button onclick="switchInventorySubTab('stock')" id="subtab-stock" class="px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap">
                         مواقع التسكين الفيزيائية
                     </button>
-                    <button onclick="switchInventorySubTab('catalog')" id="subtab-catalog" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all">
+                    <button onclick="switchInventorySubTab('catalog')" id="subtab-catalog" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         كتالوج المنتجات والصور
                     </button>
-                    <button onclick="switchInventorySubTab('discrepancy')" id="subtab-discrepancy" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all">
+                    <button onclick="switchInventorySubTab('discrepancy')" id="subtab-discrepancy" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         كاشف فروقات الجرد
+                    </button>
+                    <button onclick="switchInventorySubTab('map')" id="subtab-map" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        خريطة المستودع
+                    </button>
+                    <button onclick="switchInventorySubTab('print')" id="subtab-print" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        طباعة باركود A4
                     </button>
                 </div>
 
@@ -606,7 +690,7 @@
                 </div>
 
                 <!-- Filters and Table container -->
-                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                <div id="inventory-table-container" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
                     <!-- Table Header Tools -->
                     <div class="p-4 bg-slate-50/50 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
                         <div class="relative w-full md:w-80">
@@ -614,12 +698,19 @@
                             <input type="text" id="inventory-search" oninput="filterInventory()" placeholder="ابحث بالباركود، الاسم أو الموقع..." 
                                    class="w-full pr-9 pl-4 py-2 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent rounded-xl text-sm transition">
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <button id="btn-sort-primary" onclick="sortInventoryData('barcode')" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-600 transition">
                                 <i data-lucide="sort-asc" class="w-3.5 h-3.5"></i> ترتيب الباركود
                             </button>
                             <button id="btn-sort-secondary" onclick="sortInventoryData('locationId')" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-600 transition">
                                 <i data-lucide="sort-asc" class="w-3.5 h-3.5"></i> ترتيب الموقع
+                            </button>
+                            <div class="h-6 w-px bg-slate-200"></div>
+                            <button onclick="exportToExcel()" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 rounded-xl text-xs font-bold transition">
+                                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> تصدير Excel
+                            </button>
+                            <button onclick="printInventoryTable()" class="flex items-center gap-1.5 px-3 py-2 bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i> طباعة (PDF)
                             </button>
                         </div>
                     </div>
@@ -647,6 +738,87 @@
                                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ================= INTERACTIVE WAREHOUSE MAP ================= -->
+                <div id="inventory-map-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">تمثيل جرد المستودع التفاعلي (Heatmap)</h4>
+                            <p class="text-xs text-slate-500">خريطة بصرية للرفوف تظهر مستوى إشغال المخزن (الألوان تدل على كمية القطع).</p>
+                        </div>
+                        <!-- Zone Selector -->
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                            <span class="text-xs text-slate-500 font-bold">المنطقة (Zone):</span>
+                            <div id="map-zone-selectors" class="flex items-center gap-1.5">
+                                <!-- Dynamic zone buttons (A, B, C...) -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Warehouse Grid Map -->
+                    <div id="warehouse-grid-map" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                        <!-- Dynamic shelf boxes will render here -->
+                    </div>
+
+                    <!-- Shelf Items Details Panel (opens when shelf clicked) -->
+                    <div id="map-shelf-details" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h5 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i>
+                                تفاصيل محتويات الرف: <span id="map-selected-shelf-id" class="text-brand-deep font-mono font-black">A-01</span>
+                            </h5>
+                            <span id="map-selected-shelf-qty" class="text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200"></span>
+                        </div>
+                        <div id="map-shelf-items-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <!-- Items on the selected shelf will list here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= BARCODE A4 PRINTING TAB ================= -->
+                <div id="inventory-print-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">طباعة ملصقات الباركود بمقاييس ورق A4</h4>
+                            <p class="text-xs text-slate-500">اختر نوع الطباعة، وابحث وحدد الكمية المطلوبة لكل باركود لإنشاء ورقة طباعة A4 (3 أعمدة).</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Label Type Selector -->
+                            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                                <span class="text-xs text-slate-500 font-bold">نوع الملصق:</span>
+                                <select id="print-label-type" onchange="renderPrintItemsList()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700">
+                                    <option value="catalog">ملصقات منتجات (الباركود + الاسم)</option>
+                                    <option value="locations">ملصقات الرفوف (باركود الرف)</option>
+                                </select>
+                            </div>
+                            <button onclick="triggerPrintBarcodes()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-brand-deep/15">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                                توليد ومعاينة الطباعة (A4)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Print Sheet Options -->
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-80">
+                            <i data-lucide="search" class="w-4 h-4 absolute right-3 top-3 text-slate-400"></i>
+                            <input type="text" id="print-search-input" oninput="filterPrintItems()" placeholder="ابحث بالاسم أو الباركود..." 
+                                   class="w-full pr-9 pl-4 py-1.5 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/25 rounded-xl text-xs transition">
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-slate-500 font-bold">تعيين كمية موحدة للكل:</span>
+                            <input type="number" id="print-bulk-qty" value="0" min="0" 
+                                   class="w-16 px-2 py-1 border border-slate-300 rounded-lg text-center text-xs font-bold">
+                            <button onclick="setBulkPrintQty()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] px-3 py-1.5 rounded-lg transition">تطبيق</button>
+                            <button onclick="clearAllPrintQty()" class="text-xs text-rose-600 hover:text-rose-700 font-bold">تصفير الكل</button>
+                        </div>
+                    </div>
+
+                    <!-- Print Items Selectable Grid/List -->
+                    <div id="print-items-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-1">
+                        <!-- Dynamic items with qty controls render here -->
                     </div>
                 </div>
             </section>
@@ -734,6 +906,13 @@
             inventory: null,
             shopify_orders: null
         };
+
+        // Advanced features state variables
+        let lowStockThreshold = 5;
+        let selectedMapZone = 'A';
+        let printQuantities = {};
+        let printSearchQuery = "";
+        let activeEditRecord = null;
 
         // Live collections arrays (Fetched from Supabase)
         let liveInventoryData = [];
@@ -967,6 +1146,7 @@
                     switchInventorySubTab(activeInventorySubTab);
                 }
                 updateDashboardCharts();
+                renderLowStockAlerts();
             } catch (err) {
                 console.error("Error loading catalog data from Supabase:", err);
             }
@@ -983,10 +1163,13 @@
                 
                 if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
                     switchInventorySubTab(activeInventorySubTab);
+                } else if (activeInventorySubTab === 'map') {
+                    renderWarehouseMap();
                 }
                 
                 renderOrderPicker();
                 updateDashboardCharts();
+                renderLowStockAlerts();
             } catch (err) {
                 console.error("Error loading inventory data from Supabase:", err);
             }
@@ -1473,42 +1656,81 @@
             const subtabStock = document.getElementById('subtab-stock');
             const subtabCatalog = document.getElementById('subtab-catalog');
             const subtabDiscrepancy = document.getElementById('subtab-discrepancy');
+            const subtabMap = document.getElementById('subtab-map');
+            const subtabPrint = document.getElementById('subtab-print');
+            
             const subTitle = document.getElementById('inventory-sub-title');
             
-            // Toggle active classes
-            [subtabStock, subtabCatalog, subtabDiscrepancy].forEach(tab => {
+            const tableContainer = document.getElementById('inventory-table-container');
+            const mapContainer = document.getElementById('inventory-map-container');
+            const printContainer = document.getElementById('inventory-print-container');
+            
+            // Toggle active classes on subtab buttons
+            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint].forEach(tab => {
                 if (tab) {
-                    tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all";
+                    tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
                 }
             });
 
+            // Hide all sub-containers first
+            if (tableContainer) tableContainer.classList.add('hidden');
+            if (mapContainer) mapContainer.classList.add('hidden');
+            if (printContainer) printContainer.classList.add('hidden');
+
             if (subTabId === 'stock') {
-                subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all";
+                if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "تفاصيل الأصناف والتسكين بالمواقع";
+                if (tableContainer) tableContainer.classList.remove('hidden');
                 
                 let totalStockQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = liveInventoryData.length.toLocaleString('ar-EG');
+                
+                filterInventory();
             } 
             else if (subTabId === 'catalog') {
-                subtabCatalog.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all";
+                if (subtabCatalog) subtabCatalog.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "كتالوج منتجات الملبوسات والصور المزامنة";
+                if (tableContainer) tableContainer.classList.remove('hidden');
                 
                 let totalCatalogQty = liveCatalogData.reduce((sum, item) => sum + Number(item.system_qty || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalCatalogQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                
+                filterInventory();
             }
             else if (subTabId === 'discrepancy') {
-                subtabDiscrepancy.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all";
+                if (subtabDiscrepancy) subtabDiscrepancy.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "كاشف فروقات ومطابقة الجرد الفيزيائي والنظامي";
+                if (tableContainer) tableContainer.classList.remove('hidden');
                 
-                // Discrepancy metric counts
                 let discrepantItems = getDiscrepantItems();
                 document.getElementById('inventory-total-qty').textContent = discrepantItems.length.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = discrepantItems.length.toLocaleString('ar-EG');
+                
+                filterInventory();
             }
-
-            filterInventory();
+            else if (subTabId === 'map') {
+                if (subtabMap) subtabMap.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                subTitle.textContent = "تمثيل الخريطة الحرارية التفاعلية لرفوف المستودع";
+                if (mapContainer) mapContainer.classList.remove('hidden');
+                
+                let totalStockQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
+                document.getElementById('inventory-total-records').textContent = liveLocationsData.length.toLocaleString('ar-EG');
+                
+                renderWarehouseMap();
+            }
+            else if (subTabId === 'print') {
+                if (subtabPrint) subtabPrint.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                subTitle.textContent = "طباعة ملصقات الباركود A4";
+                if (printContainer) printContainer.classList.remove('hidden');
+                
+                document.getElementById('inventory-total-qty').textContent = "A4";
+                document.getElementById('inventory-total-records').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                
+                renderPrintItemsList();
+            }
         }
 
         // Helper to compile discrepant items
@@ -1616,6 +1838,7 @@
                         <th class="px-6 py-4">الباركود</th>
                         <th class="px-6 py-4 text-right">معرّف الموقع (الرف)</th>
                         <th class="px-6 py-4 text-left">الكمية المودعة فعلياً</th>
+                        <th class="px-6 py-4 text-left">التحكم</th>
                     </tr>
                 `;
             } 
@@ -1649,7 +1872,7 @@
                 }
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="${activeInventorySubTab === 'discrepancy' ? 6 : 4}" class="px-6 py-12 text-center text-slate-400">
+                        <td colspan="${activeInventorySubTab === 'discrepancy' ? 6 : (activeInventorySubTab === 'stock' ? 5 : 4)}" class="px-6 py-12 text-center text-slate-400">
                             <div class="flex flex-col items-center justify-center gap-2">
                                 <i data-lucide="inbox" class="w-6 h-6 text-slate-300"></i>
                                 <span class="font-semibold text-xs">${emptyMsg}</span>
@@ -1689,9 +1912,15 @@
                                     ${item.location_id}
                                 </span>
                             </td>
-                            <td class="px-6 py-3.5 block md:table-cell text-left md:text-left flex justify-between md:table-cell items-center pb-2 md:pb-3.5 pt-2 md:pt-3.5 font-bold font-mono text-slate-900">
+                            <td class="px-6 py-3.5 block md:table-cell text-left md:text-left flex justify-between md:table-cell items-center border-b border-slate-100 md:border-none pb-2 md:pb-3.5 pt-2 md:pt-3.5 font-bold font-mono text-slate-900">
                                 <span class="md:hidden text-xs text-slate-400 font-bold ml-2">الكمية المودعة:</span>
                                 <span>${item.quantity.toLocaleString('ar-EG')}</span>
+                            </td>
+                            <td class="px-6 py-3.5 block md:table-cell text-left md:text-left flex justify-between md:table-cell items-center pb-2 md:pb-3.5 pt-2 md:pt-3.5">
+                                <span class="md:hidden text-xs text-slate-400 font-bold ml-2">التحكم:</span>
+                                <button onclick="openEditQtyModal('${item.barcode}', '${item.location_id}', ${item.quantity})" class="text-brand-accent hover:text-brand-deep transition-all p-1.5 rounded-lg hover:bg-slate-100" title="تعديل يدوي">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -2399,6 +2628,542 @@
                 }
             }
         }
+
+        // =========================================================================
+        // ==================== ADVANCED LOGISTICS SYSTEM JS ====================
+        // =========================================================================
+
+        // 1. A4 BARCODE PRINT SHEET
+        function renderPrintItemsList() {
+            const listEl = document.getElementById('print-items-list');
+            const type = document.getElementById('print-label-type').value;
+            if (!listEl) return;
+
+            let html = '';
+            const query = printSearchQuery.toLowerCase().trim();
+
+            if (type === 'catalog') {
+                const filtered = liveCatalogData.filter(item => 
+                    item.barcode.toLowerCase().includes(query) || 
+                    (item.product_name && item.product_name.toLowerCase().includes(query))
+                );
+
+                if (filtered.length === 0) {
+                    listEl.innerHTML = '<p class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">لا توجد منتجات مطابقة للبحث.</p>';
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    const printQty = printQuantities[item.barcode] || 0;
+                    const imgHtml = item.image_url 
+                        ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg bg-slate-50 border border-slate-200" alt="">`
+                        : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
+                    
+                    html += `
+                        <div class="flex items-center justify-between p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl transition">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                ${imgHtml}
+                                <div class="min-w-0">
+                                    <h5 class="text-xs font-bold text-slate-800 truncate">${item.product_name}</h5>
+                                    <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">${item.barcode}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button onclick="adjustPrintQty('${item.barcode}', -1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="print-qty-input-${item.barcode}" value="${printQty}" min="0" onchange="setPrintQty('${item.barcode}', this.value)" 
+                                       class="w-12 px-1 py-1 border border-slate-200 rounded-lg text-center text-xs font-bold focus:ring-1 focus:ring-brand-accent focus:outline-none">
+                                <button onclick="adjustPrintQty('${item.barcode}', 1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                // Shelf tags
+                const filtered = liveLocationsData.filter(loc => 
+                    loc.location_id && loc.location_id.toLowerCase().includes(query)
+                );
+
+                if (filtered.length === 0) {
+                    listEl.innerHTML = '<p class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">لا توجد رفوف مطابقة للبحث.</p>';
+                    return;
+                }
+
+                filtered.forEach(loc => {
+                    const shelfId = loc.location_id;
+                    const printQty = printQuantities[shelfId] || 0;
+                    
+                    html += `
+                        <div class="flex items-center justify-between p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl transition">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 border border-slate-200"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                                <div>
+                                    <h5 class="text-xs font-bold text-slate-800 font-mono tracking-wide">${shelfId}</h5>
+                                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">ملصق باركود الرف</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button onclick="adjustPrintQty('${shelfId}', -1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="print-qty-input-${shelfId}" value="${printQty}" min="0" onchange="setPrintQty('${shelfId}', this.value)" 
+                                       class="w-12 px-1 py-1 border border-slate-200 rounded-lg text-center text-xs font-bold focus:ring-1 focus:ring-brand-accent focus:outline-none">
+                                <button onclick="adjustPrintQty('${shelfId}', 1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            listEl.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function filterPrintItems() {
+            printSearchQuery = document.getElementById('print-search-input').value;
+            renderPrintItemsList();
+        }
+
+        function adjustPrintQty(id, delta) {
+            const input = document.getElementById(`print-qty-input-${id}`);
+            if (!input) return;
+            let val = Number(input.value) || 0;
+            val = Math.max(0, val + delta);
+            input.value = val;
+            printQuantities[id] = val;
+        }
+
+        function setPrintQty(id, value) {
+            const val = Math.max(0, Number(value) || 0);
+            printQuantities[id] = val;
+        }
+
+        function setBulkPrintQty() {
+            const qty = Math.max(0, Number(document.getElementById('print-bulk-qty').value) || 0);
+            const type = document.getElementById('print-label-type').value;
+
+            if (type === 'catalog') {
+                liveCatalogData.forEach(item => {
+                    printQuantities[item.barcode] = qty;
+                });
+            } else {
+                liveLocationsData.forEach(loc => {
+                    printQuantities[loc.location_id] = qty;
+                });
+            }
+            renderPrintItemsList();
+            alert(`تم تعيين كمية الطباعة ${qty} للكل.`);
+        }
+
+        function clearAllPrintQty() {
+            printQuantities = {};
+            document.getElementById('print-bulk-qty').value = 0;
+            renderPrintItemsList();
+        }
+
+        function triggerPrintBarcodes() {
+            const printArea = document.getElementById('print-barcode-area');
+            if (!printArea) return;
+
+            printArea.innerHTML = ''; // Clear layout
+            const type = document.getElementById('print-label-type').value;
+            let totalLabelsGenerated = 0;
+
+            const targetArray = type === 'catalog' ? liveCatalogData : liveLocationsData;
+
+            targetArray.forEach(item => {
+                const id = type === 'catalog' ? item.barcode : item.location_id;
+                const qty = printQuantities[id] || 0;
+                
+                for (let k = 0; k < qty; k++) {
+                    const card = document.createElement('div');
+                    card.className = 'barcode-print-card';
+
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svg.setAttribute('id', `barcode-svg-${totalLabelsGenerated}`);
+                    card.appendChild(svg);
+
+                    const labelText = document.createElement('div');
+                    labelText.className = 'label-text';
+                    labelText.textContent = type === 'catalog' 
+                        ? (item.product_name || item.barcode) 
+                        : `رف: ${id}`;
+                    card.appendChild(labelText);
+
+                    printArea.appendChild(card);
+                    
+                    JsBarcode(svg, id, {
+                        format: "CODE128",
+                        width: 1.5,
+                        height: 40,
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 4
+                    });
+
+                    totalLabelsGenerated++;
+                }
+            });
+
+            if (totalLabelsGenerated === 0) {
+                alert("يرجى تحديد كمية طباعة (أكبر من 0) لباركود واحد على الأقل أولاً.");
+                return;
+            }
+
+            window.print();
+        }
+
+        // 2. MANUAL STOCK ADJUSTMENTS
+        function openEditQtyModal(barcode, locationId, currentQty) {
+            activeEditRecord = { barcode, location_id: locationId };
+            
+            document.getElementById('modal-barcode').textContent = barcode;
+            document.getElementById('modal-location').textContent = locationId;
+            document.getElementById('modal-quantity-input').value = currentQty;
+
+            const product = liveCatalogData.find(c => c.barcode === barcode);
+            document.getElementById('modal-product-name').textContent = product ? product.product_name : 'صنف غير مسجل بالكتالوج';
+            document.getElementById('modal-system-info').textContent = product ? `الكمية النظامية: ${product.system_qty}` : 'الكمية النظامية: -';
+
+            const imgContainer = document.getElementById('modal-img-container');
+            if (product && product.image_url) {
+                imgContainer.innerHTML = `<img src="${product.image_url}" class="w-full h-full object-cover">`;
+            } else {
+                imgContainer.innerHTML = '<i data-lucide="shirt" class="w-5 h-5"></i>';
+            }
+            lucide.createIcons();
+
+            document.getElementById('edit-qty-modal').classList.remove('hidden');
+            document.getElementById('modal-quantity-input').focus();
+        }
+
+        function closeEditQtyModal() {
+            document.getElementById('edit-qty-modal').classList.add('hidden');
+            activeEditRecord = null;
+        }
+
+        async function saveManualQtyAdjustment() {
+            if (!supabaseClient || !activeEditRecord) return;
+
+            const newQty = Number(document.getElementById('modal-quantity-input').value);
+            if (isNaN(newQty) || newQty < 0) {
+                alert("يرجى إدخال كمية صحيحة أكبر من أو تساوي 0.");
+                return;
+            }
+
+            const barcode = activeEditRecord.barcode;
+            const locationId = activeEditRecord.location_id;
+
+            logToConsole('system', `جاري تحديث كمية الباركود ${barcode} بالرف ${locationId} يدوياً إلى ${newQty}...`);
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('warehouse_inventory')
+                    .update({ quantity: newQty })
+                    .eq('barcode', barcode)
+                    .eq('location_id', locationId);
+
+                if (error) throw error;
+
+                logToConsole('success', `تم التعديل اليدوي بنجاح: الباركود ${barcode} بالرف ${locationId} أصبح ${newQty}.`);
+                
+                const product = liveCatalogData.find(c => c.barcode === barcode);
+                const name = product ? product.product_name : barcode;
+                await addActivityLog("تعديل يدوي للمخزون", `تم تعديل كمية الصنف ${name} بالرف ${locationId} يدوياً إلى ${newQty}.`);
+
+                closeEditQtyModal();
+            } catch (err) {
+                console.error("Manual adjustment failed:", err);
+                alert("فشل تحديث المخزن: " + err.message);
+                logToConsole('error', `فشل التعديل اليدوي: ${err.message}`);
+            }
+        }
+
+        // 3. LOW STOCK ALERTS
+        function updateLowStockThreshold(val) {
+            lowStockThreshold = Number(val) || 5;
+            renderLowStockAlerts();
+        }
+
+        function renderLowStockAlerts() {
+            const grid = document.getElementById('low-stock-items-grid');
+            const panel = document.getElementById('low-stock-alert-panel');
+            if (!grid || !panel) return;
+
+            const barcodeQuantities = {};
+            liveInventoryData.forEach(item => {
+                barcodeQuantities[item.barcode] = (barcodeQuantities[item.barcode] || 0) + Number(item.quantity || 0);
+            });
+
+            const lowStockItems = [];
+            liveCatalogData.forEach(product => {
+                const physicalQty = barcodeQuantities[product.barcode] || 0;
+                if (physicalQty < lowStockThreshold) {
+                    lowStockItems.push({
+                        barcode: product.barcode,
+                        name: product.product_name,
+                        systemQty: product.system_qty || 0,
+                        physicalQty: physicalQty,
+                        imageUrl: product.image_url
+                    });
+                }
+            });
+
+            if (lowStockItems.length === 0) {
+                panel.classList.add('hidden');
+                grid.innerHTML = '';
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            let html = '';
+            lowStockItems.forEach(item => {
+                const imgHtml = item.imageUrl 
+                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
+                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                
+                html += `
+                    <div class="flex items-center gap-3 p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                        </div>
+                        <div class="text-left">
+                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
+                                رصيد: ${item.physicalQty}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 4. EXPORTING REPORTS
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة SheetJS غير متوفرة.");
+                return;
+            }
+
+            let dataToExport = [];
+            let filename = "";
+            
+            if (activeInventorySubTab === 'stock') {
+                dataToExport = liveInventoryData.map(item => ({
+                    "الباركود": item.barcode,
+                    "الموقع (الرف)": item.location_id,
+                    "الكمية المودعة فعلياً": item.quantity
+                }));
+                filename = `مخزون_الرفوف_الفعلي_${new Date().toISOString().slice(0,10)}.xlsx`;
+            } 
+            else if (activeInventorySubTab === 'catalog') {
+                dataToExport = liveCatalogData.map(item => ({
+                    "الباركود": item.barcode,
+                    "اسم الموديل والمنتج": item.product_name,
+                    "الكمية النظامية": item.system_qty
+                }));
+                filename = `كتالوج_المنتجات_${new Date().toISOString().slice(0,10)}.xlsx`;
+            } 
+            else if (activeInventorySubTab === 'discrepancy') {
+                dataToExport = getDiscrepantItems().map(item => ({
+                    "الباركود": item.barcode,
+                    "اسم المنتج": item.productName,
+                    "الكمية النظامية": item.systemQty,
+                    "الكمية الفعلية بالرفوف": item.shelfQty,
+                    "الفارق الجردي": item.diff
+                }));
+                filename = `تقرير_فروقات_الجرد_${new Date().toISOString().slice(0,10)}.xlsx`;
+            }
+            else {
+                alert("التصدير غير متوفر لهذا التبويب.");
+                return;
+            }
+            
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير اللوجستي");
+            XLSX.writeFile(workbook, filename);
+            logToConsole('success', `تم تصدير ملف الإكسيل بنجاح: ${filename}`);
+        }
+
+        function printInventoryTable() {
+            window.print();
+        }
+
+        // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
+        function renderWarehouseMap() {
+            const gridContainer = document.getElementById('warehouse-grid-map');
+            const selectorContainer = document.getElementById('map-zone-selectors');
+            if (!gridContainer || !selectorContainer) return;
+
+            const zonesSet = new Set();
+            liveLocationsData.forEach(loc => {
+                const zone = loc.location_id ? loc.location_id.charAt(0).toUpperCase() : 'A';
+                zonesSet.add(zone);
+            });
+            if (zonesSet.size === 0) zonesSet.add('A');
+            const zones = Array.from(zonesSet).sort();
+
+            let selectorHtml = '';
+            zones.forEach(zone => {
+                const activeClass = zone === selectedMapZone
+                    ? 'bg-brand-deep text-white shadow-sm font-bold'
+                    : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200';
+                selectorHtml += `
+                    <button onclick="selectMapZone('${zone}')" class="px-3 py-1 rounded-lg text-xs font-bold transition ${activeClass}">
+                        المنطقة ${zone}
+                    </button>
+                `;
+            });
+            selectorContainer.innerHTML = selectorHtml;
+
+            const zoneLocations = liveLocationsData.filter(loc => 
+                loc.location_id && loc.location_id.charAt(0).toUpperCase() === selectedMapZone
+            );
+            zoneLocations.sort((a, b) => a.location_id.localeCompare(b.location_id));
+
+            const shelfQuantities = {};
+            liveInventoryData.forEach(item => {
+                shelfQuantities[item.location_id] = (shelfQuantities[item.location_id] || 0) + Number(item.quantity || 0);
+            });
+
+            if (zoneLocations.length === 0) {
+                gridContainer.innerHTML = `
+                    <div class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">
+                        لا توجد رفوف مسجلة في هذه المنطقة. ارفع ملف الرفوف للبدء.
+                    </div>
+                `;
+                return;
+            }
+
+            let mapHtml = '';
+            zoneLocations.forEach(loc => {
+                const shelfId = loc.location_id;
+                const qty = shelfQuantities[shelfId] || 0;
+
+                let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'; 
+                if (qty > 0 && qty <= 5) {
+                    colorClass = 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'; 
+                } else if (qty > 5 && qty <= 50) {
+                    colorClass = 'bg-blue-50/70 border-blue-200 text-blue-700 hover:bg-blue-100'; 
+                } else if (qty > 50) {
+                    colorClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'; 
+                }
+
+                mapHtml += `
+                    <button onclick="showShelfDetails('${shelfId}')" class="flex flex-col items-center justify-center p-4 rounded-xl border text-center transition cursor-pointer shadow-sm ${colorClass}">
+                        <span class="text-xs font-bold font-mono tracking-tight text-slate-800">${shelfId}</span>
+                        <span class="text-[10px] font-bold mt-1">${qty.toLocaleString('ar-EG')} قطعة</span>
+                    </button>
+                `;
+            });
+            gridContainer.innerHTML = mapHtml;
+        }
+
+        function selectMapZone(zone) {
+            selectedMapZone = zone;
+            renderWarehouseMap();
+            document.getElementById('map-shelf-details').classList.add('hidden');
+        }
+
+        function showShelfDetails(shelfId) {
+            const panel = document.getElementById('map-shelf-details');
+            const titleEl = document.getElementById('map-selected-shelf-id');
+            const qtyEl = document.getElementById('map-selected-shelf-qty');
+            const listEl = document.getElementById('map-shelf-items-list');
+            if (!panel || !titleEl || !qtyEl || !listEl) return;
+
+            titleEl.textContent = shelfId;
+            panel.classList.remove('hidden');
+
+            const shelfItems = liveInventoryData.filter(item => item.location_id === shelfId && item.quantity > 0);
+            const totalQty = shelfItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            qtyEl.textContent = `إجمالي: ${totalQty.toLocaleString('ar-EG')} قطعة`;
+
+            if (shelfItems.length === 0) {
+                listEl.innerHTML = '<p class="col-span-full text-center py-4 text-[10px] text-slate-400">الرف فارغ حالياً.</p>';
+                return;
+            }
+
+            let html = '';
+            shelfItems.forEach(item => {
+                const catalogItem = liveCatalogData.find(c => c.barcode === item.barcode);
+                const name = catalogItem ? catalogItem.product_name : 'صنف غير مسجل في الكتالوج';
+                const imgUrl = catalogItem ? catalogItem.image_url : '';
+                const imgHtml = imgUrl 
+                    ? `<img src="${imgUrl}" class="w-8 h-8 object-cover rounded bg-white shadow-sm border" alt="">`
+                    : `<div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+
+                html += `
+                    <div class="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-lg hover:shadow-sm transition">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-slate-700 truncate">${name}</p>
+                            <p class="text-[9px] text-slate-400 font-mono mt-0.5 truncate">${item.barcode}</p>
+                        </div>
+                        <div class="font-extrabold text-[11px] font-mono text-slate-800 bg-slate-50 px-2 py-0.5 rounded border">
+                            ${item.quantity}
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+            lucide.createIcons();
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     </script>
+    <!-- Edit Stock Quantity Modal -->
+    <div id="edit-qty-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-brand-accent"></i>
+                    تعديل المخزون الفعلي بالرف يدوياً
+                </h4>
+                <button onclick="closeEditQtyModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">الباركود</span>
+                        <p id="modal-barcode" class="text-xs font-bold text-slate-700 font-mono mt-0.5">-</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">الرف (الموقع)</span>
+                        <p id="modal-location" class="text-xs font-bold text-slate-700 font-mono mt-0.5">-</p>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded bg-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400" id="modal-img-container">
+                        <i data-lucide="shirt" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p id="modal-product-name" class="text-xs font-bold text-slate-700 truncate">اسم المنتج</p>
+                        <p id="modal-system-info" class="text-[10px] text-slate-400 mt-0.5">الكمية النظامية: -</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="modal-quantity-input" class="text-xs font-bold text-slate-600 block">الكمية الفعلية الجديدة بالرف:</label>
+                    <input type="number" id="modal-quantity-input" min="0" 
+                           class="w-full px-4 py-2.5 border-2 border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-accent/20 focus:border-brand-accent rounded-xl text-base font-bold transition text-center">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-3 border-t border-slate-100 justify-end">
+                <button onclick="closeEditQtyModal()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 font-bold text-xs rounded-xl transition">إلغاء</button>
+                <button onclick="saveManualQtyAdjustment()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-brand-deep/10">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    حفظ التغييرات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Print Barcode Area optimized for A4 grid printing -->
+    <div id="print-barcode-area"></div>
 </body>
 </html>
