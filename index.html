@@ -981,6 +981,42 @@
             return cleaned.replace(/^-/, '').trim();
         }
 
+        // استخراج الباركود الرقمي الأساسي المكون من 10 إلى 14 رقمًا (EAN-13)
+        function extractBaseBarcode(sku) {
+            if (!sku) return '';
+            const match = sku.toString().match(/\d{10,14}/);
+            return match ? match[0] : sku.toString();
+        }
+
+        // مطابقة الباركودات بدقة عبر تقسيمها لرموز (مثال: L-2096463000471 يطابق 2096463000471-L)
+        function matchBarcodesExact(a, b) {
+            if (!a || !b) return false;
+            const cleanA = cleanBarcode(a);
+            const cleanB = cleanBarcode(b);
+            if (cleanA === cleanB) return true;
+
+            const tokensA = cleanA.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0);
+            const tokensB = cleanB.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0);
+
+            if (tokensA.length !== tokensB.length) return false;
+
+            tokensA.sort();
+            tokensB.sort();
+
+            for (let i = 0; i < tokensA.length; i++) {
+                if (tokensA[i] !== tokensB[i]) return false;
+            }
+            return true;
+        }
+
+        // مطابقة الباركودات بناءً على الرقم الأساسي فقط (تجاهل الحجم واللون للمطابقة في الصور ومواقع الرفوف البديلة)
+        function matchBarcodesBase(a, b) {
+            if (!a || !b) return false;
+            const baseA = extractBaseBarcode(cleanBarcode(a));
+            const baseB = extractBaseBarcode(cleanBarcode(b));
+            return baseA && baseB && baseA === baseB;
+        }
+
         // App state variables
         let activeTab = 'dashboard';
         let activeInventorySubTab = 'stock';
@@ -2149,12 +2185,16 @@
                 
                 // OPTIMIZE PICKING PATH: Sort items inside the order based on their physical shelf locations
                 items.sort((a, b) => {
-                    const cleanA = cleanBarcode(a.sku);
-                    const cleanB = cleanBarcode(b.sku);
-                    const locsA = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanA && inv.quantity > 0);
+                    let locsA = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, a.sku) && inv.quantity > 0);
+                    if (locsA.length === 0) {
+                        locsA = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, a.sku) && inv.quantity > 0);
+                    }
                     const locA = locsA.length > 0 ? locsA[0].location_id : 'ZZZZ';
                     
-                    const locsB = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanB && inv.quantity > 0);
+                    let locsB = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, b.sku) && inv.quantity > 0);
+                    if (locsB.length === 0) {
+                        locsB = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, b.sku) && inv.quantity > 0);
+                    }
                     const locB = locsB.length > 0 ? locsB[0].location_id : 'ZZZZ';
                     
                     return locA.localeCompare(locB);
@@ -2163,15 +2203,37 @@
                 let itemsHtml = '';
                 
                 items.forEach(item => {
-                    const cleanSku = cleanBarcode(item.sku);
-                    const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanSku);
+                    // Try exact token match first with image
+                    let catalogItem = liveCatalogData.find(c => matchBarcodesExact(c.barcode, item.sku) && c.image_url);
+                    
+                    // Fallback to base barcode match with image
+                    if (!catalogItem) {
+                        catalogItem = liveCatalogData.find(c => matchBarcodesBase(c.barcode, item.sku) && c.image_url);
+                    }
+                    
+                    // Fallback to exact token match without image
+                    if (!catalogItem) {
+                        catalogItem = liveCatalogData.find(c => matchBarcodesExact(c.barcode, item.sku));
+                    }
+                    
+                    // Fallback to base barcode match without image
+                    if (!catalogItem) {
+                        catalogItem = liveCatalogData.find(c => matchBarcodesBase(c.barcode, item.sku));
+                    }
+
                     const imgUrl = catalogItem ? catalogItem.image_url : '';
                     
                     const imgHtml = imgUrl 
                         ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl bg-slate-50 shadow-sm" alt="صورة الصنف">`
                         : `<div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-6 h-6"></i></div>`;
 
-                    const locationsWithStock = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanSku && inv.quantity > 0);
+                    // Find shelves matching this variant exactly
+                    let locationsWithStock = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, item.sku) && inv.quantity > 0);
+                    
+                    // Fallback to base barcode shelves
+                    if (locationsWithStock.length === 0) {
+                        locationsWithStock = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, item.sku) && inv.quantity > 0);
+                    }
                     
                     let locationLabel = '';
                     if (locationsWithStock.length === 0) {
@@ -2263,8 +2325,13 @@
                     const cleanSku = cleanBarcode(item.sku);
                     let quantityNeeded = Number(item.quantity || 0);
                     
-                    // Find all shelves with stock for this SKU
-                    let shelves = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanSku && inv.quantity > 0);
+                    // Find all shelves with stock for this SKU (try exact variant token match first)
+                    let shelves = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, item.sku) && inv.quantity > 0);
+                    
+                    // Fallback to base barcode match if no exact variant inventory is found
+                    if (shelves.length === 0) {
+                        shelves = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, item.sku) && inv.quantity > 0);
+                    }
                     
                     // Deduct sequentially from shelves
                     for (let shelf of shelves) {
@@ -2274,16 +2341,16 @@
                         if (shelf.quantity >= quantityNeeded) {
                             newQty = shelf.quantity - quantityNeeded;
                             quantityNeeded = 0;
-                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${cleanSku} بمقدار ${item.quantity}`);
+                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${shelf.barcode} بمقدار ${item.quantity}`);
                         } else {
                             quantityNeeded -= shelf.quantity;
                             newQty = 0;
-                            logToConsole('success', `سيتم تصفير الرف ${shelf.location_id} للصنف ${cleanSku} وخصم المتبقي من رف آخر`);
+                            logToConsole('success', `سيتم تصفير الرف ${shelf.location_id} للصنف ${shelf.barcode} وخصم المتبقي من رف آخر`);
                         }
                         
                         inventoryUpdates.push({
                             id: shelf.id, // specify the bigint PK so it updates the correct row!
-                            barcode: cleanSku,
+                            barcode: shelf.barcode, // Use the EXACT barcode registered on the shelf to prevent database constraint failures!
                             location_id: shelf.location_id,
                             quantity: newQty
                         });
