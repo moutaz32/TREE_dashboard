@@ -2149,10 +2149,12 @@
                 
                 // OPTIMIZE PICKING PATH: Sort items inside the order based on their physical shelf locations
                 items.sort((a, b) => {
-                    const locsA = liveInventoryData.filter(inv => inv.barcode === a.sku && inv.quantity > 0);
+                    const cleanA = cleanBarcode(a.sku);
+                    const cleanB = cleanBarcode(b.sku);
+                    const locsA = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanA && inv.quantity > 0);
                     const locA = locsA.length > 0 ? locsA[0].location_id : 'ZZZZ';
                     
-                    const locsB = liveInventoryData.filter(inv => inv.barcode === b.sku && inv.quantity > 0);
+                    const locsB = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanB && inv.quantity > 0);
                     const locB = locsB.length > 0 ? locsB[0].location_id : 'ZZZZ';
                     
                     return locA.localeCompare(locB);
@@ -2161,14 +2163,15 @@
                 let itemsHtml = '';
                 
                 items.forEach(item => {
-                    const catalogItem = liveCatalogData.find(c => c.barcode === item.sku);
+                    const cleanSku = cleanBarcode(item.sku);
+                    const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanSku);
                     const imgUrl = catalogItem ? catalogItem.image_url : '';
                     
                     const imgHtml = imgUrl 
                         ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl bg-slate-50 shadow-sm" alt="صورة الصنف">`
                         : `<div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-6 h-6"></i></div>`;
 
-                    const locationsWithStock = liveInventoryData.filter(inv => inv.barcode === item.sku && inv.quantity > 0);
+                    const locationsWithStock = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanSku && inv.quantity > 0);
                     
                     let locationLabel = '';
                     if (locationsWithStock.length === 0) {
@@ -2257,10 +2260,11 @@
                 
                 // For each item in the order, deduct from inventory shelves
                 for (const item of orderItems) {
+                    const cleanSku = cleanBarcode(item.sku);
                     let quantityNeeded = Number(item.quantity || 0);
                     
                     // Find all shelves with stock for this SKU
-                    let shelves = liveInventoryData.filter(inv => inv.barcode === item.sku && inv.quantity > 0);
+                    let shelves = liveInventoryData.filter(inv => cleanBarcode(inv.barcode) === cleanSku && inv.quantity > 0);
                     
                     // Deduct sequentially from shelves
                     for (let shelf of shelves) {
@@ -2270,16 +2274,16 @@
                         if (shelf.quantity >= quantityNeeded) {
                             newQty = shelf.quantity - quantityNeeded;
                             quantityNeeded = 0;
-                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${item.sku} بمقدار ${item.quantity}`);
+                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${cleanSku} بمقدار ${item.quantity}`);
                         } else {
                             quantityNeeded -= shelf.quantity;
                             newQty = 0;
-                            logToConsole('success', `سيتم تصفير الرف ${shelf.location_id} للصنف ${item.sku} وخصم المتبقي من رف آخر`);
+                            logToConsole('success', `سيتم تصفير الرف ${shelf.location_id} للصنف ${cleanSku} وخصم المتبقي من رف آخر`);
                         }
                         
                         inventoryUpdates.push({
                             id: shelf.id, // specify the bigint PK so it updates the correct row!
-                            barcode: item.sku,
+                            barcode: cleanSku,
                             location_id: shelf.location_id,
                             quantity: newQty
                         });
@@ -2289,7 +2293,7 @@
                     }
 
                     if (quantityNeeded > 0) {
-                        logToConsole('error', `تنبيه: عجز في مخزون الرفوف للباركود ${item.sku} بمقدار ${quantityNeeded} قطع!`);
+                        logToConsole('error', `تنبيه: عجز في مخزون الرفوف للباركود ${cleanSku} بمقدار ${quantityNeeded} قطع!`);
                     }
                 }
 
