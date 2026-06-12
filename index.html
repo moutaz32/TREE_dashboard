@@ -1546,7 +1546,7 @@
                 } 
                 else if (type === 'shopify_images') {
                     const rawBarcode = findVal(['variantbarcode', 'barcode', 'sku', 'itemcode', 'الباركود', 'باركودالمنتج']);
-                    const imageSrc = findVal(['imagesrc', 'image', 'src', 'img', 'رابطالصورة', 'الصورة']);
+                    const imageSrc = findVal(['imagesrc', 'imageurl', 'image', 'src', 'img', 'رابطالصورة', 'الصورة', 'رابط_الصورة']);
                     const title = findVal(['title', 'name', 'productname', 'المنتج', 'اسمالمنتج']);
 
                     const cleanBarcodeVal = cleanBarcode(rawBarcode);
