@@ -1661,7 +1661,8 @@
                         else if (type === 'shopify_images') {
                             return {
                                 barcode: item.barcode,
-                                image_url: item.image_url
+                                image_url: item.image_url,
+                                product_name: item.product_name || ''
                             };
                         }
                         else if (type === 'locations') {
