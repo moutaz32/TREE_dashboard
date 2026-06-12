@@ -1017,6 +1017,80 @@
             return baseA && baseB && baseA === baseB;
         }
 
+        // دالة جلب البيانات كاملة من Supabase مع تجنب قيود الـ 1000 سجل عبر الـ parallel ranges
+        async function fetchAllFromTable(tableName) {
+            if (!supabaseClient) return [];
+            try {
+                // استعلام الرأس للحصول على العدد الإجمالي للسجلات
+                const { count, error: countErr } = await supabaseClient
+                    .from(tableName)
+                    .select('*', { count: 'exact', head: true });
+                
+                if (countErr) throw countErr;
+                if (!count) return [];
+
+                const limit = 1000;
+                const promises = [];
+                for (let from = 0; from < count; from += limit) {
+                    promises.push(
+                        supabaseClient
+                            .from(tableName)
+                            .select('*')
+                            .range(from, from + limit - 1)
+                            .then(res => {
+                                if (res.error) throw res.error;
+                                return res.data || [];
+                            })
+                    );
+                }
+
+                const results = await Promise.all(promises);
+                return results.flat();
+            } catch (err) {
+                console.error(`Error in fetchAllFromTable for ${tableName}:`, err);
+                // Fallback to simple select if HEAD/count fails
+                const { data, error } = await supabaseClient.from(tableName).select('*');
+                if (error) throw error;
+                return data || [];
+            }
+        }
+
+        // دالة جلب كائن الكتالوج المطابق للباركود بالكامل (مع دعم مطابقة الرموز والباركود الأساسي كبديل)
+        function getProductCatalogItem(barcode) {
+            if (!barcode) return null;
+            const clean = cleanBarcode(barcode);
+            
+            // 1. مطابقة دقيقة للباركود المنظف
+            let match = liveCatalogData.find(c => cleanBarcode(c.barcode) === clean);
+            if (match) return match;
+
+            // 2. مطابقة دقيقة للرموز التوكينية
+            match = liveCatalogData.find(c => matchBarcodesExact(c.barcode, barcode));
+            if (match) return match;
+
+            // 3. مطابقة الباركود الرقمي الأساسي (تغطية المقاسات)
+            match = liveCatalogData.find(c => matchBarcodesBase(c.barcode, barcode));
+            if (match) return match;
+
+            return null;
+        }
+
+        // دالة جلب رابط صورة المنتج وتغطية مشكلة الصور الفارغة بالباركود الأساسي عبر استعارتها من مقاس بديل
+        function getProductImage(barcode) {
+            const item = getProductCatalogItem(barcode);
+            if (item && item.image_url && item.image_url.trim() !== '') {
+                return item.image_url;
+            }
+            
+            // إذا لم تتوفر صورة، نبحث عن أي مقاس بديل يشترك في نفس الباركود الرقمي الأساسي وله صورة
+            if (barcode) {
+                const clean = cleanBarcode(barcode);
+                const match = liveCatalogData.find(c => matchBarcodesBase(c.barcode, clean) && c.image_url && c.image_url.trim() !== '');
+                if (match) return match.image_url;
+            }
+            return '';
+        }
+
         // App state variables
         let activeTab = 'dashboard';
         let activeInventorySubTab = 'stock';
@@ -1271,8 +1345,7 @@
         // Database loading helper functions
         async function loadCatalogData() {
             try {
-                const { data, error } = await supabaseClient.from('products_catalog').select('*');
-                if (error) throw error;
+                const data = await fetchAllFromTable('products_catalog');
                 
                 liveCatalogData = data || [];
                 document.getElementById('stat-catalog-count').textContent = liveCatalogData.length.toLocaleString('ar-EG');
@@ -1289,8 +1362,7 @@
 
         async function loadInventoryData() {
             try {
-                const { data, error } = await supabaseClient.from('warehouse_inventory').select('*');
-                if (error) throw error;
+                const data = await fetchAllFromTable('warehouse_inventory');
                 
                 liveInventoryData = data || [];
                 let totalUnits = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -1312,8 +1384,7 @@
 
         async function loadLocationsData() {
             try {
-                const { data, error } = await supabaseClient.from('warehouse_locations').select('*');
-                if (error) throw error;
+                const data = await fetchAllFromTable('warehouse_locations');
                 
                 liveLocationsData = data || [];
                 document.getElementById('stat-locations-count').textContent = liveLocationsData.length.toLocaleString('ar-EG');
@@ -1324,8 +1395,7 @@
 
         async function loadOrdersData() {
             try {
-                const { data, error } = await supabaseClient.from('shopify_orders').select('*');
-                if (error) throw error;
+                const data = await fetchAllFromTable('shopify_orders');
                 
                 liveOrdersData = data || [];
                 const pendingOrders = liveOrdersData.filter(o => o.status === 'PENDING' || o.status === 'pending');
@@ -1881,7 +1951,7 @@
                     discrepant.push({
                         barcode: item.barcode,
                         productName: item.product_name || 'غير مسجل',
-                        imageUrl: item.image_url || '',
+                        imageUrl: getProductImage(item.barcode) || '',
                         systemQty: Number(item.system_qty || 0),
                         shelfQty: shelfQty,
                         diff: diff
@@ -2064,8 +2134,9 @@
             } 
             else if (activeInventorySubTab === 'catalog') {
                 paginatedItems.forEach((item, index) => {
-                    const imgHtml = item.image_url 
-                        ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm" alt="صورة المنتج">`
+                    const imgUrl = getProductImage(item.barcode);
+                    const imgHtml = imgUrl 
+                        ? `<img src="${imgUrl}" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm" alt="صورة المنتج">`
                         : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
                     
                     html += `
@@ -2203,25 +2274,7 @@
                 let itemsHtml = '';
                 
                 items.forEach(item => {
-                    // Try exact token match first with image
-                    let catalogItem = liveCatalogData.find(c => matchBarcodesExact(c.barcode, item.sku) && c.image_url);
-                    
-                    // Fallback to base barcode match with image
-                    if (!catalogItem) {
-                        catalogItem = liveCatalogData.find(c => matchBarcodesBase(c.barcode, item.sku) && c.image_url);
-                    }
-                    
-                    // Fallback to exact token match without image
-                    if (!catalogItem) {
-                        catalogItem = liveCatalogData.find(c => matchBarcodesExact(c.barcode, item.sku));
-                    }
-                    
-                    // Fallback to base barcode match without image
-                    if (!catalogItem) {
-                        catalogItem = liveCatalogData.find(c => matchBarcodesBase(c.barcode, item.sku));
-                    }
-
-                    const imgUrl = catalogItem ? catalogItem.image_url : '';
+                    const imgUrl = getProductImage(item.sku);
                     
                     const imgHtml = imgUrl 
                         ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl bg-slate-50 shadow-sm" alt="صورة الصنف">`
@@ -2440,7 +2493,24 @@
                 }
 
                 const name = product ? product.product_name : 'اسم صنف غير مسجل بالكتالوج ⚠️';
-                const imgUrl = product ? product.image_url : '';
+                let imgUrl = product ? product.image_url : '';
+
+                if ((!imgUrl || imgUrl.trim() === '') && product) {
+                    // Try to borrow image from a variant sibling in database
+                    const baseBarcode = extractBaseBarcode(barcode);
+                    if (baseBarcode) {
+                        const { data: siblingData } = await supabaseClient
+                            .from('products_catalog')
+                            .select('image_url')
+                            .ilike('barcode', `${baseBarcode}%`)
+                            .neq('image_url', '')
+                            .limit(1);
+                        if (siblingData && siblingData.length > 0) {
+                            imgUrl = siblingData[0].image_url;
+                        }
+                    }
+                }
+
                 const systemQty = product ? Number(product.system_qty) : 0;
 
                 const imgHtml = imgUrl 
@@ -2692,7 +2762,7 @@
             
             const topSKUs = Object.keys(skuQty)
                 .map(sku => {
-                    const catalogItem = liveCatalogData.find(c => c.barcode === sku);
+                    const catalogItem = getProductCatalogItem(sku);
                     const name = catalogItem ? (catalogItem.product_name || sku) : sku;
                     const shortName = name.length > 20 ? name.substring(0, 20) + '...' : name;
                     return {
@@ -2826,8 +2896,9 @@
 
                 filtered.forEach(item => {
                     const printQty = printQuantities[item.barcode] || 0;
-                    const imgHtml = item.image_url 
-                        ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg bg-slate-50 border border-slate-200" alt="">`
+                    const imgUrl = getProductImage(item.barcode);
+                    const imgHtml = imgUrl 
+                        ? `<img src="${imgUrl}" class="w-10 h-10 object-cover rounded-lg bg-slate-50 border border-slate-200" alt="">`
                         : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
                     
                     html += `
@@ -2988,13 +3059,14 @@
             document.getElementById('modal-location').textContent = locationId;
             document.getElementById('modal-quantity-input').value = currentQty;
 
-            const product = liveCatalogData.find(c => c.barcode === barcode);
+            const product = getProductCatalogItem(barcode);
             document.getElementById('modal-product-name').textContent = product ? product.product_name : 'صنف غير مسجل بالكتالوج';
             document.getElementById('modal-system-info').textContent = product ? `الكمية النظامية: ${product.system_qty}` : 'الكمية النظامية: -';
 
             const imgContainer = document.getElementById('modal-img-container');
-            if (product && product.image_url) {
-                imgContainer.innerHTML = `<img src="${product.image_url}" class="w-full h-full object-cover">`;
+            const imgUrl = getProductImage(barcode);
+            if (imgUrl) {
+                imgContainer.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover">`;
             } else {
                 imgContainer.innerHTML = '<i data-lucide="shirt" class="w-5 h-5"></i>';
             }
@@ -3071,7 +3143,7 @@
                         name: product.product_name,
                         systemQty: product.system_qty || 0,
                         physicalQty: physicalQty,
-                        imageUrl: product.image_url
+                        imageUrl: getProductImage(product.barcode)
                     });
                 }
             });
@@ -3486,9 +3558,9 @@
 
             let html = '';
             shelfItems.forEach(item => {
-                const catalogItem = liveCatalogData.find(c => c.barcode === item.barcode);
+                const catalogItem = getProductCatalogItem(item.barcode);
                 const name = catalogItem ? catalogItem.product_name : 'صنف غير مسجل في الكتالوج';
-                const imgUrl = catalogItem ? catalogItem.image_url : '';
+                const imgUrl = getProductImage(item.barcode);
                 const imgHtml = imgUrl 
                     ? `<img src="${imgUrl}" class="w-8 h-8 object-cover rounded bg-white shadow-sm border" alt="">`
                     : `<div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
