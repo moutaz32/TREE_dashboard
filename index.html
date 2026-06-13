@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستودع  TREE - نظام اللوجستيات المتكامل (Supabase)</title>
+    <title>مستودع الشجرة TREE - نظام اللوجستيات المتكامل (Supabase)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,6 +54,9 @@
 
     <!-- JsBarcode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
+    <!-- Html5Qrcode Camera Scanner CDN -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         body {
@@ -125,7 +128,44 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col md:flex-row text-slate-800 antialiased overflow-hidden">
+<body class="h-full bg-slate-50 text-slate-800 antialiased overflow-hidden">
+
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#10b981 1px, transparent 1px); background-size: 30px 30px;"></div>
+        
+        <div class="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl shadow-emerald-900/20 text-center space-y-8 relative z-10 border border-slate-100">
+            <div class="space-y-4">
+                <div class="w-20 h-20 bg-gradient-to-br from-brand-deep to-brand-700 text-white rounded-2xl flex items-center justify-center mx-auto shadow-inner shadow-white/20">
+                    <i data-lucide="sprout" class="w-10 h-10"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">مستودع TREE</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-1">يرجى إدخال رمز الوصول السري</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                    <input type="password" id="login-pin" placeholder="••••••••" class="w-full text-center text-2xl tracking-[0.5em] font-black pl-4 pr-12 py-3 rounded-xl border-2 border-slate-200 focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/20 transition outline-none bg-slate-50 focus:bg-white" onkeypress="if(event.key === 'Enter') checkLogin()">
+                </div>
+                <button onclick="checkLogin()" class="w-full bg-brand-deep hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-deep/20 flex items-center justify-center gap-2 transition active:scale-95 text-sm">
+                    <i data-lucide="log-in" class="w-5 h-5"></i>
+                    تسجيل الدخول
+                </button>
+                <p id="login-error" class="text-xs text-rose-500 font-bold hidden animate-pulse">رمز المرور غير صحيح!</p>
+            </div>
+            
+            <div class="text-[10px] text-slate-400 font-medium">
+                النظام محمي ومراقب 🔒
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP WRAPPER ================= -->
+    <div id="main-app" class="hidden w-full h-full flex-col md:flex-row">
 
     <!-- LEFT SIDEBAR (RIGHT in RTL) - hidden on mobile, visible on md and up -->
     <aside class="hidden md:flex w-full md:w-64 bg-brand-deep text-white flex-col justify-between flex-shrink-0 border-l border-brand-900/30">
@@ -143,12 +183,17 @@
 
             <!-- Navigation Tabs -->
             <nav class="px-4 py-6 space-y-1">
-                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 bg-brand-900/50 text-white shadow-inner">
+                <button onclick="switchTab('executive')" id="tab-executive" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="briefcase" class="w-5 h-5 text-amber-400"></i>
+                    الإدارة الذكية
+                </button>
+
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 bg-brand-900/50 text-white shadow-inner">
                     <i data-lucide="layout-dashboard" class="w-5 h-5 text-brand-accent"></i>
                     لوحة التحكم
                 </button>
                 
-                <button onclick="switchTab('upload')" id="tab-upload" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                <button onclick="switchTab('upload')" id="tab-upload" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="upload-cloud" class="w-5 h-5"></i>
                     مركز الرفع (5 ملفات)
                 </button>
@@ -168,7 +213,7 @@
                     استعلام الباركود الفوري
                 </button>
 
-                <button onclick="switchTab('logs')" id="tab-logs" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                <button onclick="switchTab('logs')" id="tab-logs" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="history" class="w-5 h-5"></i>
                     سجل العمليات التفصيلي
                 </button>
@@ -187,13 +232,16 @@
         </div>
     </aside>
 
-    <!-- MOBILE BOTTOM NAVIGATION - visible on mobile, hidden on md and up -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-brand-deep border-t border-brand-900/30 text-white flex md:hidden justify-around items-center h-16 px-1 shadow-2xl">
-        <button onclick="switchTab('dashboard')" id="mobile-tab-dashboard" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-bold text-brand-accent bg-brand-950/40 rounded-lg">
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-brand-deep border-t border-brand-900/30 text-white flex md:hidden justify-around items-center h-16 px-1 shadow-2xl overflow-x-auto scrollbar-none">
+        <button onclick="switchTab('executive')" id="mobile-tab-executive" data-role="admin" class="flex flex-col items-center justify-center gap-1 flex-1 min-w-[60px] h-full py-1 text-[10px] font-medium text-amber-400">
+            <i data-lucide="briefcase" class="w-5 h-5"></i>
+            <span>الإدارة</span>
+        </button>
+        <button onclick="switchTab('dashboard')" id="mobile-tab-dashboard" data-role="admin" class="flex flex-col items-center justify-center gap-1 flex-1 min-w-[60px] h-full py-1 text-[10px] font-bold text-brand-accent bg-brand-950/40 rounded-lg">
             <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
             <span>الرئيسية</span>
         </button>
-        <button onclick="switchTab('upload')" id="mobile-tab-upload" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+        <button onclick="switchTab('upload')" id="mobile-tab-upload" data-role="admin" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="upload-cloud" class="w-5 h-5"></i>
             <span>الرفع</span>
         </button>
@@ -334,6 +382,25 @@
                     </div>
                 </div>
 
+                <!-- Dead Stock Alerts Panel -->
+                <div id="dead-stock-alert-panel" class="hidden bg-white border border-amber-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-amber-50 p-2.5 rounded-xl text-amber-600 border border-amber-100">
+                                <i data-lucide="package" class="w-5 h-5 animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">الأصناف الراكدة (Dead Stock - مخزون بلا مبيعات)</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">المنتجات المتوفرة بالمخزن والتي لم يسبق طلبها بأي من طلبات شوبيفاي المرفوعة.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Dead Stock Grid -->
+                    <div id="dead-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
+                        <!-- Dynamic dead stock alerts will go here -->
+                    </div>
+                </div>
+
                 <!-- Real-time Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Chart 1: Stock Distribution by Zone -->
@@ -434,6 +501,94 @@
                                 <p class="text-xs text-slate-400 text-center py-6">جاري تحميل سجل الحركات من Supabase...</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= EXECUTIVE DASHBOARD TAB ================= -->
+            <section id="section-executive" class="hidden space-y-6">
+                <!-- Welcome Banner -->
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl md:text-3xl font-extrabold tracking-tight text-amber-400">لوحة الإدارة الذكية (Executive View)</h3>
+                        <p class="text-slate-300 text-sm max-w-xl">
+                            نظرة عامة على صحة المخزون، حركة المستودع، وكفاءة العمليات مع إمكانية اتخاذ قرارات سريعة بناءً على مؤشرات الأداء الحيوية.
+                        </p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-xl border border-white/20 text-center min-w-[150px]">
+                        <p class="text-xs text-slate-400 mb-1">صحة المخزون العام</p>
+                        <h4 id="exec-health-score" class="text-3xl font-black text-emerald-400">100%</h4>
+                    </div>
+                </div>
+
+                <!-- Executive KPIs Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- KPI 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs text-slate-500 font-bold uppercase">قيمة المخزون (تقديري)</span>
+                            <h4 id="exec-inventory-value" class="text-2xl font-black text-slate-800">EGP 0</h4>
+                            <p class="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> مؤمن بالكامل</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl text-slate-600 border border-slate-100">
+                            <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <!-- KPI 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs text-slate-500 font-bold uppercase">بلاغات العجز (Shrinkage)</span>
+                            <h4 id="exec-discrepancy-count" class="text-2xl font-black text-rose-600">0</h4>
+                            <p class="text-[10px] text-rose-500 font-bold flex items-center gap-1">تم الإبلاغ عنها يدوياً</p>
+                        </div>
+                        <div class="bg-rose-50 p-3 rounded-xl text-rose-600 border border-rose-100">
+                            <i data-lucide="alert-octagon" class="w-6 h-6 animate-pulse"></i>
+                        </div>
+                    </div>
+                    <!-- KPI 3 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs text-slate-500 font-bold uppercase">نسبة البضائع الراكدة</span>
+                            <h4 id="exec-dead-stock-percent" class="text-2xl font-black text-amber-600">0%</h4>
+                            <p class="text-[10px] text-slate-400 font-medium">من إجمالي المخزون المتاح</p>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-xl text-amber-600 border border-amber-100">
+                            <i data-lucide="package-minus" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <!-- KPI 4 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs text-slate-500 font-bold uppercase">كفاءة الأداء اليومي</span>
+                            <h4 id="exec-daily-ops" class="text-2xl font-black text-blue-600">0</h4>
+                            <p class="text-[10px] text-slate-400 font-medium">عملية مسجلة اليوم</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-xl text-blue-600 border border-blue-100">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heatmap Section -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="layout-grid" class="w-5 h-5 text-amber-500"></i>
+                                الخريطة الحرارية للمستودع (Warehouse Heatmap)
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-1">توزيع كثافة البضاعة على الرفوف (A-Z). الألوان الدافئة تدل على رفوف مزدحمة، والباردة تدل على مساحات فارغة.</p>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-500">
+                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-slate-200 bg-slate-100"></span> فارغ</div>
+                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-emerald-200 bg-emerald-100"></span> خفيف</div>
+                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-amber-400 bg-amber-300"></span> متوسط</div>
+                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-rose-600 bg-rose-500"></span> مزدحم</div>
+                        </div>
+                    </div>
+                    
+                    <div id="exec-heatmap-container" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-13 gap-3">
+                        <!-- Heatmap blocks will be generated here -->
                     </div>
                 </div>
             </section>
@@ -801,7 +956,8 @@
                                 <span class="text-xs text-slate-500 font-bold">نوع الملصق:</span>
                                 <select id="print-label-type" onchange="renderPrintItemsList()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700">
                                     <option value="catalog">ملصقات منتجات (الباركود + الاسم)</option>
-                                    <option value="locations">ملصقات الرفوف (باركود الرف)</option>
+                                    <option value="locations">ملصقات الرفوف (الرفوف المسجلة بقاعدة البيانات)</option>
+                                    <option value="shelves-az">توليد وطباعة رفوف جديدة A-Z (5 مستويات لكل حرف)</option>
                                 </select>
                             </div>
                             <button onclick="triggerPrintBarcodes()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-brand-deep/15">
@@ -872,10 +1028,16 @@
                         <input type="text" id="query-barcode-input" onkeyup="if(event.key === 'Enter') handleQuerySearch()" placeholder="امسح باركود قطعة الملابس باستخدام قارئ الباركود أو اكتبه هنا..." 
                                class="w-full pr-12 pl-4 py-3.5 border-2 border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-accent/20 focus:border-brand-accent rounded-2xl text-base font-medium transition">
                     </div>
-                    <button onclick="handleQuerySearch()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-brand-deep/15 transition flex items-center gap-2 flex-shrink-0 w-full md:w-auto justify-center">
-                        <i data-lucide="search" class="w-5 h-5"></i>
-                        استعلم عن القطعة
-                    </button>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <button onclick="handleQuerySearch()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-brand-deep/15 transition flex items-center gap-2 flex-1 md:flex-none justify-center">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                            استعلم عن القطعة
+                        </button>
+                        <button onclick="openScanner()" class="bg-brand-accent hover:bg-emerald-600 text-white font-bold px-6 py-3.5 rounded-2xl shadow-lg shadow-brand-accent/15 transition flex items-center gap-2 flex-1 md:flex-none justify-center">
+                            <i data-lucide="camera" class="w-5 h-5"></i>
+                            مسح بالكاميرا
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Results Output Card -->
@@ -1055,40 +1217,145 @@
             }
         }
 
-        // دالة جلب كائن الكتالوج المطابق للباركود بالكامل (مع دعم مطابقة الرموز والباركود الأساسي كبديل)
+        // ================= FAST INDEX MAPS (O(1) LOOKUP) =================
+        // خرائط الفهرسة السريعة - تُبنى مرة واحدة عند تحميل البيانات بدلاً من البحث الخطي المتكرر
+        let catalogByBarcodeMap = new Map();      // cleanBarcode -> catalog item
+        let catalogByTokenKeyMap = new Map();     // sorted-token-key -> catalog item
+        let catalogByBaseMap = new Map();          // base numeric barcode -> first catalog item
+        let imageByBaseMap = new Map();            // base numeric barcode -> first image_url found
+        let inventoryQtyByBarcodeMap = new Map();  // barcode -> total shelf qty
+
+        // إعادة بناء فهارس الكتالوج بعد كل تحميل بيانات (عملية واحدة سريعة O(N))
+        function rebuildCatalogIndexes() {
+            catalogByBarcodeMap = new Map();
+            catalogByTokenKeyMap = new Map();
+            catalogByBaseMap = new Map();
+            imageByBaseMap = new Map();
+
+            for (const item of liveCatalogData) {
+                const clean = cleanBarcode(item.barcode);
+                if (!clean) continue;
+
+                // 1. فهرس الباركود المنظف
+                if (!catalogByBarcodeMap.has(clean)) {
+                    catalogByBarcodeMap.set(clean, item);
+                }
+
+                // 2. فهرس الرموز التوكينية المرتبة (لمطابقة L-2096 مع 2096-L)
+                const tokens = clean.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
+                if (tokens && !catalogByTokenKeyMap.has(tokens)) {
+                    catalogByTokenKeyMap.set(tokens, item);
+                }
+
+                // 3. فهرس الباركود الرقمي الأساسي
+                const base = extractBaseBarcode(clean);
+                if (base) {
+                    if (!catalogByBaseMap.has(base)) {
+                        catalogByBaseMap.set(base, item);
+                    }
+                    // 4. فهرس الصور - نخزن أول صورة صالحة لكل باركود أساسي
+                    if (!imageByBaseMap.has(base) && item.image_url && item.image_url.trim() !== '') {
+                        imageByBaseMap.set(base, item.image_url);
+                    }
+                }
+            }
+        }
+
+        // إعادة بناء فهرس كميات المخزون الفعلي
+        function rebuildInventoryIndex() {
+            inventoryQtyByBarcodeMap = new Map();
+            for (const item of liveInventoryData) {
+                const bc = item.barcode;
+                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + Number(item.quantity || 0));
+            }
+        }
+
+        // دالة جلب كائن الكتالوج المطابق للباركود (O(1) باستخدام الفهارس)
         function getProductCatalogItem(barcode) {
             if (!barcode) return null;
             const clean = cleanBarcode(barcode);
-            
-            // 1. مطابقة دقيقة للباركود المنظف
-            let match = liveCatalogData.find(c => cleanBarcode(c.barcode) === clean);
+
+            // 1. مطابقة مباشرة بالباركود المنظف
+            let match = catalogByBarcodeMap.get(clean);
             if (match) return match;
 
-            // 2. مطابقة دقيقة للرموز التوكينية
-            match = liveCatalogData.find(c => matchBarcodesExact(c.barcode, barcode));
+            // 2. مطابقة بالرموز التوكينية المرتبة
+            const tokens = clean.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
+            match = catalogByTokenKeyMap.get(tokens);
             if (match) return match;
 
-            // 3. مطابقة الباركود الرقمي الأساسي (تغطية المقاسات)
-            match = liveCatalogData.find(c => matchBarcodesBase(c.barcode, barcode));
+            // 3. مطابقة بالباركود الرقمي الأساسي
+            const base = extractBaseBarcode(clean);
+            match = catalogByBaseMap.get(base);
             if (match) return match;
 
             return null;
         }
 
-        // دالة جلب رابط صورة المنتج وتغطية مشكلة الصور الفارغة بالباركود الأساسي عبر استعارتها من مقاس بديل
+        // دالة جلب رابط صورة المنتج (O(1) باستخدام الفهارس)
         function getProductImage(barcode) {
+            if (!barcode) return '';
             const item = getProductCatalogItem(barcode);
             if (item && item.image_url && item.image_url.trim() !== '') {
                 return item.image_url;
             }
             
-            // إذا لم تتوفر صورة، نبحث عن أي مقاس بديل يشترك في نفس الباركود الرقمي الأساسي وله صورة
-            if (barcode) {
-                const clean = cleanBarcode(barcode);
-                const match = liveCatalogData.find(c => matchBarcodesBase(c.barcode, clean) && c.image_url && c.image_url.trim() !== '');
-                if (match) return match.image_url;
+            // استعارة الصورة من مقاس بديل عبر فهرس الصور السريع
+            const clean = cleanBarcode(barcode);
+            const base = extractBaseBarcode(clean);
+            if (base && imageByBaseMap.has(base)) {
+                return imageByBaseMap.get(base);
             }
             return '';
+        }
+
+        // ================= DEBOUNCE UTILITY =================
+        // دالة تجميع الطلبات لمنع عاصفة التحديثات أثناء رفع الملفات
+        function debounce(fn, delay) {
+            let timer = null;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // ================= RBAC AND LOGIN =================
+        let currentUserRole = null;
+
+        function checkLogin() {
+            const pin = document.getElementById('login-pin').value.trim();
+            const errorEl = document.getElementById('login-error');
+            
+            if (pin === 'TREE123') {
+                currentUserRole = 'admin';
+                completeLogin('executive');
+            } else if (pin === '21587') {
+                currentUserRole = 'worker';
+                completeLogin('picker');
+            } else {
+                errorEl.classList.remove('hidden');
+                setTimeout(() => errorEl.classList.add('hidden'), 3000);
+            }
+        }
+
+        function completeLogin(defaultTab) {
+            document.getElementById('login-screen').classList.add('hidden');
+            const mainApp = document.getElementById('main-app');
+            mainApp.classList.remove('hidden');
+            mainApp.classList.add('flex'); // Show main app flex layout
+            
+            // Apply RBAC UI
+            if (currentUserRole === 'worker') {
+                // Hide admin tabs
+                const adminElements = document.querySelectorAll('[data-role="admin"]');
+                adminElements.forEach(el => el.style.display = 'none');
+            }
+            
+            // Re-initialize Lucide icons in case they were hidden
+            lucide.createIcons();
+
+            // Start the app with correct tab
+            switchTab(defaultTab);
         }
 
         // App state variables
@@ -1226,7 +1493,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['dashboard', 'upload', 'inventory', 'picker', 'query', 'logs'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -1257,6 +1524,7 @@
             });
 
             const titles = {
+                executive: 'لوحة الإدارة الذكية (Executive Dashboard)',
                 dashboard: 'لوحة التحكم واللوجستيات (Supabase)',
                 upload: 'بوابة رفع جداول المخازن وشوبيفاي',
                 inventory: 'المخازن والكتالوجات الحية',
@@ -1266,7 +1534,9 @@
             };
             document.getElementById('current-section-title').textContent = titles[tabId];
 
-            if (tabId === 'inventory') {
+            if (tabId === 'executive') {
+                renderExecutiveDashboard();
+            } else if (tabId === 'inventory') {
                 switchInventorySubTab(activeInventorySubTab);
             } else if (tabId === 'query') {
                 setTimeout(() => {
@@ -1301,43 +1571,48 @@
             await loadOrdersData();
             await loadActivityLogs();
 
-            // 2. Set Up Realtime WebSockets for Instant updates
+            // 2. Set Up Realtime WebSockets for Instant updates (with debounce to prevent network storms)
+            const debouncedLoadInventory = debounce(loadInventoryData, 2000);
+            const debouncedLoadCatalog = debounce(loadCatalogData, 2000);
+            const debouncedLoadLocations = debounce(loadLocationsData, 2000);
+            const debouncedLoadOrders = debounce(loadOrdersData, 2000);
+            const debouncedLoadActivityLogs = debounce(() => {
+                loadActivityLogs();
+                if (activeTab === 'logs') fetchAuditLogs();
+            }, 2000);
             
             // Inventory updates
             activeChannels.inventory = supabaseClient.channel('realtime-inventory')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_inventory' }, payload => {
-                    loadInventoryData();
+                    debouncedLoadInventory();
                 })
                 .subscribe();
 
             // Catalog updates
             activeChannels.catalog = supabaseClient.channel('realtime-catalog')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'products_catalog' }, payload => {
-                    loadCatalogData();
+                    debouncedLoadCatalog();
                 })
                 .subscribe();
 
             // Locations updates
             activeChannels.locations = supabaseClient.channel('realtime-locations')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_locations' }, payload => {
-                    loadLocationsData();
+                    debouncedLoadLocations();
                 })
                 .subscribe();
 
             // Orders updates
             activeChannels.shopify_orders = supabaseClient.channel('realtime-orders')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'shopify_orders' }, payload => {
-                    loadOrdersData();
+                    debouncedLoadOrders();
                 })
                 .subscribe();
 
             // Activity Log updates
             activeChannels.activityLogs = supabaseClient.channel('realtime-activity-logs')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, payload => {
-                    loadActivityLogs();
-                    if (activeTab === 'logs') {
-                        fetchAuditLogs();
-                    }
+                    debouncedLoadActivityLogs();
                 })
                 .subscribe();
         }
@@ -1348,6 +1623,7 @@
                 const data = await fetchAllFromTable('products_catalog');
                 
                 liveCatalogData = data || [];
+                rebuildCatalogIndexes();  // بناء الفهارس السريعة O(1)
                 document.getElementById('stat-catalog-count').textContent = liveCatalogData.length.toLocaleString('ar-EG');
                 
                 if (activeInventorySubTab === 'catalog' || activeInventorySubTab === 'discrepancy') {
@@ -1355,6 +1631,7 @@
                 }
                 updateDashboardCharts();
                 renderLowStockAlerts();
+                renderDeadStockAlerts();
             } catch (err) {
                 console.error("Error loading catalog data from Supabase:", err);
             }
@@ -1365,6 +1642,7 @@
                 const data = await fetchAllFromTable('warehouse_inventory');
                 
                 liveInventoryData = data || [];
+                rebuildInventoryIndex();  // بناء فهرس كميات المخزون O(1)
                 let totalUnits = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('stat-total-qty').textContent = totalUnits.toLocaleString('ar-EG');
                 
@@ -1377,6 +1655,7 @@
                 renderOrderPicker();
                 updateDashboardCharts();
                 renderLowStockAlerts();
+                renderDeadStockAlerts();
             } catch (err) {
                 console.error("Error loading inventory data from Supabase:", err);
             }
@@ -1402,6 +1681,7 @@
                 document.getElementById('stat-orders-pending-count').textContent = pendingOrders.length.toLocaleString('ar-EG');
 
                 renderOrderPicker();
+                renderDeadStockAlerts();
             } catch (err) {
                 console.error("Error loading orders data from Supabase:", err);
             }
@@ -1413,20 +1693,21 @@
                     .from('activity_logs')
                     .select('*')
                     .order('created_at', { ascending: false })
-                    .limit(10);
+                    .limit(100);
                 
                 if (error) {
                     const { data: altData, error: altError } = await supabaseClient
                         .from('activity_logs')
                         .select('*')
                         .order('timestamp', { ascending: false })
-                        .limit(10);
+                        .limit(100);
                     
                     if (altError) throw altError;
                     data = altData;
                 }
                 
-                renderActivityLogsUI(data);
+                auditLogsData = data || [];
+                renderActivityLogsUI(data.slice(0, 10));
             } catch (err) {
                 console.error("Error loading activity logs from Supabase:", err);
                 const container = document.getElementById('dashboard-activity-logs');
@@ -1939,12 +2220,11 @@
             }
         }
 
-        // Helper to compile discrepant items
+        // Helper to compile discrepant items (optimized with Map index O(1))
         function getDiscrepantItems() {
             const discrepant = [];
             liveCatalogData.forEach(item => {
-                const stockRecords = liveInventoryData.filter(inv => inv.barcode === item.barcode);
-                const shelfQty = stockRecords.reduce((sum, rec) => sum + rec.quantity, 0);
+                const shelfQty = inventoryQtyByBarcodeMap.get(item.barcode) || 0;
                 const diff = shelfQty - Number(item.system_qty || 0);
                 
                 if (diff !== 0) {
@@ -2560,9 +2840,13 @@
                         <!-- Left details -->
                         <div class="flex-1 space-y-4">
                             <div class="space-y-1">
-                                <div class="flex items-center gap-3 flex-wrap">
+                                <div class="flex items-center gap-3 flex-wrap w-full">
                                     <span class="bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-brand-100">استعلام Supabase مباشر</span>
                                     ${discrepancyBadge}
+                                    <button onclick="promptDiscrepancy('${barcode}', ${systemQty})" class="mr-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition animate-pulse">
+                                        <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+                                        تسجيل عجز بالرف
+                                    </button>
                                 </div>
                                 <h4 class="text-lg font-bold text-slate-800">${name}</h4>
                                 <p class="text-xs text-slate-400 font-mono">الباركود: ${barcode}</p>
@@ -2919,7 +3203,7 @@
                         </div>
                     `;
                 });
-            } else {
+            } else if (type === 'locations') {
                 // Shelf tags
                 const filtered = liveLocationsData.filter(loc => 
                     loc.location_id && loc.location_id.toLowerCase().includes(query)
@@ -2941,6 +3225,46 @@
                                 <div>
                                     <h5 class="text-xs font-bold text-slate-800 font-mono tracking-wide">${shelfId}</h5>
                                     <p class="text-[10px] text-slate-400 font-medium mt-0.5">ملصق باركود الرف</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button onclick="adjustPrintQty('${shelfId}', -1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="print-qty-input-${shelfId}" value="${printQty}" min="0" onchange="setPrintQty('${shelfId}', this.value)" 
+                                       class="w-12 px-1 py-1 border border-slate-200 rounded-lg text-center text-xs font-bold focus:ring-1 focus:ring-brand-accent focus:outline-none">
+                                <button onclick="adjustPrintQty('${shelfId}', 1)" class="w-7 h-7 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 flex items-center justify-center font-bold">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else if (type === 'shelves-az') {
+                // Generate virtual shelves A-1 to Z-5
+                const autoShelves = [];
+                for (let charCode = 65; charCode <= 90; charCode++) {
+                    const char = String.fromCharCode(charCode);
+                    for (let level = 1; level <= 5; level++) {
+                        const shelfId = `${char}-${level}`;
+                        if (!query || shelfId.toLowerCase().includes(query)) {
+                            autoShelves.push({ location_id: shelfId });
+                        }
+                    }
+                }
+
+                if (autoShelves.length === 0) {
+                    listEl.innerHTML = '<p class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">لا توجد رفوف مطابقة للبحث.</p>';
+                    return;
+                }
+
+                autoShelves.forEach(loc => {
+                    const shelfId = loc.location_id;
+                    const printQty = printQuantities[shelfId] || 0;
+                    
+                    html += `
+                        <div class="flex items-center justify-between p-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl transition">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 border border-slate-200"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                                <div>
+                                    <h5 class="text-xs font-bold text-slate-800 font-mono tracking-wide">${shelfId}</h5>
+                                    <p class="text-[10px] text-slate-400 font-medium mt-0.5">رف مولد تلقائياً A-Z</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-shrink-0">
@@ -2984,10 +3308,17 @@
                 liveCatalogData.forEach(item => {
                     printQuantities[item.barcode] = qty;
                 });
-            } else {
+            } else if (type === 'locations') {
                 liveLocationsData.forEach(loc => {
                     printQuantities[loc.location_id] = qty;
                 });
+            } else if (type === 'shelves-az') {
+                for (let charCode = 65; charCode <= 90; charCode++) {
+                    const char = String.fromCharCode(charCode);
+                    for (let level = 1; level <= 5; level++) {
+                        printQuantities[`${char}-${level}`] = qty;
+                    }
+                }
             }
             renderPrintItemsList();
             alert(`تم تعيين كمية الطباعة ${qty} للكل.`);
@@ -3007,7 +3338,19 @@
             const type = document.getElementById('print-label-type').value;
             let totalLabelsGenerated = 0;
 
-            const targetArray = type === 'catalog' ? liveCatalogData : liveLocationsData;
+            let targetArray = [];
+            if (type === 'catalog') {
+                targetArray = liveCatalogData;
+            } else if (type === 'locations') {
+                targetArray = liveLocationsData;
+            } else if (type === 'shelves-az') {
+                for (let charCode = 65; charCode <= 90; charCode++) {
+                    const char = String.fromCharCode(charCode);
+                    for (let level = 1; level <= 5; level++) {
+                        targetArray.push({ location_id: `${char}-${level}` });
+                    }
+                }
+            }
 
             targetArray.forEach(item => {
                 const id = type === 'catalog' ? item.barcode : item.location_id;
@@ -3106,7 +3449,7 @@
 
                 logToConsole('success', `تم التعديل اليدوي بنجاح: الباركود ${barcode} بالرف ${locationId} أصبح ${newQty}.`);
                 
-                const product = liveCatalogData.find(c => c.barcode === barcode);
+                const product = getProductCatalogItem(barcode);
                 const name = product ? product.product_name : barcode;
                 await addActivityLog("تعديل يدوي للمخزون", `تم تعديل كمية الصنف ${name} بالرف ${locationId} يدوياً إلى ${newQty}.`);
 
@@ -3129,14 +3472,12 @@
             const panel = document.getElementById('low-stock-alert-panel');
             if (!grid || !panel) return;
 
-            const barcodeQuantities = {};
-            liveInventoryData.forEach(item => {
-                barcodeQuantities[item.barcode] = (barcodeQuantities[item.barcode] || 0) + Number(item.quantity || 0);
-            });
-
+            // استخدام الفهرس السريع بدلاً من إعادة حساب الكميات في كل مرة
             const lowStockItems = [];
-            liveCatalogData.forEach(product => {
-                const physicalQty = barcodeQuantities[product.barcode] || 0;
+            const maxAlerts = 50; // الحد الأقصى لعدد التنبيهات المعروضة لمنع تجمد الـ DOM
+            for (const product of liveCatalogData) {
+                if (lowStockItems.length >= maxAlerts) break;
+                const physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
                 if (physicalQty < lowStockThreshold) {
                     lowStockItems.push({
                         barcode: product.barcode,
@@ -3146,7 +3487,7 @@
                         imageUrl: getProductImage(product.barcode)
                     });
                 }
-            });
+            }
 
             if (lowStockItems.length === 0) {
                 panel.classList.add('hidden');
@@ -3582,6 +3923,268 @@
             lucide.createIcons();
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+
+        // ================= الأصناف الراكدة (DEAD STOCK ALERTS) =================
+        function renderDeadStockAlerts() {
+            const grid = document.getElementById('dead-stock-items-grid');
+            const panel = document.getElementById('dead-stock-alert-panel');
+            if (!grid || !panel) return;
+
+            // 1. تجميع الباركودات المطلوبة في كل الطلبات المرفوعة لشوبيفاي
+            const orderedSkus = new Set();
+            liveOrdersData.forEach(order => {
+                const items = order.items || [];
+                items.forEach(item => {
+                    if (item.sku) {
+                        orderedSkus.add(cleanBarcode(item.sku));
+                    }
+                });
+            });
+
+            // 2. تصفية الأصناف: متوفرة بالمخزن فيزيائياً ولكن صفر مبيعات في الطلبات
+            const deadStockItems = [];
+            const maxAlerts = 50; // حد أقصى للحفاظ على سرعة المتصفح
+            for (const product of liveCatalogData) {
+                if (deadStockItems.length >= maxAlerts) break;
+                
+                const cleanBC = cleanBarcode(product.barcode);
+                if (!orderedSkus.has(cleanBC)) {
+                    const physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
+                    if (physicalQty > 0) {
+                        deadStockItems.push({
+                            barcode: product.barcode,
+                            name: product.product_name,
+                            physicalQty: physicalQty,
+                            imageUrl: getProductImage(product.barcode)
+                        });
+                    }
+                }
+            }
+
+            if (deadStockItems.length === 0) {
+                panel.classList.add('hidden');
+                grid.innerHTML = '';
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            let html = '';
+            deadStockItems.forEach(item => {
+                const imgHtml = item.imageUrl 
+                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
+                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                
+                html += `
+                    <div class="flex items-center gap-3 p-3 bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-xl transition">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                        </div>
+                        <div class="text-left">
+                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">
+                                رصيد: ${item.physicalQty}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
+        let html5QrcodeScanner = null;
+
+        function openScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            lucide.createIcons();
+            
+            if (typeof Html5Qrcode === 'undefined') {
+                alert("جاري تحميل مكتبة الكاميرا، يرجى التأكد من الاتصال بالإنترنت.");
+                return;
+            }
+
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    startScanning();
+                }).catch(() => {
+                    startScanning();
+                });
+            } else {
+                startScanning();
+            }
+        }
+
+        function startScanning() {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: function(width, height) {
+                        return { width: Math.floor(width * 0.8), height: Math.floor(height * 0.4) }; // مستطيل مناسب للباركود
+                    }
+                },
+                (decodedText) => {
+                    const bcInput = document.getElementById('query-barcode-input');
+                    if (bcInput) {
+                        bcInput.value = decodedText;
+                        handleQuerySearch();
+                    }
+                    closeScanner();
+                },
+                (errorMessage) => {
+                    // أخطاء القراءة المستمرة أثناء المسح طبيعية جداً
+                }
+            ).catch(err => {
+                console.error("Camera access failed:", err);
+                alert("فشل الوصول إلى الكاميرا: " + err);
+                closeScanner();
+            });
+        }
+
+        function closeScanner() {
+            document.getElementById('scanner-modal').classList.add('hidden');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner = null;
+                }).catch(err => {
+                    console.error("Error stopping scanner:", err);
+                    html5QrcodeScanner = null;
+                });
+            }
+        }
+
+        // ================= EXECUTIVE DASHBOARD LOGIC =================
+        function renderExecutiveDashboard() {
+            // 1. Calculate Total Inventory Value (Mocking 250 EGP per unit on average for display)
+            let totalQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            let estimatedValue = totalQty * 250;
+            document.getElementById('exec-inventory-value').textContent = `EGP ${estimatedValue.toLocaleString('ar-EG')}`;
+
+            // 2. Shrinkage/Discrepancy Count
+            let discrepancyCount = auditLogsData.filter(log => log.action === 'تسجيل عجز بالرف').length;
+            document.getElementById('exec-discrepancy-count').textContent = discrepancyCount.toLocaleString('ar-EG');
+
+            // 3. Dead Stock Percent
+            const orderedBarcodes = new Set();
+            liveOrdersData.forEach(o => {
+                if(o.items) o.items.forEach(i => orderedBarcodes.add(cleanBarcode(i.sku)));
+            });
+            const deadItems = liveCatalogData.filter(c => !orderedBarcodes.has(cleanBarcode(c.barcode)));
+            const catalogCount = liveCatalogData.length;
+            let deadPercent = catalogCount > 0 ? Math.round((deadItems.length / catalogCount) * 100) : 0;
+            document.getElementById('exec-dead-stock-percent').textContent = `${deadPercent}%`;
+
+            // 4. Daily Ops
+            let todayOps = auditLogsData.filter(log => {
+                const logDate = new Date(log.created_at || log.timestamp).toDateString();
+                const today = new Date().toDateString();
+                return logDate === today;
+            }).length;
+            document.getElementById('exec-daily-ops').textContent = todayOps.toLocaleString('ar-EG');
+
+            // 5. Health Score
+            let healthScore = 100 - deadPercent - (discrepancyCount > 0 ? Math.min(discrepancyCount, 20) : 0);
+            const healthEl = document.getElementById('exec-health-score');
+            healthEl.textContent = `${Math.max(0, healthScore)}%`;
+            healthEl.className = `text-3xl font-black ${healthScore >= 80 ? 'text-emerald-400' : (healthScore >= 50 ? 'text-amber-400' : 'text-rose-400')}`;
+
+            // 6. Render Heatmap (A-Z)
+            renderWarehouseHeatmap();
+        }
+
+        function renderWarehouseHeatmap() {
+            const container = document.getElementById('exec-heatmap-container');
+            if (!container) return;
+
+            // Group inventory by first letter of location_id
+            const zoneDensity = {};
+            for (let charCode = 65; charCode <= 90; charCode++) {
+                zoneDensity[String.fromCharCode(charCode)] = 0; // Initialize A-Z with 0
+            }
+
+            liveInventoryData.forEach(item => {
+                if (item.location_id) {
+                    const zone = item.location_id.charAt(0).toUpperCase();
+                    if (zoneDensity[zone] !== undefined) {
+                        zoneDensity[zone] += Number(item.quantity || 0);
+                    }
+                }
+            });
+
+            let maxDensity = Math.max(...Object.values(zoneDensity), 1); // Avoid div by 0
+
+            let html = '';
+            for (const [zone, qty] of Object.entries(zoneDensity)) {
+                let densityRatio = qty / maxDensity;
+                let bgColor = 'bg-slate-100 text-slate-400';
+                let borderCol = 'border-slate-200';
+                
+                if (qty > 0) {
+                    if (densityRatio > 0.7) {
+                        bgColor = 'bg-rose-500 text-white';
+                        borderCol = 'border-rose-600';
+                    } else if (densityRatio > 0.3) {
+                        bgColor = 'bg-amber-300 text-amber-900';
+                        borderCol = 'border-amber-400';
+                    } else {
+                        bgColor = 'bg-emerald-100 text-emerald-800';
+                        borderCol = 'border-emerald-200';
+                    }
+                }
+
+                html += `
+                    <div class="flex flex-col items-center justify-center p-3 rounded-xl border ${bgColor} ${borderCol} shadow-sm transition hover:scale-105 cursor-pointer" title="المنطقة ${zone} - القطع: ${qty}">
+                        <span class="text-lg font-black font-mono leading-none">${zone}</span>
+                        <span class="text-[10px] font-bold mt-1 opacity-80">${qty > 0 ? qty : 'فارغ'}</span>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // ================= DISCREPANCY REPORTING LOGIC =================
+        function promptDiscrepancy(barcode, systemQty) {
+            const actualQtyStr = prompt(\`الرصيد النظامي هو \${systemQty} قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟\`);
+            if (actualQtyStr === null || actualQtyStr.trim() === '') return;
+
+            const actualQty = parseInt(actualQtyStr, 10);
+            if (isNaN(actualQty) || actualQty < 0) {
+                alert("الرجاء إدخال رقم صحيح.");
+                return;
+            }
+
+            const diff = actualQty - systemQty;
+            if (diff === 0) {
+                alert("الكمية مطابقة للنظام، لا يوجد عجز!");
+                return;
+            }
+
+            const diffMsg = diff > 0 ? \`زيادة بمقدار \${diff}\` : \`عجز بمقدار \${Math.abs(diff)}\`;
+            const confirmMsg = \`تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: \${actualQty}\nالفارق المكتشف: \${diffMsg}\nسيتم إشعار الإدارة فوراً.\`;
+            
+            if (confirm(confirmMsg)) {
+                submitDiscrepancy(barcode, systemQty, actualQty, diff);
+            }
+        }
+
+        async function submitDiscrepancy(barcode, systemQty, actualQty, diff) {
+            logToConsole('system', \`جاري إرسال بلاغ عجز للإدارة عن الصنف \${barcode}...\`);
+            try {
+                await addActivityLog('تسجيل عجز بالرف', \`تم الإبلاغ عن فارق جرد للباركود \${barcode} (النظام: \${systemQty}، الفعلي: \${actualQty})\`);
+                
+                logToConsole('success', \`تم رفع تقرير العجز للإدارة بنجاح.\`);
+                alert("تم تسجيل البلاغ ورفعه للإدارة بنجاح!");
+                
+                if(activeTab === 'executive') renderExecutiveDashboard();
+            } catch (err) {
+                console.error("Discrepancy submit error:", err);
+                alert("حدث خطأ أثناء تسجيل العجز.");
+            }
+        }
     </script>
     <!-- Edit Stock Quantity Modal -->
     <div id="edit-qty-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
@@ -3635,7 +4238,30 @@
         </div>
     </div>
 
+    <!-- Scanner Modal for Camera scanning -->
+    <div id="scanner-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-fadeIn relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="camera" class="w-5 h-5 text-brand-accent"></i>
+                    مسح الباركود بكاميرا الجوال
+                </h3>
+                <button onclick="closeScanner()" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-slate-200">
+                <div id="reader" class="w-full h-full"></div>
+            </div>
+            <div class="text-center text-xs text-slate-500">
+                ضع باركود المنتج داخل مربع المسح للكشف التلقائي.
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden Print Barcode Area optimized for A4 grid printing -->
     <div id="print-barcode-area"></div>
+    
+    </div> <!-- END MAIN APP -->
 </body>
 </html>
