@@ -1169,6 +1169,17 @@
             return cleaned.replace(/^-/, '').trim();
         }
 
+        // دالة تنظيف وتوحيد أسماء الفروع والمواقع (مثل معالجة التاء المربوطة والألف والياء)
+        function normalizeLocationId(locId) {
+            if (!locId) return '';
+            return locId.toString()
+                .trim()
+                .replace(/\s+/g, ' ')                        // دمج المسافات المتكررة
+                .replace(/ة\b/g, 'ه')                         // تحويل التاء المربوطة في نهاية الكلمة إلى هاء
+                .replace(/أ|إ|آ/g, 'ا')                       // توحيد الألفات (أ، إ، آ) إلى ألف عادية
+                .replace(/ى\b/g, 'ي');                        // تحويل الألف اللينة في نهاية الكلمة إلى ياء
+        }
+
         // استخراج الباركود الرقمي الأساسي المكون من 10 إلى 14 رقمًا (EAN-13)
         function extractBaseBarcode(sku) {
             if (!sku) return '';
@@ -1458,9 +1469,13 @@
 
         function completeLogin(user) {
             currentUser = user;
-            localStorage.setItem('tree_session', JSON.stringify({
-                username: user.username, role: user.role, branch: user.branch, ts: Date.now()
-            }));
+            try {
+                localStorage.setItem('tree_session', JSON.stringify({
+                    username: user.username, role: user.role, branch: user.branch, ts: Date.now()
+                }));
+            } catch (e) {
+                console.warn("localStorage set failed:", e);
+            }
 
             const overlay = document.getElementById('login-overlay');
             if (overlay) overlay.style.display = 'none';
@@ -1494,33 +1509,44 @@
                     if (btn) btn.style.display = 'none';
                 });
                 if (branch) {
-                    activeBranchFilter = branch;
+                    const normBranch = normalizeLocationId(branch);
+                    activeBranchFilter = normBranch;
                     const sel = document.getElementById('branch-filter-select');
-                    if (sel) sel.value = branch;
+                    if (sel) sel.value = normBranch;
                 }
                 setTimeout(() => {
                     const badge = document.createElement('span');
                     badge.className = 'text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200';
-                    badge.textContent = '&#128100; موظف فرع';
                     badge.innerHTML = '<span style="font-style:normal">&#128100;</span> موظف فرع';
                     const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
                     if (headerRight) headerRight.prepend(badge);
                 }, 300);
-            } else {
-                setTimeout(() => {
-                    const logoutBtn = document.createElement('button');
-                    logoutBtn.className = 'flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-400 transition border border-rose-200 rounded-lg px-2 py-1';
-                    logoutBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> خروج';
-                    logoutBtn.onclick = logoutUser;
-                    const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
-                    if (headerRight) { headerRight.appendChild(logoutBtn); if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); }
-                }, 150);
             }
+
+            // إظهار زر تسجيل الخروج للجميع دائماً
+            setTimeout(() => {
+                if (document.getElementById('btn-global-logout')) return;
+
+                const logoutBtn = document.createElement('button');
+                logoutBtn.id = 'btn-global-logout';
+                logoutBtn.className = 'flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-400 transition border border-rose-200 rounded-lg px-2 py-1';
+                logoutBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> خروج';
+                logoutBtn.onclick = logoutUser;
+                const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+                if (headerRight) { 
+                    headerRight.appendChild(logoutBtn); 
+                    if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); 
+                }
+            }, 150);
         }
 
         function logoutUser() {
             if (confirm('هل تريد تسجيل الخروج؟')) {
-                localStorage.removeItem('tree_session');
+                try {
+                    localStorage.removeItem('tree_session');
+                } catch (e) {
+                    console.warn("localStorage remove failed:", e);
+                }
                 location.reload();
             }
         }
@@ -1533,7 +1559,13 @@
             window.addEventListener('resize', updateUploadCardsResponsiveState);
 
             // تحقق من وجود جلسة محفوظة (صالحة 24 ساعة)
-            const saved = localStorage.getItem('tree_session');
+            let saved = null;
+            try {
+                saved = localStorage.getItem('tree_session');
+            } catch (e) {
+                console.warn("localStorage get failed:", e);
+            }
+
             if (saved) {
                 try {
                     const session = JSON.parse(saved);
@@ -1544,7 +1576,9 @@
                         completeLogin(user);
                         return;
                     }
-                } catch(e) { localStorage.removeItem('tree_session'); }
+                } catch(e) { 
+                    try { localStorage.removeItem('tree_session'); } catch (_) {}
+                }
             }
             // لا توجد جلسة - شاشة الدخول تبقى ظاهرة
         });
@@ -1909,6 +1943,14 @@
             return liveInventoryData.filter(r => r.location_id === activeBranchFilter);
         }
 
+        // ===== helper: apply branch filter to catalog array based on branch inventory =====
+        function getBranchFilteredCatalog() {
+            if (!activeBranchFilter || activeBranchFilter === 'all') return liveCatalogData;
+            const branchInventory = getBranchFilteredInventory();
+            const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+            return liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+        }
+
         async function loadOrdersData() {
             try {
                 const data = await fetchAllFromTable('shopify_orders');
@@ -2190,7 +2232,7 @@
                 else if (type === 'locations') {
                     const id = findVal(['id', 'location', 'locationid', 'zone', 'shelf', 'الموقع', 'معرفالموقع', 'رقمالموقع']);
                     if (id) {
-                        const locIdClean = String(id).trim();
+                        const locIdClean = normalizeLocationId(id);
                         locationsMap.set(locIdClean, {
                             location_id: locIdClean
                         });
@@ -2204,7 +2246,7 @@
                     const cleanBarcodeVal = cleanBarcode(rawBarcode);
 
                     if (cleanBarcodeVal && locationId) {
-                        const locIdClean = String(locationId).trim();
+                        const locIdClean = normalizeLocationId(locationId);
                         const key = `${cleanBarcodeVal}_${locIdClean}`;
                         const qtyVal = quantity !== null ? Number(quantity) : 0;
                         if (inventoryMap.has(key)) {
@@ -2297,13 +2339,13 @@
                         }
                         else if (type === 'locations') {
                             return {
-                                location_id: item.location_id
+                                location_id: normalizeLocationId(item.location_id)
                             };
                         }
                         else if (type === 'inventory') {
                             return {
                                 barcode: item.barcode,
-                                location_id: item.location_id,
+                                location_id: normalizeLocationId(item.location_id),
                                 quantity: Number(item.quantity || 0)
                             };
                         }
@@ -2412,9 +2454,10 @@
                 subTitle.textContent = "تفاصيل الأصناف والتسكين بالمواقع";
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 
-                let totalStockQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const filteredInventory = getBranchFilteredInventory();
+                let totalStockQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
-                document.getElementById('inventory-total-records').textContent = liveInventoryData.length.toLocaleString('ar-EG');
+                document.getElementById('inventory-total-records').textContent = filteredInventory.length.toLocaleString('ar-EG');
                 
                 filterInventory();
             } 
@@ -2423,9 +2466,10 @@
                 subTitle.textContent = "كتالوج منتجات الملبوسات والصور المزامنة";
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 
-                let totalCatalogQty = liveCatalogData.reduce((sum, item) => sum + Number(item.system_qty || 0), 0);
+                const filteredCatalog = getBranchFilteredCatalog();
+                let totalCatalogQty = filteredCatalog.reduce((sum, item) => sum + Number(item.system_qty || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalCatalogQty.toLocaleString('ar-EG');
-                document.getElementById('inventory-total-records').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
                 
                 filterInventory();
             }
@@ -2445,7 +2489,8 @@
                 subTitle.textContent = "تمثيل الخريطة الحرارية التفاعلية لرفوف المستودع";
                 if (mapContainer) mapContainer.classList.remove('hidden');
                 
-                let totalStockQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const filteredInventory = getBranchFilteredInventory();
+                let totalStockQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = liveLocationsData.length.toLocaleString('ar-EG');
                 
@@ -2457,7 +2502,9 @@
                 if (printContainer) printContainer.classList.remove('hidden');
                 
                 document.getElementById('inventory-total-qty').textContent = "A4";
-                document.getElementById('inventory-total-records').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                
+                const filteredCatalog = getBranchFilteredCatalog();
+                document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
                 
                 renderPrintItemsList();
             }
@@ -2466,8 +2513,25 @@
         // Helper to compile discrepant items (optimized with Map index O(1))
         function getDiscrepantItems() {
             const discrepant = [];
-            liveCatalogData.forEach(item => {
-                const shelfQty = inventoryQtyByBarcodeMap.get(item.barcode) || 0;
+            
+            // تحديد المنتجات والكميات الفعلية بناءً على الفلتر النشط للفرع
+            let targetCatalog = liveCatalogData;
+            let qtyMap = inventoryQtyByBarcodeMap;
+
+            if (activeBranchFilter !== 'all') {
+                const branchInventory = getBranchFilteredInventory();
+                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+                targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+                
+                // بناء خريطة كميات خاصة بالفرع المحدد فقط
+                qtyMap = new Map();
+                branchInventory.forEach(item => {
+                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                });
+            }
+
+            targetCatalog.forEach(item => {
+                const shelfQty = qtyMap.get(item.barcode) || 0;
                 const diff = shelfQty - Number(item.system_qty || 0);
                 
                 if (diff !== 0) {
@@ -2507,10 +2571,11 @@
                 }
             } 
             else if (activeInventorySubTab === 'catalog') {
+                const baseCatalog = getBranchFilteredCatalog();
                 if (!query) {
-                    filteredTableData = [...liveCatalogData];
+                    filteredTableData = [...baseCatalog];
                 } else {
-                    filteredTableData = liveCatalogData.filter(item => 
+                    filteredTableData = baseCatalog.filter(item => 
                         item.barcode.toLowerCase().includes(query) || 
                         (item.product_name && item.product_name.toLowerCase().includes(query))
                     );
@@ -4401,7 +4466,7 @@
 
         // ================= DISCREPANCY REPORTING LOGIC =================
         function promptDiscrepancy(barcode, systemQty) {
-            const actualQtyStr = prompt(`الرصيد النظامي هو ${systemQty} قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟`);
+            const actualQtyStr = prompt("الرصيد النظامي هو " + systemQty + " قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟");
             if (actualQtyStr === null || actualQtyStr.trim() === '') return;
 
             const actualQty = parseInt(actualQtyStr, 10);
@@ -4416,8 +4481,8 @@
                 return;
             }
 
-            const diffMsg = diff > 0 ? `زيادة بمقدار ${diff}` : `عجز بمقدار ${Math.abs(diff)}`;
-            const confirmMsg = `تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: ${actualQty}\nالفارق المكتشف: ${diffMsg}\nسيتم إشعار الإدارة فوراً.`;
+            const diffMsg = diff > 0 ? "زيادة بمقدار " + diff : "عجز بمقدار " + Math.abs(diff);
+            const confirmMsg = "تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: " + actualQty + "\nالفارق المكتشف: " + diffMsg + "\nسيتم إشعار الإدارة فوراً.";
             
             if (confirm(confirmMsg)) {
                 submitDiscrepancy(barcode, systemQty, actualQty, diff);
@@ -4425,11 +4490,11 @@
         }
 
         async function submitDiscrepancy(barcode, systemQty, actualQty, diff) {
-            logToConsole('system', `جاري إرسال بلاغ عجز للإدارة عن الصنف ${barcode}...`);
+            logToConsole('system', "جاري إرسال بلاغ عجز للإدارة عن الصنف " + barcode + "...");
             try {
-                await addActivityLog('تسجيل عجز بالرف', `تم الإبلاغ عن فارق جرد للباركود ${barcode} (النظام: ${systemQty}، الفعلي: ${actualQty})`);
+                await addActivityLog('تسجيل عجز بالرف', "تم الإبلاغ عن فارق جرد للباركود " + barcode + " (النظام: " + systemQty + "، الفعلي: " + actualQty + ")");
                 
-                logToConsole('success', `تم رفع تقرير العجز للإدارة بنجاح.`);
+                logToConsole('success', "تم رفع تقرير العجز للإدارة بنجاح.");
                 alert("تم تسجيل البلاغ ورفعه للإدارة بنجاح!");
                 
                 if(activeTab === 'executive') renderExecutiveDashboard();
