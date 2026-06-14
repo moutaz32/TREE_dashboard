@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مستودع  TREE - نظام اللوجستيات المتكامل (Supabase)</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -35,27 +34,20 @@
         }
     </script>
 
-    <!-- Google Fonts Tajawal -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- SheetJS (xlsx.full.min.js) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- JsBarcode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
-    <!-- Html5Qrcode Camera Scanner CDN -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
@@ -130,10 +122,8 @@
 </head>
 <body class="h-full flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased overflow-hidden">
 
-    <!-- LEFT SIDEBAR (RIGHT in RTL) - hidden on mobile, visible on md and up -->
     <aside class="hidden md:flex w-full md:w-64 bg-brand-deep text-white flex-col justify-between flex-shrink-0 border-l border-brand-900/30">
         <div>
-            <!-- Header Brand -->
             <div class="px-6 py-5 flex items-center gap-3 border-b border-brand-900/55">
                 <div class="bg-white p-1.5 rounded-xl text-brand-deep flex items-center justify-center shadow-lg shadow-emerald-500/25 w-10 h-10 overflow-hidden">
                     <img src="logo.png" onerror="this.onerror=null; this.outerHTML='<i data-lucide=\'sprout\' class=\'w-6 h-6 text-brand-deep\'></i>'" alt="Logo" class="max-w-full max-h-full object-contain">
@@ -144,7 +134,6 @@
                 </div>
             </div>
 
-            <!-- Navigation Tabs -->
             <nav class="px-4 py-6 space-y-1">
                 <button onclick="switchTab('executive')" id="tab-executive" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="briefcase" class="w-5 h-5 text-amber-400"></i>
@@ -183,7 +172,6 @@
             </nav>
         </div>
 
-        <!-- Supabase Connection Status Badge -->
         <div class="p-4 border-t border-brand-900/55 bg-brand-900/20">
             <div class="flex items-center justify-between">
                 <span class="text-xs text-brand-300 font-semibold">اتصال Supabase</span>
@@ -212,7 +200,7 @@
             <i data-lucide="boxes" class="w-5 h-5"></i>
             <span>المخزن</span>
         </button>
-        <button onclick="switchTab('picker')" id="mobile-tab-picker" class="flex flex-col items-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+        <button onclick="switchTab('picker')" id="mobile-tab-picker" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="package-check" class="w-5 h-5"></i>
             <span>التحضير</span>
         </button>
@@ -222,10 +210,8 @@
         </button>
     </nav>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden relative pb-16 md:pb-0">
         
-        <!-- Top Header Bar -->
         <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-3">
                 <h2 id="current-section-title" class="text-xl font-bold text-slate-800">نظرة عامة</h2>
@@ -240,12 +226,9 @@
             </div>
         </header>
 
-        <!-- Dynamic Tabs Content -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8" id="content-container">
 
-            <!-- ================= DASHBOARD TAB ================= -->
             <section id="section-dashboard" class="space-y-6">
-                <!-- Welcome Banner -->
                 <div class="bg-gradient-to-r from-brand-deep to-brand-700 text-white rounded-2xl p-6 shadow-xl shadow-brand-deep/10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="space-y-2">
                         <h3 class="text-2xl md:text-3xl font-extrabold tracking-tight">نظام لوجستيات TREE للملابس</h3>
@@ -269,9 +252,7 @@
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Stat Card 1 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition duration-200 flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-semibold tracking-wide uppercase">أصناف الكتالوج</span>
@@ -283,7 +264,6 @@
                         </div>
                     </div>
 
-                    <!-- Stat Card 2 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition duration-200 flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-semibold tracking-wide uppercase">رفوف التخزين</span>
@@ -295,7 +275,6 @@
                         </div>
                     </div>
 
-                    <!-- Stat Card 3 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition duration-200 flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-semibold tracking-wide uppercase">إجمالي القطع المودعة</span>
@@ -307,7 +286,6 @@
                         </div>
                     </div>
 
-                    <!-- Stat Card 4 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition duration-200 flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-semibold tracking-wide uppercase">طلبات معلقة للتحضير</span>
@@ -320,7 +298,6 @@
                     </div>
                 </div>
 
-                <!-- Low Stock Alert and Safety Threshold Card -->
                 <div id="low-stock-alert-panel" class="hidden bg-white border border-rose-200 rounded-2xl p-6 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-3">
                         <div class="flex items-center gap-3">
@@ -339,13 +316,10 @@
                             <span class="text-xs text-slate-400">قطعة</span>
                         </div>
                     </div>
-                    <!-- Low Stock Alert Grid -->
                     <div id="low-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
-                        <!-- Dynamic low stock alerts will go here -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Dead Stock Alerts Panel -->
                 <div id="dead-stock-alert-panel" class="hidden bg-white border border-amber-200 rounded-2xl p-6 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100 pb-3">
                         <div class="flex items-center gap-3">
@@ -358,15 +332,11 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Dead Stock Grid -->
                     <div id="dead-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
-                        <!-- Dynamic dead stock alerts will go here -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Real-time Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Chart 1: Stock Distribution by Zone -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="border-b border-slate-100 pb-3 mb-4">
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -380,7 +350,6 @@
                         </div>
                     </div>
 
-                    <!-- Chart 2: Top Stocked clothing items -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="border-b border-slate-100 pb-3 mb-4">
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -395,9 +364,7 @@
                     </div>
                 </div>
 
-                <!-- Split Dashboard Panel: Action templates & Activity logs -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Setup templates helper (Left cols) -->
                     <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
                         <div>
                             <h4 class="text-lg font-bold text-slate-800">تحميل نماذج جداول البيانات</h4>
@@ -447,7 +414,6 @@
                         </div>
                     </div>
 
-                    <!-- Live Activity logs panel (Right 1 col) -->
                     <div class="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between">
                         <div class="space-y-4">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -459,7 +425,6 @@
                                     عرض الكل &larr;
                                 </button>
                             </div>
-                            <!-- Logs stack -->
                             <div id="dashboard-activity-logs" class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
                                 <p class="text-xs text-slate-400 text-center py-6">جاري تحميل سجل الحركات من Supabase...</p>
                             </div>
@@ -468,9 +433,7 @@
                 </div>
             </section>
 
-            <!-- ================= EXECUTIVE DASHBOARD TAB ================= -->
             <section id="section-executive" class="hidden space-y-6">
-                <!-- Welcome Banner -->
                 <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="space-y-2">
                         <h3 class="text-2xl md:text-3xl font-extrabold tracking-tight text-amber-400">لوحة الإدارة الذكية (Executive View)</h3>
@@ -484,9 +447,7 @@
                     </div>
                 </div>
 
-                <!-- Executive KPIs Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- KPI 1 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-bold uppercase">قيمة المخزون (تقديري)</span>
@@ -497,7 +458,6 @@
                             <i data-lucide="dollar-sign" class="w-6 h-6"></i>
                         </div>
                     </div>
-                    <!-- KPI 2 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-bold uppercase">بلاغات العجز (Shrinkage)</span>
@@ -508,7 +468,6 @@
                             <i data-lucide="alert-octagon" class="w-6 h-6 animate-pulse"></i>
                         </div>
                     </div>
-                    <!-- KPI 3 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-bold uppercase">نسبة البضائع الراكدة</span>
@@ -519,7 +478,6 @@
                             <i data-lucide="package-minus" class="w-6 h-6"></i>
                         </div>
                     </div>
-                    <!-- KPI 4 -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                         <div class="space-y-1">
                             <span class="text-xs text-slate-500 font-bold uppercase">كفاءة الأداء اليومي</span>
@@ -532,7 +490,6 @@
                     </div>
                 </div>
 
-                <!-- Heatmap Section -->
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
                         <div>
@@ -551,14 +508,11 @@
                     </div>
                     
                     <div id="exec-heatmap-container" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-13 gap-3">
-                        <!-- Heatmap blocks will be generated here -->
-                    </div>
+                        </div>
                 </div>
             </section>
 
-            <!-- ================= UPLOAD CENTER TAB ================= -->
             <section id="section-upload" class="hidden space-y-6">
-                <!-- Page Info Header -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">بوابة رفع ومزامنة البيانات اللوجستية (Supabase)</h3>
@@ -570,7 +524,6 @@
                     </div>
                 </div>
 
-                <!-- Mobile Upload Tabs Selector -->
                 <div class="flex md:hidden overflow-x-auto gap-2 pb-2 mb-2 border-b border-slate-200 scrollbar-none justify-start">
                     <button onclick="switchMobileUploadCard('catalog')" id="btn-upload-tab-catalog" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-brand-deep text-white shadow-sm transition-all">1. الكتالوج</button>
                     <button onclick="switchMobileUploadCard('shopify_images')" id="btn-upload-tab-shopify_images" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 transition-all">2. الصور</button>
@@ -579,10 +532,8 @@
                     <button onclick="switchMobileUploadCard('shopify_orders')" id="btn-upload-tab-shopify_orders" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 transition-all">5. الطلبات</button>
                 </div>
 
-                <!-- 5 Upload Cards Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                     
-                    <!-- 1. Catalog Upload Card -->
                     <div id="upload-card-catalog" class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm p-4 space-y-4">
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
@@ -617,7 +568,6 @@
                         </div>
                     </div>
 
-                    <!-- 2. Shopify Images Upload Card -->
                     <div id="upload-card-shopify_images" class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm p-4 space-y-4">
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
@@ -652,7 +602,6 @@
                         </div>
                     </div>
 
-                    <!-- 3. Locations Upload Card -->
                     <div id="upload-card-locations" class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm p-4 space-y-4">
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
@@ -687,7 +636,6 @@
                         </div>
                     </div>
 
-                    <!-- 4. Inventory Upload Card -->
                     <div id="upload-card-inventory" class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm p-4 space-y-4">
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
@@ -722,7 +670,6 @@
                         </div>
                     </div>
 
-                    <!-- 5. Shopify Orders Upload Card -->
                     <div id="upload-card-shopify_orders" class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm p-4 space-y-4">
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
@@ -758,7 +705,6 @@
                     </div>
                 </div>
 
-                <!-- Logger/Consolidated Terminal Output -->
                 <div class="bg-slate-900 rounded-2xl p-5 font-mono text-xs text-slate-300 border border-slate-800 space-y-2 shadow-inner">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
                         <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">سجل معالجة ومزامنة البيانات (Supabase CLI)</span>
@@ -770,9 +716,7 @@
                 </div>
             </section>
 
-            <!-- ================= LIVE INVENTORY & CATALOG TAB ================= -->
             <section id="section-inventory" class="hidden space-y-6">
-                <!-- Inner Sub tabs -->
                 <div class="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto scrollbar-none">
                     <button onclick="switchInventorySubTab('stock')" id="subtab-stock" class="px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap">
                         مواقع التسكين الفيزيائية
@@ -791,14 +735,12 @@
                     </button>
                 </div>
 
-                <!-- Search and Live Metric Header -->
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="space-y-1">
                         <h3 id="inventory-sub-title" class="text-lg font-bold text-slate-800">تفاصيل الأصناف والتسكين بالمواقع</h3>
                         <p class="text-xs text-slate-500">بيانات المخزن الحية ومواقع الرفوف المحدثة لحظياً من Supabase.</p>
                     </div>
 
-                    <!-- Live Aggregation Panel -->
                     <div class="flex items-center gap-6 bg-slate-50 border border-slate-200/80 p-4 rounded-xl">
                         <div class="space-y-0.5">
                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">إجمالي قطع المخزن</span>
@@ -818,13 +760,11 @@
                     </div>
                 </div>
 
-                <!-- Filters and Table container -->
                 <div id="inventory-table-container" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-                    <!-- Table Header Tools -->
                     <div class="p-4 bg-slate-50/50 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
                         <div class="relative w-full md:w-80">
                             <i data-lucide="search" class="w-4 h-4 absolute right-3 top-3.5 text-slate-400"></i>
-                            <input type="text" id="inventory-search" oninput="filterInventory()" placeholder="ابحث بالباركود، الاسم أو الموقع..." 
+                            <input type="text" id="inventory-search" oninput="debouncedFilterInventory()" placeholder="ابحث بالباركود، الاسم أو الموقع..." 
                                    class="w-full pr-9 pl-4 py-2 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent rounded-xl text-sm transition">
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -844,19 +784,15 @@
                         </div>
                     </div>
 
-                    <!-- Main Dynamic Table -->
                     <div class="overflow-x-auto min-h-[350px]">
                         <table class="w-full text-right border-collapse block md:table">
                             <thead id="inventory-table-head" class="hidden md:table-header-group">
-                                <!-- Dynamic Headers based on active subtab -->
-                            </thead>
+                                </thead>
                             <tbody id="inventory-table-body" class="divide-y divide-slate-100 md:divide-y-0 block md:table-row-group text-sm font-medium text-slate-700 space-y-3 md:space-y-0 p-4 md:p-0">
-                                <!-- Dynamic records go here -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
 
-                    <!-- Client Pagination Controls -->
                     <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/40">
                         <span id="pagination-status" class="text-xs text-slate-500 font-semibold">يعرض 0 من أصل 0 سجل</span>
                         <div class="flex items-center gap-1.5">
@@ -870,28 +806,22 @@
                     </div>
                 </div>
 
-                <!-- ================= INTERACTIVE WAREHOUSE MAP ================= -->
                 <div id="inventory-map-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
                             <h4 class="font-bold text-slate-800 text-sm">تمثيل جرد المستودع التفاعلي (Heatmap)</h4>
                             <p class="text-xs text-slate-500">خريطة بصرية للرفوف تظهر مستوى إشغال المخزن (الألوان تدل على كمية القطع).</p>
                         </div>
-                        <!-- Zone Selector -->
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
                             <span class="text-xs text-slate-500 font-bold">المنطقة (Zone):</span>
                             <div id="map-zone-selectors" class="flex items-center gap-1.5">
-                                <!-- Dynamic zone buttons (A, B, C...) -->
-                            </div>
+                                </div>
                         </div>
                     </div>
 
-                    <!-- Warehouse Grid Map -->
                     <div id="warehouse-grid-map" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                        <!-- Dynamic shelf boxes will render here -->
-                    </div>
+                        </div>
 
-                    <!-- Shelf Items Details Panel (opens when shelf clicked) -->
                     <div id="map-shelf-details" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                         <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                             <h5 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
@@ -901,12 +831,10 @@
                             <span id="map-selected-shelf-qty" class="text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200"></span>
                         </div>
                         <div id="map-shelf-items-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            <!-- Items on the selected shelf will list here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
 
-                <!-- ================= BARCODE A4 PRINTING TAB ================= -->
                 <div id="inventory-print-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
@@ -914,7 +842,6 @@
                             <p class="text-xs text-slate-500">اختر نوع الطباعة، وابحث وحدد الكمية المطلوبة لكل باركود لإنشاء ورقة طباعة A4 (3 أعمدة).</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
-                            <!-- Label Type Selector -->
                             <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
                                 <span class="text-xs text-slate-500 font-bold">نوع الملصق:</span>
                                 <select id="print-label-type" onchange="renderPrintItemsList()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700">
@@ -930,7 +857,6 @@
                         </div>
                     </div>
 
-                    <!-- Print Sheet Options -->
                     <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-4">
                         <div class="relative w-full sm:w-80">
                             <i data-lucide="search" class="w-4 h-4 absolute right-3 top-3 text-slate-400"></i>
@@ -946,16 +872,12 @@
                         </div>
                     </div>
 
-                    <!-- Print Items Selectable Grid/List -->
                     <div id="print-items-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-1">
-                        <!-- Dynamic items with qty controls render here -->
-                    </div>
+                        </div>
                 </div>
             </section>
 
-            <!-- ================= ORDER PICKER TAB ================= -->
             <section id="section-picker" class="hidden space-y-6">
-                <!-- Welcome Banner -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">شاشة فرز وتحضير طلبات شوبيفاي الفورية (Supabase)</h3>
@@ -970,21 +892,16 @@
                     </div>
                 </div>
 
-                <!-- Live Orders Stack -->
                 <div id="picker-orders-container" class="space-y-6">
-                    <!-- Dynamic Orders go here -->
-                </div>
+                    </div>
             </section>
 
-            <!-- ================= BARCODE QUERY TAB ================= -->
             <section id="section-query" class="hidden space-y-6">
-                <!-- Welcome Banner -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200">
                     <h3 class="text-lg font-bold text-slate-800">الاستعلام الفوري والسريع للقطع بالمستودع (Supabase)</h3>
                     <p class="text-sm text-slate-500">امسح باركود أي قطعة بملابس TREE لمعرفة تفاصيلها ومواقع الرفوف المتواجدة بها فورياً.</p>
                 </div>
 
-                <!-- Main Query Input -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center gap-4">
                     <div class="relative w-full flex-1">
                         <i data-lucide="scan-line" class="w-5 h-5 absolute right-4 top-4 text-slate-400"></i>
@@ -1003,7 +920,6 @@
                     </div>
                 </div>
 
-                <!-- Results Output Card -->
                 <div id="query-result-container" class="bg-white border border-slate-200 rounded-2xl p-8 min-h-[300px] flex items-center justify-center text-slate-400">
                     <div class="flex flex-col items-center justify-center gap-3">
                         <i data-lucide="barcode" class="w-12 h-12 text-slate-300"></i>
@@ -1013,9 +929,7 @@
                 </div>
             </section>
 
-            <!-- ================= AUDIT LOGS TAB ================= -->
             <section id="section-logs" class="hidden space-y-6">
-                <!-- Header Card -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">سجل حركات المخزن التفصيلي (Inventory Audit Logs)</h3>
@@ -1033,15 +947,12 @@
                     </div>
                 </div>
 
-                <!-- Search and Filters bar -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center gap-4">
-                    <!-- Search Input -->
                     <div class="relative w-full flex-1">
                         <i data-lucide="search" class="w-4 h-4 absolute right-3.5 top-3.5 text-slate-400"></i>
                         <input type="text" id="audit-logs-search-input" onkeyup="handleAuditLogsSearch(event)" placeholder="بحث بالباركود، رقم الرف، رقم الأوردر أو أي تفاصيل..." 
                                class="w-full pr-10 pl-4 py-2.5 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-brand-accent rounded-xl text-xs font-medium transition">
                     </div>
-                    <!-- Type Filter -->
                     <div class="w-full md:w-60 flex items-center gap-2">
                         <label for="audit-logs-type-filter" class="text-xs font-bold text-slate-500 whitespace-nowrap">نوع الحركة:</label>
                         <select id="audit-logs-type-filter" onchange="handleAuditLogsFilter(this.value)" 
@@ -1058,7 +969,6 @@
                     </div>
                 </div>
 
-                <!-- Table Card -->
                 <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="w-full text-right border-collapse">
@@ -1070,26 +980,22 @@
                                 </tr>
                             </thead>
                             <tbody id="audit-logs-table-body" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                                <!-- Dynamic logs table rows go here -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
 
-                    <!-- Pagination Controls -->
                     <div class="bg-slate-50/50 border-t border-slate-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="text-xs text-slate-500 font-medium" id="audit-logs-page-info">
                             عرض 0 - 0 من أصل 0 حركة
                         </div>
                         <div class="flex items-center gap-2" id="audit-logs-pagination-buttons">
-                            <!-- Prev/Next buttons will go here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </section>
         </div>
     </main>
 
-    <!-- UI JAVASCRIPT LOGIC -->
     <script>
         // SUPABASE CONNECTION SETTINGS
         const supabaseUrl = "https://auwnaivrovqqmthmljvg.supabase.co";
@@ -1273,7 +1179,7 @@
         }
 
         // ================= DEBOUNCE UTILITY =================
-        // دالة تجميع الطلبات لمنع عاصفة التحديثات أثناء رفع الملفات
+        // دالة تجميع الطلبات لمنع عاصفة التحديثات أثناء رفع الملفات والبحث
         function debounce(fn, delay) {
             let timer = null;
             return function(...args) {
@@ -1299,6 +1205,7 @@
         let printQuantities = {};
         let printSearchQuery = "";
         let activeEditRecord = null;
+        const debouncedFilterInventory = debounce(filterInventory, 300);
 
         // Audit Logs state variables
         let auditLogsData = [];
@@ -1479,6 +1386,17 @@
         }
 
         // ================= SUPABASE DATA LOADING & SYNC =================
+        function applyRealtimePayload(payload, currentData, pkField) {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                const idx = currentData.findIndex(item => item[pkField] === payload.new[pkField]);
+                if (idx > -1) currentData[idx] = payload.new;
+                else currentData.push(payload.new);
+            } else if (payload.eventType === 'DELETE') {
+                return currentData.filter(item => item[pkField] !== payload.old[pkField]);
+            }
+            return currentData;
+        }
+
         async function setupRealtimeListeners() {
             if (!supabaseClient) return;
 
@@ -1496,48 +1414,70 @@
             await loadOrdersData();
             await loadActivityLogs();
 
-            // 2. Set Up Realtime WebSockets for Instant updates (with debounce to prevent network storms)
-            const debouncedLoadInventory = debounce(loadInventoryData, 2000);
-            const debouncedLoadCatalog = debounce(loadCatalogData, 2000);
-            const debouncedLoadLocations = debounce(loadLocationsData, 2000);
-            const debouncedLoadOrders = debounce(loadOrdersData, 2000);
-            const debouncedLoadActivityLogs = debounce(() => {
-                loadActivityLogs();
-                if (activeTab === 'logs') fetchAuditLogs();
-            }, 2000);
+            // 2. Set Up Realtime WebSockets for Instant updates (Optimized: Granular Updates)
             
             // Inventory updates
             activeChannels.inventory = supabaseClient.channel('realtime-inventory')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_inventory' }, payload => {
-                    debouncedLoadInventory();
+                    liveInventoryData = applyRealtimePayload(payload, liveInventoryData, 'id');
+                    rebuildInventoryIndex();
+                    
+                    let totalUnits = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                    const elQty = document.getElementById('stat-total-qty');
+                    if(elQty) elQty.textContent = totalUnits.toLocaleString('ar-EG');
+                    
+                    if (activeTab === 'inventory') filterInventory();
+                    else if (activeTab === 'dashboard') {
+                        updateDashboardCharts();
+                        renderLowStockAlerts();
+                    }
                 })
                 .subscribe();
 
             // Catalog updates
             activeChannels.catalog = supabaseClient.channel('realtime-catalog')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'products_catalog' }, payload => {
-                    debouncedLoadCatalog();
+                    liveCatalogData = applyRealtimePayload(payload, liveCatalogData, 'barcode');
+                    rebuildCatalogIndexes();
+                    
+                    const elCount = document.getElementById('stat-catalog-count');
+                    if(elCount) elCount.textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                    
+                    if (activeTab === 'inventory') filterInventory();
                 })
                 .subscribe();
 
             // Locations updates
             activeChannels.locations = supabaseClient.channel('realtime-locations')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouse_locations' }, payload => {
-                    debouncedLoadLocations();
+                    liveLocationsData = applyRealtimePayload(payload, liveLocationsData, 'location_id');
+                    const elLoc = document.getElementById('stat-locations-count');
+                    if(elLoc) elLoc.textContent = liveLocationsData.length.toLocaleString('ar-EG');
+                    
+                    if (activeTab === 'inventory' && activeInventorySubTab === 'map') renderWarehouseMap();
                 })
                 .subscribe();
 
             // Orders updates
             activeChannels.shopify_orders = supabaseClient.channel('realtime-orders')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'shopify_orders' }, payload => {
-                    debouncedLoadOrders();
+                    liveOrdersData = applyRealtimePayload(payload, liveOrdersData, 'order_id');
+                    const pendingOrders = liveOrdersData.filter(o => o.status === 'PENDING' || o.status === 'pending');
+                    const elPending = document.getElementById('stat-orders-pending-count');
+                    if(elPending) elPending.textContent = pendingOrders.length.toLocaleString('ar-EG');
+                    
+                    if (activeTab === 'picker') renderOrderPicker();
                 })
                 .subscribe();
 
             // Activity Log updates
             activeChannels.activityLogs = supabaseClient.channel('realtime-activity-logs')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, payload => {
-                    debouncedLoadActivityLogs();
+                    auditLogsData = applyRealtimePayload(payload, auditLogsData, 'id');
+                    auditLogsData.sort((a,b) => new Date(b.created_at || b.timestamp) - new Date(a.created_at || a.timestamp));
+                    
+                    renderActivityLogsUI(auditLogsData.slice(0, 10));
+                    if (activeTab === 'logs') renderAuditLogsUI();
                 })
                 .subscribe();
         }
@@ -1679,7 +1619,7 @@
                 });
             }
             container.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: container }); // Optimized Lucide call
         }
 
         async function addActivityLog(action, details) {
@@ -2291,7 +2231,7 @@
                         </td>
                     </tr>
                 `;
-                lucide.createIcons();
+                lucide.createIcons({ root: tbody }); // Optimized Lucide call
                 document.getElementById('pagination-status').textContent = 'يعرض 0 من أصل 0 سجل';
                 document.getElementById('btn-prev').setAttribute('disabled', 'true');
                 document.getElementById('btn-next').setAttribute('disabled', 'true');
@@ -2411,7 +2351,7 @@
             }
 
             tbody.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: tbody }); // Optimized Lucide call
 
             document.getElementById('pagination-status').textContent = `يعرض ${(startIdx + 1).toLocaleString('ar-EG')} إلى ${endIdx.toLocaleString('ar-EG')} من أصل ${total.toLocaleString('ar-EG')} سجل`;
             
@@ -2448,7 +2388,7 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
+                lucide.createIcons({ root: container });
                 return;
             }
 
@@ -2532,7 +2472,6 @@
 
                 html += `
                     <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                        <!-- Order Card Header -->
                         <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex flex-wrap items-center gap-3">
                                 <span class="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 uppercase tracking-wider">الطلب رقم:</span>
@@ -2552,7 +2491,6 @@
                             </button>
                         </div>
                         
-                        <!-- Order Items list -->
                         <div class="p-6 space-y-3">
                             ${itemsHtml}
                         </div>
@@ -2561,7 +2499,7 @@
             });
 
             container.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: container }); // Optimized Lucide call
         }
 
         async function markOrderCompleted(orderNumber) {
@@ -2693,7 +2631,7 @@
                             <p class="text-xs text-slate-400">القطعة غير مسجلة في كتالوج Supabase أو مسكنة بالرفوف.</p>
                         </div>
                     `;
-                    lucide.createIcons();
+                    lucide.createIcons({ root: resultContainer });
                     return;
                 }
 
@@ -2757,12 +2695,10 @@
 
                 resultContainer.innerHTML = `
                     <div class="w-full flex flex-col md:flex-row gap-8 text-right animate-fadeIn">
-                        <!-- Right thumbnail image -->
                         <div class="flex justify-center md:justify-start">
                             ${imgHtml}
                         </div>
 
-                        <!-- Left details -->
                         <div class="flex-1 space-y-4">
                             <div class="space-y-1">
                                 <div class="flex items-center gap-3 flex-wrap w-full">
@@ -2777,7 +2713,6 @@
                                 <p class="text-xs text-slate-400 font-mono">الباركود: ${barcode}</p>
                             </div>
 
-                            <!-- Quantities map -->
                             <div class="grid grid-cols-2 gap-4 border-y border-slate-100 py-3">
                                 <div>
                                     <span class="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">الرصيد النظامي (الكتالوج)</span>
@@ -2789,7 +2724,6 @@
                                 </div>
                             </div>
 
-                            <!-- Shelf locations -->
                             <div class="space-y-2">
                                 <span class="text-[10px] text-slate-400 font-bold uppercase block">أماكن الحفظ والتسكين الفعلي:</span>
                                 ${shelvesListHtml}
@@ -2797,7 +2731,7 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
+                lucide.createIcons({ root: resultContainer });
             } catch (err) {
                 console.error("Direct query lookup error:", err);
                 resultContainer.innerHTML = `
@@ -2807,7 +2741,7 @@
                         <p class="text-xs text-slate-400 mt-1">${err.message || err.details || ''}</p>
                     </div>
                 `;
-                lucide.createIcons();
+                lucide.createIcons({ root: resultContainer });
             }
 
             // Auto focus and clear input for next scan
@@ -3203,7 +3137,7 @@
                 });
             }
             listEl.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: listEl });
         }
 
         function filterPrintItems() {
@@ -3338,7 +3272,7 @@
             } else {
                 imgContainer.innerHTML = '<i data-lucide="shirt" class="w-5 h-5"></i>';
             }
-            lucide.createIcons();
+            lucide.createIcons({ root: imgContainer });
 
             document.getElementById('edit-qty-modal').classList.remove('hidden');
             document.getElementById('modal-quantity-input').focus();
@@ -3443,7 +3377,7 @@
                 `;
             });
             grid.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: grid });
         }
 
         // 4. EXPORTING REPORTS
@@ -3616,7 +3550,7 @@
                 `;
             });
             tableBody.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: tableBody });
 
             if (pageInfo) {
                 pageInfo.textContent = `عرض ${(startIndex + 1).toLocaleString('ar-EG')} - ${endIndex.toLocaleString('ar-EG')} من أصل ${totalRecords.toLocaleString('ar-EG')} حركة`;
@@ -3662,7 +3596,7 @@
                 `;
 
                 paginationContainer.innerHTML = paginationHtml;
-                lucide.createIcons();
+                lucide.createIcons({ root: paginationContainer });
             }
         }
 
@@ -3845,7 +3779,7 @@
                 `;
             });
             listEl.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: listEl });
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
@@ -3915,7 +3849,7 @@
                 `;
             });
             grid.innerHTML = html;
-            lucide.createIcons();
+            lucide.createIcons({ root: grid });
         }
 
         // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
@@ -3923,7 +3857,6 @@
 
         function openScanner() {
             document.getElementById('scanner-modal').classList.remove('hidden');
-            lucide.createIcons();
             
             if (typeof Html5Qrcode === 'undefined') {
                 alert("جاري تحميل مكتبة الكاميرا، يرجى التأكد من الاتصال بالإنترنت.");
@@ -4068,12 +4001,11 @@
                 `;
             }
             container.innerHTML = html;
-            lucide.createIcons();
         }
 
         // ================= DISCREPANCY REPORTING LOGIC =================
         function promptDiscrepancy(barcode, systemQty) {
-            const actualQtyStr = prompt(\`الرصيد النظامي هو \${systemQty} قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟\`);
+            const actualQtyStr = prompt(`الرصيد النظامي هو ${systemQty} قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟`);
             if (actualQtyStr === null || actualQtyStr.trim() === '') return;
 
             const actualQty = parseInt(actualQtyStr, 10);
@@ -4088,8 +4020,8 @@
                 return;
             }
 
-            const diffMsg = diff > 0 ? \`زيادة بمقدار \${diff}\` : \`عجز بمقدار \${Math.abs(diff)}\`;
-            const confirmMsg = \`تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: \${actualQty}\nالفارق المكتشف: \${diffMsg}\nسيتم إشعار الإدارة فوراً.\`;
+            const diffMsg = diff > 0 ? `زيادة بمقدار ${diff}` : `عجز بمقدار ${Math.abs(diff)}`;
+            const confirmMsg = `تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: ${actualQty}\nالفارق المكتشف: ${diffMsg}\nسيتم إشعار الإدارة فوراً.`;
             
             if (confirm(confirmMsg)) {
                 submitDiscrepancy(barcode, systemQty, actualQty, diff);
@@ -4097,11 +4029,11 @@
         }
 
         async function submitDiscrepancy(barcode, systemQty, actualQty, diff) {
-            logToConsole('system', \`جاري إرسال بلاغ عجز للإدارة عن الصنف \${barcode}...\`);
+            logToConsole('system', `جاري إرسال بلاغ عجز للإدارة عن الصنف ${barcode}...`);
             try {
-                await addActivityLog('تسجيل عجز بالرف', \`تم الإبلاغ عن فارق جرد للباركود \${barcode} (النظام: \${systemQty}، الفعلي: \${actualQty})\`);
+                await addActivityLog('تسجيل عجز بالرف', `تم الإبلاغ عن فارق جرد للباركود ${barcode} (النظام: ${systemQty}، الفعلي: ${actualQty})`);
                 
-                logToConsole('success', \`تم رفع تقرير العجز للإدارة بنجاح.\`);
+                logToConsole('success', `تم رفع تقرير العجز للإدارة بنجاح.`);
                 alert("تم تسجيل البلاغ ورفعه للإدارة بنجاح!");
                 
                 if(activeTab === 'executive') renderExecutiveDashboard();
@@ -4111,7 +4043,7 @@
             }
         }
     </script>
-    <!-- Edit Stock Quantity Modal -->
+    
     <div id="edit-qty-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-slate-200">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -4163,7 +4095,6 @@
         </div>
     </div>
 
-    <!-- Scanner Modal for Camera scanning -->
     <div id="scanner-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-fadeIn relative">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -4184,7 +4115,6 @@
         </div>
     </div>
 
-    <!-- Hidden Print Barcode Area optimized for A4 grid printing -->
     <div id="print-barcode-area"></div>
 </body>
 </html>
