@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستودع الشجرة TREE - نظام اللوجستيات المتكامل (Supabase)</title>
+    <title>مستودع  TREE - نظام اللوجستيات المتكامل (Supabase)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1268,6 +1268,8 @@
         let imageByBaseMap = new Map();            // base numeric barcode -> first image_url found
         let inventoryQtyByBarcodeMap = new Map();  // barcode -> total shelf qty
         let barcodeCategoryCacheMap = new Map();   // cleanBarcode -> product category (A-E) cache
+        let inventoryLocationsByBarcodeMap = new Map(); // cleanBarcode -> array of {location_id, quantity}
+        let inventoryLocationsByBaseBarcodeMap = new Map(); // baseBarcode -> array of {location_id, quantity}
 
         // إعادة بناء فهارس الكتالوج بعد كل تحميل بيانات (عملية واحدة سريعة O(N))
         function rebuildCatalogIndexes() {
@@ -1306,12 +1308,38 @@
             }
         }
 
-        // إعادة بناء فهرس كميات المخزون الفعلي
+        // إعادة بناء فهرس كميات المخزون الفعلي ومواقعه
         function rebuildInventoryIndex() {
             inventoryQtyByBarcodeMap = new Map();
+            inventoryLocationsByBarcodeMap = new Map();
+            inventoryLocationsByBaseBarcodeMap = new Map();
+            
             for (const item of liveInventoryData) {
                 const bc = item.barcode;
-                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + Number(item.quantity || 0));
+                const qty = Number(item.quantity || 0);
+                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + qty);
+                
+                if (qty > 0) {
+                    const clean = cleanBarcode(bc);
+                    if (!inventoryLocationsByBarcodeMap.has(clean)) {
+                        inventoryLocationsByBarcodeMap.set(clean, []);
+                    }
+                    inventoryLocationsByBarcodeMap.get(clean).push({
+                        location_id: item.location_id,
+                        quantity: qty
+                    });
+
+                    const base = extractBaseBarcode(clean);
+                    if (base) {
+                        if (!inventoryLocationsByBaseBarcodeMap.has(base)) {
+                            inventoryLocationsByBaseBarcodeMap.set(base, []);
+                        }
+                        inventoryLocationsByBaseBarcodeMap.get(base).push({
+                            location_id: item.location_id,
+                            quantity: qty
+                        });
+                    }
+                }
             }
         }
 
@@ -1352,6 +1380,49 @@
                 return imageByBaseMap.get(base);
             }
             return '';
+        }
+
+        // دالة جلب الموقع الأول للصنف للتوجيه الجغرافي السريع O(1)
+        function getSkuFirstLocation(sku) {
+            if (!sku) return 'ZZZZ';
+            const clean = cleanBarcode(sku);
+            
+            // مطابقة مباشرة بالباركود المنظف
+            let locs = inventoryLocationsByBarcodeMap.get(clean) || [];
+            if (locs.length > 0) return locs[0].location_id;
+            
+            // مطابقة بالباركود الأساسي البديل
+            const base = extractBaseBarcode(clean);
+            if (base) {
+                let locsBase = inventoryLocationsByBaseBarcodeMap.get(base) || [];
+                if (locsBase.length > 0) return locsBase[0].location_id;
+            }
+            
+            return 'ZZZZ';
+        }
+
+        // كاش الباركود النظيف للمنتجات لتفادي حساب الـ Regex المتكرر في الحلقات التكرارية
+        function getCleanedProductBarcode(product) {
+            if (!product) return '';
+            if (!product.cleanedBarcode) {
+                product.cleanedBarcode = cleanBarcode(product.barcode);
+            }
+            return product.cleanedBarcode;
+        }
+
+        // دالة لتنظيف وتجهيز باركودات طلبات شوبيفاي دفعة واحدة عند تحميلها لتجنب التكرار في الحلقات
+        function preprocessOrdersBarcodes(orders) {
+            if (!orders) return;
+            orders.forEach(order => {
+                if (order.items && !order.cleanedBarcodes) {
+                    const barcodeSet = new Set();
+                    order.items.forEach(item => {
+                        const clean = cleanBarcode(item.sku);
+                        if (clean) barcodeSet.add(clean);
+                    });
+                    order.cleanedBarcodes = barcodeSet;
+                }
+            });
         }
 
         // ================= DEBOUNCE UTILITY =================
@@ -1714,6 +1785,29 @@
             return isUploading.catalog || isUploading.shopify_images || isUploading.locations || isUploading.inventory || isUploading.shopify_orders;
         }
 
+        // تحديث أجزاء الواجهة النشطة فقط لتلافي تهنيج المتصفح وتبذير العمليات
+        function refreshUI() {
+            updateTopCounters();
+
+            if (activeTab === 'dashboard') {
+                updateDashboardCharts();
+                renderLowStockAlerts();
+                renderDeadStockAlerts();
+            } else if (activeTab === 'inventory') {
+                if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
+                    filterInventory();
+                } else if (activeInventorySubTab === 'map') {
+                    renderWarehouseMap();
+                }
+            } else if (activeTab === 'picker') {
+                renderOrderPicker();
+            } else if (activeTab === 'executive') {
+                renderExecutiveDashboard();
+            } else if (activeTab === 'logs') {
+                fetchAuditLogs();
+            }
+        }
+
         // ================= SUPABASE DATA LOADING & SYNC =================
         async function setupRealtimeListeners() {
             if (!supabaseClient) return;
@@ -1738,39 +1832,27 @@
             // --- دوال إعادة رسم UI بعد التعديل المحلي ---
             const debouncedUIRefreshInventory = debounce(() => {
                 rebuildInventoryIndex();
-                updateTopCounters();
-                if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') switchInventorySubTab(activeInventorySubTab);
-                else if (activeInventorySubTab === 'map') renderWarehouseMap();
-                renderOrderPicker();
-                updateDashboardCharts();
-                renderLowStockAlerts();
-                renderDeadStockAlerts();
-            }, 400);
+                refreshUI();
+            }, 1000);
 
             const debouncedUIRefreshCatalog = debounce(() => {
                 rebuildCatalogIndexes();
-                updateTopCounters();
-                if (activeInventorySubTab === 'catalog' || activeInventorySubTab === 'discrepancy') switchInventorySubTab(activeInventorySubTab);
-                updateDashboardCharts();
-                renderLowStockAlerts();
-                renderDeadStockAlerts();
-            }, 400);
+                refreshUI();
+            }, 1000);
 
             const debouncedUIRefreshLocations = debounce(() => {
-                updateTopCounters();
+                refreshUI();
                 populateBranchFilterDropdown();
-            }, 400);
+            }, 1000);
 
             const debouncedUIRefreshOrders = debounce(() => {
-                updateTopCounters();
-                renderOrderPicker();
-                renderDeadStockAlerts();
-            }, 400);
+                refreshUI();
+            }, 1000);
 
             const debouncedLoadActivityLogs = debounce(() => {
                 loadActivityLogs();
                 if (activeTab === 'logs') fetchAuditLogs();
-            }, 2000);
+            }, 3000);
 
             // --- Inventory: patch local array from payload ---
             activeChannels.inventory = supabaseClient.channel('realtime-inventory')
@@ -1829,10 +1911,12 @@
             // --- Orders: patch local array from payload ---
             activeChannels.shopify_orders = supabaseClient.channel('realtime-orders')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shopify_orders' }, payload => {
+                    preprocessOrdersBarcodes([payload.new]);
                     liveOrdersData.push(payload.new);
                     debouncedUIRefreshOrders();
                 })
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'shopify_orders' }, payload => {
+                    preprocessOrdersBarcodes([payload.new]);
                     const idx = liveOrdersData.findIndex(r => r.order_id === payload.new.order_id);
                     if (idx !== -1) liveOrdersData[idx] = payload.new;
                     else liveOrdersData.push(payload.new);
@@ -2044,8 +2128,11 @@
             const filteredOrders = (!activeBranchFilter || activeBranchFilter === 'all')
                 ? liveOrdersData
                 : liveOrdersData.filter(order => {
-                    if (!order.items) return false;
-                    return order.items.some(item => branchBarcodes.has(cleanBarcode(item.sku)));
+                    if (!order.cleanedBarcodes) return false;
+                    for (const bc of order.cleanedBarcodes) {
+                        if (branchBarcodes.has(bc)) return true;
+                    }
+                    return false;
                 });
             const pending = filteredOrders.filter(o => o.status === 'PENDING' || o.status === 'pending');
             const pendingOrdersEl = document.getElementById('stat-orders-pending-count');
@@ -2057,6 +2144,7 @@
                 const data = await fetchAllFromTable('shopify_orders');
                 
                 liveOrdersData = data || [];
+                preprocessOrdersBarcodes(liveOrdersData);
                 updateTopCounters();
 
                 renderOrderPicker();
@@ -2956,18 +3044,8 @@
                 
                 // OPTIMIZE PICKING PATH: Sort items inside the order based on their physical shelf locations
                 items.sort((a, b) => {
-                    let locsA = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, a.sku) && inv.quantity > 0);
-                    if (locsA.length === 0) {
-                        locsA = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, a.sku) && inv.quantity > 0);
-                    }
-                    const locA = locsA.length > 0 ? locsA[0].location_id : 'ZZZZ';
-                    
-                    let locsB = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, b.sku) && inv.quantity > 0);
-                    if (locsB.length === 0) {
-                        locsB = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, b.sku) && inv.quantity > 0);
-                    }
-                    const locB = locsB.length > 0 ? locsB[0].location_id : 'ZZZZ';
-                    
+                    const locA = getSkuFirstLocation(a.sku);
+                    const locB = getSkuFirstLocation(b.sku);
                     return locA.localeCompare(locB);
                 });
 
@@ -2980,12 +3058,14 @@
                         ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl bg-slate-50 shadow-sm" alt="صورة الصنف">`
                         : `<div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-6 h-6"></i></div>`;
 
-                    // Find shelves matching this variant exactly
-                    let locationsWithStock = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, item.sku) && inv.quantity > 0);
-                    
-                    // Fallback to base barcode shelves
+                    // Find shelves matching this variant using O(1) indexes
+                    const cleanSKU = cleanBarcode(item.sku);
+                    let locationsWithStock = inventoryLocationsByBarcodeMap.get(cleanSKU) || [];
                     if (locationsWithStock.length === 0) {
-                        locationsWithStock = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, item.sku) && inv.quantity > 0);
+                        const baseSKU = extractBaseBarcode(cleanSKU);
+                        if (baseSKU) {
+                            locationsWithStock = inventoryLocationsByBaseBarcodeMap.get(baseSKU) || [];
+                        }
                     }
                     
                     let locationLabel = '';
@@ -4558,15 +4638,14 @@
             const panel = document.getElementById('dead-stock-alert-panel');
             if (!grid || !panel) return;
 
-            // 1. تجميع الباركودات المطلوبة في كل الطلبات المرفوعة لشوبيفاي
+            // 1. تجميع الباركودات المطلوبة في كل الطلبات المرفوعة لشوبيفاي (باستخدام المجموعات المجهزة مسبقاً)
             const orderedSkus = new Set();
             liveOrdersData.forEach(order => {
-                const items = order.items || [];
-                items.forEach(item => {
-                    if (item.sku) {
-                        orderedSkus.add(cleanBarcode(item.sku));
+                if (order.cleanedBarcodes) {
+                    for (const bc of order.cleanedBarcodes) {
+                        orderedSkus.add(bc);
                     }
-                });
+                }
             });
 
             // 2. تصفية الأصناف: متوفرة بالمخزن فيزيائياً ولكن صفر مبيعات في الطلبات
@@ -4591,7 +4670,7 @@
             for (const product of targetCatalog) {
                 if (deadStockItems.length >= maxAlerts) break;
                 
-                const cleanBC = cleanBarcode(product.barcode);
+                const cleanBC = getCleanedProductBarcode(product);
                 if (!orderedSkus.has(cleanBC)) {
                     const physicalQty = qtyMap.get(product.barcode) || 0;
                     if (physicalQty > 0) {
