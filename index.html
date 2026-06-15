@@ -1952,23 +1952,22 @@
             }
         }
 
-        function onBranchFilterChange(val) {
+function onBranchFilterChange(val) {
             activeBranchFilter = val;
             updateTopCounters();
             
-            // أعِد رسم الجداول والخريطة بالفلتر الجديد
             if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
                 filterInventory();
             } else if (activeInventorySubTab === 'map') {
                 renderWarehouseMap();
             }
             updateDashboardCharts();
+            renderLowStockAlerts(); // تحديث النواقص بناءً على الفرع
             
             if (activeTab === 'executive') {
                 renderExecutiveDashboard();
             }
         }
-
         // ===== helper: apply branch filter to inventory array =====
         function getBranchFilteredInventory() {
             if (!activeBranchFilter || activeBranchFilter === 'all') return liveInventoryData;
@@ -3948,12 +3947,24 @@
             const panel = document.getElementById('low-stock-alert-panel');
             if (!grid || !panel) return;
 
-            // استخدام الفهرس السريع بدلاً من إعادة حساب الكميات في كل مرة
             const lowStockItems = [];
-            const maxAlerts = 50; // الحد الأقصى لعدد التنبيهات المعروضة لمنع تجمد الـ DOM
+            const maxAlerts = 50; 
+            
+            const isAllBranches = (!activeBranchFilter || activeBranchFilter === 'all');
+
             for (const product of liveCatalogData) {
                 if (lowStockItems.length >= maxAlerts) break;
-                const physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
+                
+                let physicalQty = 0;
+                
+                // حساب الكمية بناءً على الفرع المحدد
+                if (isAllBranches) {
+                    physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
+                } else {
+                    const branchKey = `${activeBranchFilter}_${product.barcode}`;
+                    physicalQty = inventoryQtyByBranchBarcodeMap.get(branchKey) || 0;
+                }
+
                 if (physicalQty < lowStockThreshold) {
                     lowStockItems.push({
                         barcode: product.barcode,
@@ -3996,7 +4007,6 @@
             grid.innerHTML = html;
             safeCreateIcons();
         }
-
         // 4. EXPORTING REPORTS
         function exportToExcel() {
             if (typeof XLSX === 'undefined') {
