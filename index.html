@@ -146,26 +146,27 @@
 
             <!-- Login Card -->
             <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
-                <h2 class="text-white font-bold text-base mb-5 text-center">&#128274; تسجيل الدخول</h2>
+    <h2 class="text-white font-bold text-base mb-5 text-center">&#128274; تسجيل الدخول</h2>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم</label>
-                        <input id="login-username" type="text" placeholder="admin" autocomplete="username"
-                            class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition">
-                    </div>
-                    <div>
-                        <label class="text-brand-200 text-xs font-bold block mb-1.5">كلمة المرور / رمز الدخول</label>
-                        <input id="login-pin" type="password" placeholder="أدخل كلمة المرور" autocomplete="current-password"
-                            class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition"
-                            onkeydown="if(event.key==='Enter') checkLogin()">
-                    </div>
-                    <p id="login-error" class="text-rose-400 text-xs font-bold text-center hidden">كلمة المرور غير صحيحة. حاول مرة أخرى.</p>
-                    <button onclick="checkLogin()" class="w-full bg-brand-accent hover:bg-emerald-400 text-brand-deep font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2">
-                        <i data-lucide="log-in" class="w-4 h-4"></i>
-                        دخول
-                    </button>
-                </div>
+    <div class="space-y-4">
+        <div>
+            <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم</label>
+            <input id="login-username" type="text" placeholder="admin" autocomplete="username"
+                class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition">
+        </div>
+        <div>
+            <label class="text-brand-200 text-xs font-bold block mb-1.5">كلمة المرور / رمز الدخول</label>
+            <input id="login-pin" type="password" placeholder="أدخل كلمة المرور" autocomplete="current-password"
+                class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition"
+                onkeydown="if(event.key==='Enter') checkLogin()">
+        </div>
+        <p id="login-error" class="text-rose-400 text-xs font-bold text-center hidden">كلمة المرور غير صحيحة. حاول مرة أخرى.</p>
+        <button onclick="checkLogin()" class="w-full bg-brand-accent hover:bg-emerald-400 text-brand-deep font-black py-3 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            دخول
+        </button>
+    </div>
+</div>
 
                 <!-- Role hints -->
                 <div class="mt-5 pt-4 border-t border-white/10 space-y-2">
