@@ -4011,6 +4011,8 @@ function onBranchFilterChange(val) {
     grid.innerHTML = html;
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+            // ================= دالة تصدير الإكسيل =================
+        function exportToExcel() {
             let dataToExport = [];
             let filename = "";
             
@@ -4041,9 +4043,21 @@ function onBranchFilterChange(val) {
                 filename = `تقرير_فروقات_الجرد_${new Date().toISOString().slice(0,10)}.xlsx`;
             }
             else {
-        alert("التصدير غير متوفر لهذا التبويب");
-        // لاحظ أننا حذفنا كلمة return; من هنا
-    }
+                alert("التصدير غير متوفر لهذا التبويب");
+                return; // هنا نستخدم return بأمان لأننا داخل دالة
+            }
+
+            // التأكد من وجود بيانات فعلية قبل إنشاء الملف
+            if (dataToExport && dataToExport.length > 0) {
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير اللوجستي");
+                XLSX.writeFile(workbook, filename);
+                logToConsole('success', `تم تصدير ملف الإكسيل بنجاح: ${filename}`);
+            } else {
+                alert("لا توجد بيانات لتصديرها!");
+            }
+        }
 
     // أضفنا هذا الشرط للتأكد من وجود بيانات قبل إنشاء الإكسيل
     if (typeof dataToExport !== 'undefined' && dataToExport) {
