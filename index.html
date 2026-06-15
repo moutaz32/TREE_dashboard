@@ -4041,17 +4041,19 @@ function onBranchFilterChange(val) {
                 filename = `تقرير_فروقات_الجرد_${new Date().toISOString().slice(0,10)}.xlsx`;
             }
             else {
-                alert("التصدير غير متوفر لهذا التبويب.");
-                return;
-            }
-            
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير اللوجستي");
-            XLSX.writeFile(workbook, filename);
-            logToConsole('success', `تم تصدير ملف الإكسيل بنجاح: ${filename}`);
-        }
+        alert("التصدير غير متوفر لهذا التبويب");
+        // لاحظ أننا حذفنا كلمة return; من هنا
+    }
 
+    // أضفنا هذا الشرط للتأكد من وجود بيانات قبل إنشاء الإكسيل
+    if (typeof dataToExport !== 'undefined' && dataToExport) {
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير اللوجستي");
+        XLSX.writeFile(workbook, filename);
+        logToConsole('success', `تم تصدير ملف الإكسيل بنجاح: ${filename}`);
+    }
+} // القفلة النهائية
         function printInventoryTable() {
             window.print();
         }
