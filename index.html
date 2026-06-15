@@ -317,18 +317,18 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-3 flex-shrink-0">
-                        <button onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
-                            <i data-lucide="upload" class="w-4 h-4"></i>
-                            مركز الرفع
-                        </button>
-                        <button onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
-                            <i data-lucide="package-check" class="w-4 h-4"></i>
-                            شاشة التحضير
-                        </button>
-                        <button onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
-                            <i data-lucide="history" class="w-4 h-4"></i>
-                            سجل العمليات
-                        </button>
+                        <button id="quick-btn-upload" onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
+    <i data-lucide="upload" class="w-4 h-4"></i>
+    مركز الرفع
+</button>
+<button id="quick-btn-picker" onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+    <i data-lucide="package-check" class="w-4 h-4"></i>
+    شاشة التحضير
+</button>
+<button id="quick-btn-logs" onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+    <i data-lucide="history" class="w-4 h-4"></i>
+    سجل العمليات
+</button>
                     </div>
                 </div>
 
@@ -1262,13 +1262,13 @@
         }
 
         // ================= FAST INDEX MAPS (O(1) LOOKUP) =================
-        let catalogByBarcodeMap = new Map();      
-        let catalogByTokenKeyMap = new Map();     
-        let catalogByBaseMap = new Map();          
-        let imageByBaseMap = new Map();            
-        let inventoryQtyByBarcodeMap = new Map();  
-        let inventoryLocationsByTokenMap = new Map(); // خريطة سريعة جديدة للمواقع
-
+let catalogByBarcodeMap = new Map();      
+let catalogByTokenKeyMap = new Map();     
+let catalogByBaseMap = new Map();          
+let imageByBaseMap = new Map();            
+let inventoryQtyByBarcodeMap = new Map();  
+let inventoryLocationsByTokenMap = new Map(); 
+let inventoryQtyByBranchBarcodeMap = new Map();
         // إعادة بناء فهارس الكتالوج بعد كل تحميل بيانات (عملية واحدة سريعة O(N))
         function rebuildCatalogIndexes() {
             catalogByBarcodeMap = new Map();
@@ -1307,35 +1307,32 @@
 
 // إعادة بناء فهرس كميات المخزون والمواقع الفعلي
         function rebuildInventoryIndex() {
-            inventoryQtyByBarcodeMap = new Map();
-            inventoryLocationsByTokenMap = new Map(); 
-            inventoryQtyByBranchBarcodeMap = new Map(); // تصفير خريطة الفروع الجديدة
-            
-            for (const item of liveInventoryData) {
-                const bc = item.barcode;
-                const qty = Number(item.quantity || 0);
-                const locId = item.location_id;
-                
-                // 1. فهرس الكميات الإجمالي
-                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + qty);
-                
-                // 2. فهرس المواقع السريع (لمنع التهنيج في شاشة التحضير)
-                if (qty > 0) {
-                    const clean = cleanBarcode(bc);
-                    const tokens = clean.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
-                    if (!inventoryLocationsByTokenMap.has(tokens)) {
-                        inventoryLocationsByTokenMap.set(tokens, []);
-                    }
-                    inventoryLocationsByTokenMap.get(tokens).push(item);
+    inventoryQtyByBarcodeMap = new Map();
+    inventoryLocationsByTokenMap = new Map(); 
+    inventoryQtyByBranchBarcodeMap = new Map();
+    
+    for (const item of liveInventoryData) {
+        const bc = item.barcode;
+        const qty = Number(item.quantity || 0);
+        const locId = item.location_id;
+        
+        inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + qty);
+        
+        if (qty > 0) {
+            const clean = cleanBarcode(bc);
+            const tokens = clean.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
+            if (!inventoryLocationsByTokenMap.has(tokens)) {
+                inventoryLocationsByTokenMap.set(tokens, []);
+            }
+            inventoryLocationsByTokenMap.get(tokens).push(item);
 
-                    // 3. فهرس مخصص لكمية كل صنف داخل كل فرع (من أجل نواقص الفروع)
-                    if(locId) {
-                        const branchKey = `${locId}_${bc}`;
-                        inventoryQtyByBranchBarcodeMap.set(branchKey, (inventoryQtyByBranchBarcodeMap.get(branchKey) || 0) + qty);
-                    }
-                }
+            if(locId) {
+                const branchKey = `${locId}_${bc}`;
+                inventoryQtyByBranchBarcodeMap.set(branchKey, (inventoryQtyByBranchBarcodeMap.get(branchKey) || 0) + qty);
             }
         }
+    }
+}
         // دالة جلب كائن الكتالوج المطابق للباركود (O(1) باستخدام الفهارس)
         function getProductCatalogItem(barcode) {
             if (!barcode) return null;
@@ -1525,49 +1522,56 @@
         }
 
         function applyRBACRules(role, branch) {
-            const adminOnlyTabs    = ['executive', 'upload', 'picker', 'logs'];
-            const adminOnlyMobTabs = ['executive', 'upload', 'picker'];
+    const adminOnlyTabs    = ['executive', 'upload', 'picker', 'logs'];
+    const adminOnlyMobTabs = ['executive', 'upload', 'picker'];
 
-            if (role === 'branch_employee') {
-                adminOnlyTabs.forEach(t => {
-                    const btn = document.getElementById('tab-' + t);
-                    if (btn) btn.style.display = 'none';
-                });
-                adminOnlyMobTabs.forEach(t => {
-                    const btn = document.getElementById('mobile-tab-' + t);
-                    if (btn) btn.style.display = 'none';
-                });
-                if (branch) {
-                    const normBranch = normalizeLocationId(branch);
-                    activeBranchFilter = normBranch;
-                    const sel = document.getElementById('branch-filter-select');
-                    if (sel) sel.value = normBranch;
-                }
-                setTimeout(() => {
-                    const badge = document.createElement('span');
-                    badge.className = 'text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200';
-                    badge.innerHTML = '<span style="font-style:normal">&#128100;</span> موظف فرع';
-                    const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
-                    if (headerRight) headerRight.prepend(badge);
-                }, 300);
-            }
+    if (role === 'branch_employee') {
+        adminOnlyTabs.forEach(t => {
+            const btn = document.getElementById('tab-' + t);
+            if (btn) btn.style.display = 'none';
+        });
+        adminOnlyMobTabs.forEach(t => {
+            const btn = document.getElementById('mobile-tab-' + t);
+            if (btn) btn.style.display = 'none';
+        });
+        
+        const quickUploadBtn = document.getElementById('quick-btn-upload');
+        const quickPickerBtn = document.getElementById('quick-btn-picker');
+        const quickLogsBtn = document.getElementById('quick-btn-logs');
+        if(quickUploadBtn) quickUploadBtn.style.display = 'none';
+        if(quickPickerBtn) quickPickerBtn.style.display = 'none';
+        if(quickLogsBtn) quickLogsBtn.style.display = 'none';
 
-            // إظهار زر تسجيل الخروج للجميع دائماً
-            setTimeout(() => {
-                if (document.getElementById('btn-global-logout')) return;
-
-                const logoutBtn = document.createElement('button');
-                logoutBtn.id = 'btn-global-logout';
-                logoutBtn.className = 'flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-400 transition border border-rose-200 rounded-lg px-2 py-1';
-                logoutBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> خروج';
-                logoutBtn.onclick = logoutUser;
-                const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
-                if (headerRight) { 
-                    headerRight.appendChild(logoutBtn); 
-                    safeCreateIcons({ root: logoutBtn }); 
-                }
-            }, 150);
+        if (branch) {
+            const normBranch = normalizeLocationId(branch);
+            activeBranchFilter = normBranch;
+            const sel = document.getElementById('branch-filter-select');
+            if (sel) sel.value = normBranch;
         }
+        setTimeout(() => {
+            const badge = document.createElement('span');
+            badge.className = 'text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200';
+            badge.innerHTML = '<span style="font-style:normal">&#128100;</span> موظف فرع';
+            const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+            if (headerRight) headerRight.prepend(badge);
+        }, 300);
+    }
+
+    setTimeout(() => {
+        if (document.getElementById('btn-global-logout')) return;
+
+        const logoutBtn = document.createElement('button');
+        logoutBtn.id = 'btn-global-logout';
+        logoutBtn.className = 'flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-400 transition border border-rose-200 rounded-lg px-2 py-1 ml-auto';
+        logoutBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> خروج';
+        logoutBtn.onclick = logoutUser;
+        const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+        if (headerRight) { 
+            headerRight.appendChild(logoutBtn); 
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); 
+        }
+    }, 150);
+}
 
         function logoutUser() {
             if (confirm('هل تريد تسجيل الخروج؟')) {
@@ -1953,21 +1957,21 @@
         }
 
 function onBranchFilterChange(val) {
-            activeBranchFilter = val;
-            updateTopCounters();
-            
-            if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
-                filterInventory();
-            } else if (activeInventorySubTab === 'map') {
-                renderWarehouseMap();
-            }
-            updateDashboardCharts();
-            renderLowStockAlerts(); // تحديث النواقص بناءً على الفرع
-            
-            if (activeTab === 'executive') {
-                renderExecutiveDashboard();
-            }
-        }
+    activeBranchFilter = val;
+    updateTopCounters();
+    
+    if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
+        filterInventory();
+    } else if (activeInventorySubTab === 'map') {
+        renderWarehouseMap();
+    }
+    updateDashboardCharts();
+    renderLowStockAlerts(); 
+    
+    if (activeTab === 'executive') {
+        renderExecutiveDashboard();
+    }
+}
         // ===== helper: apply branch filter to inventory array =====
         function getBranchFilteredInventory() {
             if (!activeBranchFilter || activeBranchFilter === 'all') return liveInventoryData;
@@ -3943,77 +3947,69 @@ function onBranchFilterChange(val) {
         }
 
         function renderLowStockAlerts() {
-            const grid = document.getElementById('low-stock-items-grid');
-            const panel = document.getElementById('low-stock-alert-panel');
-            if (!grid || !panel) return;
+    const grid = document.getElementById('low-stock-items-grid');
+    const panel = document.getElementById('low-stock-alert-panel');
+    if (!grid || !panel) return;
 
-            const lowStockItems = [];
-            const maxAlerts = 50; 
-            
-            const isAllBranches = (!activeBranchFilter || activeBranchFilter === 'all');
+    const lowStockItems = [];
+    const maxAlerts = 50; 
+    
+    const isAllBranches = (!activeBranchFilter || activeBranchFilter === 'all');
 
-            for (const product of liveCatalogData) {
-                if (lowStockItems.length >= maxAlerts) break;
-                
-                let physicalQty = 0;
-                
-                // حساب الكمية بناءً على الفرع المحدد
-                if (isAllBranches) {
-                    physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
-                } else {
-                    const branchKey = `${activeBranchFilter}_${product.barcode}`;
-                    physicalQty = inventoryQtyByBranchBarcodeMap.get(branchKey) || 0;
-                }
-
-                if (physicalQty < lowStockThreshold) {
-                    lowStockItems.push({
-                        barcode: product.barcode,
-                        name: product.product_name,
-                        systemQty: product.system_qty || 0,
-                        physicalQty: physicalQty,
-                        imageUrl: getProductImage(product.barcode)
-                    });
-                }
-            }
-
-            if (lowStockItems.length === 0) {
-                panel.classList.add('hidden');
-                grid.innerHTML = '';
-                return;
-            }
-
-            panel.classList.remove('hidden');
-            let html = '';
-            lowStockItems.forEach(item => {
-                const imgHtml = item.imageUrl 
-                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
-                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
-                
-                html += `
-                    <div class="flex items-center gap-3 p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
-                        ${imgHtml}
-                        <div class="flex-1 min-w-0">
-                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
-                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
-                        </div>
-                        <div class="text-left">
-                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
-                                رصيد: ${item.physicalQty}
-                            </span>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
-            safeCreateIcons();
+    for (const product of liveCatalogData) {
+        if (lowStockItems.length >= maxAlerts) break;
+        
+        let physicalQty = 0;
+        
+        if (isAllBranches) {
+            physicalQty = inventoryQtyByBarcodeMap.get(product.barcode) || 0;
+        } else {
+            const branchKey = `${activeBranchFilter}_${product.barcode}`;
+            physicalQty = inventoryQtyByBranchBarcodeMap.get(branchKey) || 0;
         }
-        // 4. EXPORTING REPORTS
-        function exportToExcel() {
-            if (typeof XLSX === 'undefined') {
-                alert("مكتبة SheetJS غير متوفرة.");
-                return;
-            }
 
+        if (physicalQty < lowStockThreshold) {
+            lowStockItems.push({
+                barcode: product.barcode,
+                name: product.product_name,
+                systemQty: product.system_qty || 0,
+                physicalQty: physicalQty,
+                imageUrl: getProductImage(product.barcode)
+            });
+        }
+    }
+
+    if (lowStockItems.length === 0) {
+        panel.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
+    }
+
+    panel.classList.remove('hidden');
+    let html = '';
+    lowStockItems.forEach(item => {
+        const imgHtml = item.imageUrl 
+            ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
+            : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+        
+        html += `
+            <div class="flex items-center gap-3 p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
+                ${imgHtml}
+                <div class="flex-1 min-w-0">
+                    <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                    <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                </div>
+                <div class="text-left">
+                    <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
+                        رصيد: ${item.physicalQty}
+                    </span>
+                </div>
+            </div>
+        `;
+    });
+    grid.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
             let dataToExport = [];
             let filename = "";
             
