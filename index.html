@@ -603,7 +603,7 @@
                                 <i data-lucide="layout-grid" class="w-5 h-5 text-amber-500"></i>
                                 الخريطة الحرارية للمستودع (Warehouse Heatmap)
                             </h4>
-                            <p class="text-xs text-slate-500 mt-1">توزيع كثافة البضاعة على الرفوف (A-Z). الألوان الدافئة تدل على رفوف مزدحمة، والباردة تدل على مساحات فارغة.</p>
+                            <p id="exec-heatmap-description" class="text-xs text-slate-500 mt-1">توزيع كثافة البضاعة على الرفوف (A-Z). الألوان الدافئة تدل على رفوف مزدحمة، والباردة تدل على مساحات فارغة.</p>
                         </div>
                         <div class="flex items-center gap-4 text-xs font-bold text-slate-500">
                             <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-slate-200 bg-slate-100"></span> فارغ</div>
@@ -1730,8 +1730,7 @@
             // --- دوال إعادة رسم UI بعد التعديل المحلي ---
             const debouncedUIRefreshInventory = debounce(() => {
                 rebuildInventoryIndex();
-                const totalUnits = liveInventoryData.reduce((s, i) => s + Number(i.quantity || 0), 0);
-                document.getElementById('stat-total-qty').textContent = totalUnits.toLocaleString('ar-EG');
+                updateTopCounters();
                 if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') switchInventorySubTab(activeInventorySubTab);
                 else if (activeInventorySubTab === 'map') renderWarehouseMap();
                 renderOrderPicker();
@@ -1742,7 +1741,7 @@
 
             const debouncedUIRefreshCatalog = debounce(() => {
                 rebuildCatalogIndexes();
-                document.getElementById('stat-catalog-count').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                updateTopCounters();
                 if (activeInventorySubTab === 'catalog' || activeInventorySubTab === 'discrepancy') switchInventorySubTab(activeInventorySubTab);
                 updateDashboardCharts();
                 renderLowStockAlerts();
@@ -1750,13 +1749,12 @@
             }, 400);
 
             const debouncedUIRefreshLocations = debounce(() => {
-                document.getElementById('stat-locations-count').textContent = liveLocationsData.length.toLocaleString('ar-EG');
+                updateTopCounters();
                 populateBranchFilterDropdown();
             }, 400);
 
             const debouncedUIRefreshOrders = debounce(() => {
-                const pending = liveOrdersData.filter(o => o.status === 'PENDING' || o.status === 'pending');
-                document.getElementById('stat-orders-pending-count').textContent = pending.length.toLocaleString('ar-EG');
+                updateTopCounters();
                 renderOrderPicker();
                 renderDeadStockAlerts();
             }, 400);
@@ -1853,7 +1851,7 @@
                 
                 liveCatalogData = data || [];
                 rebuildCatalogIndexes();  // بناء الفهارس السريعة O(1)
-                document.getElementById('stat-catalog-count').textContent = liveCatalogData.length.toLocaleString('ar-EG');
+                updateTopCounters();
                 
                 if (activeInventorySubTab === 'catalog' || activeInventorySubTab === 'discrepancy') {
                     switchInventorySubTab(activeInventorySubTab);
@@ -1872,8 +1870,7 @@
                 
                 liveInventoryData = data || [];
                 rebuildInventoryIndex();  // بناء فهرس كميات المخزون O(1)
-                let totalUnits = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-                document.getElementById('stat-total-qty').textContent = totalUnits.toLocaleString('ar-EG');
+                updateTopCounters();
                 
                 if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
                     switchInventorySubTab(activeInventorySubTab);
@@ -1895,7 +1892,7 @@
                 const data = await fetchAllFromTable('warehouse_locations');
                 
                 liveLocationsData = data || [];
-                document.getElementById('stat-locations-count').textContent = liveLocationsData.length.toLocaleString('ar-EG');
+                updateTopCounters();
                 populateBranchFilterDropdown();
             } catch (err) {
                 console.error("Error loading locations data from Supabase:", err);
@@ -1928,6 +1925,8 @@
 
         function onBranchFilterChange(val) {
             activeBranchFilter = val;
+            updateTopCounters();
+            
             // أعِد رسم الجداول والخريطة بالفلتر الجديد
             if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
                 filterInventory();
@@ -1935,6 +1934,10 @@
                 renderWarehouseMap();
             }
             updateDashboardCharts();
+            
+            if (activeTab === 'executive') {
+                renderExecutiveDashboard();
+            }
         }
 
         // ===== helper: apply branch filter to inventory array =====
@@ -1951,13 +1954,87 @@
             return liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
         }
 
+        // ===== helper: apply branch filter to locations array =====
+        function getBranchFilteredLocations() {
+            if (!activeBranchFilter || activeBranchFilter === 'all') return liveLocationsData;
+            return liveLocationsData.filter(r => r.location_id === activeBranchFilter);
+        }
+
+        // ===== helper: categorize products based on Arabic/English keywords dynamically =====
+        function getProductCategory(barcode) {
+            const catalogItem = getProductCatalogItem(barcode);
+            if (!catalogItem || !catalogItem.product_name) return "E";
+            
+            // Normalize product name: lowercase, strip all spaces, unify Arabic letters
+            const name = catalogItem.product_name.toLowerCase()
+                .replace(/\s+/g, '')
+                .replace(/ة\b/g, 'ه')
+                .replace(/أ|إ|آ/g, 'ا')
+                .replace(/ى\b/g, 'ي');
+            
+            // Keywords
+            const topsKeywords = ['تيشرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat'];
+            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'pants', 'jeans', 'shorts', 'skirt'];
+            const underwearKeywords = ['داخلي', 'بيجامه', 'ترينج', 'شراب', 'جوارب', 'بوكسر', 'فانله', 'كيلوت', 'socks', 'underwear', 'pajama', 'boxer'];
+            const accessoriesKeywords = ['شوز', 'حذاء', 'سنيكر', 'شنطه', 'حقيبه', 'حزام', 'كاب', 'نظاره', 'محفظه', 'shoes', 'bag', 'belt', 'cap', 'wallet'];
+
+            if (topsKeywords.some(kw => name.includes(kw))) return "A";
+            if (bottomsKeywords.some(kw => name.includes(kw))) return "B";
+            if (underwearKeywords.some(kw => name.includes(kw))) return "C";
+            if (accessoriesKeywords.some(kw => name.includes(kw))) return "D";
+            
+            return "E";
+        }
+
+        // ===== helper: get category readable name =====
+        function getCategoryName(cat) {
+            switch(cat) {
+                case 'A': return 'القطع العلوية (Tops)';
+                case 'B': return 'القطع السفلية (Bottoms)';
+                case 'C': return 'الملابس الداخلية والمنزلية';
+                case 'D': return 'الأحذية والإكسسوارات';
+                default: return 'أصناف متنوعة (Misc)';
+            }
+        }
+
+        // ===== helper: dynamically update top statistics counters =====
+        function updateTopCounters() {
+            const filteredInventory = getBranchFilteredInventory();
+            const filteredCatalog = getBranchFilteredCatalog();
+            const filteredLocations = getBranchFilteredLocations();
+            
+            // Total units
+            const totalUnits = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            const totalUnitsEl = document.getElementById('stat-total-qty');
+            if (totalUnitsEl) totalUnitsEl.textContent = totalUnits.toLocaleString('ar-EG');
+            
+            // Catalog items
+            const catalogCountEl = document.getElementById('stat-catalog-count');
+            if (catalogCountEl) catalogCountEl.textContent = filteredCatalog.length.toLocaleString('ar-EG');
+            
+            // Locations/Shelves
+            const locationsCountEl = document.getElementById('stat-locations-count');
+            if (locationsCountEl) locationsCountEl.textContent = filteredLocations.length.toLocaleString('ar-EG');
+            
+            // Pending orders
+            const branchBarcodes = new Set(filteredInventory.map(item => item.barcode));
+            const filteredOrders = (!activeBranchFilter || activeBranchFilter === 'all')
+                ? liveOrdersData
+                : liveOrdersData.filter(order => {
+                    if (!order.items) return false;
+                    return order.items.some(item => branchBarcodes.has(cleanBarcode(item.sku)));
+                });
+            const pending = filteredOrders.filter(o => o.status === 'PENDING' || o.status === 'pending');
+            const pendingOrdersEl = document.getElementById('stat-orders-pending-count');
+            if (pendingOrdersEl) pendingOrdersEl.textContent = pending.length.toLocaleString('ar-EG');
+        }
+
         async function loadOrdersData() {
             try {
                 const data = await fetchAllFromTable('shopify_orders');
                 
                 liveOrdersData = data || [];
-                const pendingOrders = liveOrdersData.filter(o => o.status === 'PENDING' || o.status === 'pending');
-                document.getElementById('stat-orders-pending-count').textContent = pendingOrders.length.toLocaleString('ar-EG');
+                updateTopCounters();
 
                 renderOrderPicker();
                 renderDeadStockAlerts();
@@ -2492,7 +2569,9 @@
                 const filteredInventory = getBranchFilteredInventory();
                 let totalStockQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
-                document.getElementById('inventory-total-records').textContent = liveLocationsData.length.toLocaleString('ar-EG');
+                
+                const filteredLocations = getBranchFilteredLocations();
+                document.getElementById('inventory-total-records').textContent = filteredLocations.length.toLocaleString('ar-EG');
                 
                 renderWarehouseMap();
             }
@@ -3075,10 +3154,21 @@
                 if (invErr) throw invErr;
 
                 const product = catData;
-                const shelves = invData || [];
+                const allShelves = invData || [];
+
+                // Filter based on active branch
+                const isAllBranches = (!activeBranchFilter || activeBranchFilter === 'all');
+                const shelves = isAllBranches 
+                    ? allShelves
+                    : allShelves.filter(item => item.location_id === activeBranchFilter);
+                
+                const otherShelves = isAllBranches
+                    ? []
+                    : allShelves.filter(item => item.location_id !== activeBranchFilter);
+
                 const totalOnShelves = shelves.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-                if (!product && shelves.length === 0) {
+                if (!product && allShelves.length === 0) {
                     resultContainer.innerHTML = `
                         <div class="flex flex-col items-center justify-center gap-3 text-rose-500">
                             <i data-lucide="x-circle" class="w-12 h-12 text-rose-400 animate-bounce"></i>
@@ -3120,7 +3210,7 @@
                     shelvesListHtml = `
                         <div class="p-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl flex items-center gap-2 text-xs font-bold">
                             <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                            المنتج غير مسكن في الرفوف حالياً!
+                            المنتج غير مسكن في رفوف هذا الفرع حالياً!
                         </div>
                     `;
                 } else {
@@ -3130,13 +3220,35 @@
                             <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
                                 <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
-                                    الرف / الموقع: ${shelf.location_id}
+                                    الرف / الفرع: ${shelf.location_id}
                                 </span>
                                 <span class="text-xs font-extrabold text-brand-deep font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
                             </div>
                         `;
                     });
                     shelvesListHtml = `<div class="space-y-2">${itemsList}</div>`;
+                }
+
+                let otherBranchesHtml = '';
+                if (otherShelves.length > 0) {
+                    let itemsList = '';
+                    otherShelves.forEach(shelf => {
+                        itemsList += `
+                            <div class="flex justify-between items-center p-2.5 bg-amber-50/40 border border-amber-100/50 rounded-xl text-slate-700">
+                                <span class="text-[11px] font-bold flex items-center gap-1.5">
+                                    <i data-lucide="store" class="w-3.5 h-3.5 text-amber-500"></i>
+                                    فرع: ${shelf.location_id}
+                                </span>
+                                <span class="text-[11px] font-extrabold text-slate-800 font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
+                            </div>
+                        `;
+                    });
+                    otherBranchesHtml = `
+                        <div class="space-y-2 mt-4 pt-3 border-t border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block">متوفر في فروع أخرى:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${itemsList}</div>
+                        </div>
+                    `;
                 }
 
                 const discrepancy = totalOnShelves - systemQty;
@@ -3187,6 +3299,9 @@
                                 <span class="text-[10px] text-slate-400 font-bold uppercase block">أماكن الحفظ والتسكين الفعلي:</span>
                                 ${shelvesListHtml}
                             </div>
+                            
+                            <!-- Other branches availability -->
+                            ${otherBranchesHtml}
                         </div>
                     </div>
                 `;
@@ -3346,19 +3461,29 @@
         function updateDashboardCharts() {
             if (typeof Chart === 'undefined') return;
 
-            // 1. Zone Stock Distribution
-            const zoneCounts = {};
-            liveInventoryData.forEach(item => {
-                const zone = item.location_id ? item.location_id.charAt(0).toUpperCase() : 'غير محدد';
-                zoneCounts[zone] = (zoneCounts[zone] || 0) + Number(item.quantity || 0);
+            const filteredInventory = getBranchFilteredInventory();
+
+            // 1. Zone/Branch Stock Distribution
+            const distCounts = {};
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            
+            filteredInventory.forEach(item => {
+                let key = 'غير محدد';
+                if (isAll) {
+                    key = item.location_id || 'غير محدد';
+                } else {
+                    const cat = getProductCategory(item.barcode);
+                    key = getCategoryName(cat);
+                }
+                distCounts[key] = (distCounts[key] || 0) + Number(item.quantity || 0);
             });
 
-            const zoneLabels = Object.keys(zoneCounts).map(z => `المنطقة ${z}`);
-            const zoneData = Object.values(zoneCounts);
+            const zoneLabels = Object.keys(distCounts);
+            const zoneData = Object.values(distCounts);
 
             // 2. Top 5 Most Stocked SKUs
             const skuQty = {};
-            liveInventoryData.forEach(item => {
+            filteredInventory.forEach(item => {
                 skuQty[item.barcode] = (skuQty[item.barcode] || 0) + Number(item.quantity || 0);
             });
             
@@ -4121,92 +4246,179 @@
         }
 
         // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
+        // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
         function renderWarehouseMap() {
             const gridContainer = document.getElementById('warehouse-grid-map');
             const selectorContainer = document.getElementById('map-zone-selectors');
             if (!gridContainer || !selectorContainer) return;
 
-            const zonesSet = new Set();
-            liveLocationsData.forEach(loc => {
-                const zone = loc.location_id ? loc.location_id.charAt(0).toUpperCase() : 'A';
-                zonesSet.add(zone);
-            });
-            if (zonesSet.size === 0) zonesSet.add('A');
-            const zones = Array.from(zonesSet).sort();
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
 
-            let selectorHtml = '';
-            zones.forEach(zone => {
-                const activeClass = zone === selectedMapZone
-                    ? 'bg-brand-deep text-white shadow-sm font-bold'
-                    : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200';
-                selectorHtml += `
-                    <button onclick="selectMapZone('${zone}')" class="px-3 py-1 rounded-lg text-xs font-bold transition ${activeClass}">
-                        المنطقة ${zone}
-                    </button>
-                `;
-            });
-            selectorContainer.innerHTML = selectorHtml;
-
-            const zoneLocations = liveLocationsData.filter(loc => 
-                loc.location_id && loc.location_id.charAt(0).toUpperCase() === selectedMapZone
-            );
-            zoneLocations.sort((a, b) => a.location_id.localeCompare(b.location_id));
-
-            const shelfQuantities = {};
-            liveInventoryData.forEach(item => {
-                shelfQuantities[item.location_id] = (shelfQuantities[item.location_id] || 0) + Number(item.quantity || 0);
-            });
-
-            if (zoneLocations.length === 0) {
-                gridContainer.innerHTML = `
-                    <div class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">
-                        لا توجد رفوف مسجلة في هذه المنطقة. ارفع ملف الرفوف للبدء.
+            if (isAll) {
+                // --- VIEW ALL BRANCHES ---
+                selectorContainer.innerHTML = `
+                    <div class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
+                        خريطة فروع العلامة التجارية TREE (مستودعات تفاعلية)
                     </div>
                 `;
-                return;
-            }
 
-            let mapHtml = '';
-            zoneLocations.forEach(loc => {
-                const shelfId = loc.location_id;
-                const qty = shelfQuantities[shelfId] || 0;
+                // Calculate stats per branch
+                const branchStats = {};
+                liveLocationsData.forEach(loc => {
+                    if (loc.location_id) {
+                        branchStats[loc.location_id] = { qty: 0, uniqueSKUs: 0 };
+                    }
+                });
+                liveInventoryData.forEach(item => {
+                    if (item.location_id && branchStats[item.location_id]) {
+                        branchStats[item.location_id].qty += Number(item.quantity || 0);
+                        if (Number(item.quantity || 0) > 0) {
+                            branchStats[item.location_id].uniqueSKUs++;
+                        }
+                    }
+                });
 
-                let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'; 
-                if (qty > 0 && qty <= 5) {
-                    colorClass = 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'; 
-                } else if (qty > 5 && qty <= 50) {
-                    colorClass = 'bg-blue-50/70 border-blue-200 text-blue-700 hover:bg-blue-100'; 
-                } else if (qty > 50) {
-                    colorClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'; 
+                let mapHtml = '';
+                Object.entries(branchStats).sort().forEach(([branchName, stats]) => {
+                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100';
+                    if (stats.qty > 10000) {
+                        colorClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70';
+                    } else if (stats.qty > 1000) {
+                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100';
+                    }
+
+                    mapHtml += `
+                        <div class="flex flex-col p-5 rounded-2xl border transition shadow-sm ${colorClass}">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <h4 class="font-extrabold text-sm text-slate-800">${branchName}</h4>
+                            </div>
+                            <div class="space-y-1.5 my-3 text-xs text-slate-500 font-medium">
+                                <div class="flex justify-between">
+                                    <span>رصيد المخزون:</span>
+                                    <span class="font-bold text-slate-700">${stats.qty.toLocaleString('ar-EG')} قطعة</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>الأصناف الفريدة:</span>
+                                    <span class="font-bold text-slate-700">${stats.uniqueSKUs.toLocaleString('ar-EG')} صنف</span>
+                                </div>
+                            </div>
+                            <button onclick="onBranchFilterChange('${branchName}')" 
+                                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold text-[11px] py-2 rounded-xl transition mt-auto shadow-sm">
+                                عرض تفاصيل الفرع
+                            </button>
+                        </div>
+                    `;
+                });
+
+                if (Object.keys(branchStats).length === 0) {
+                    gridContainer.innerHTML = `
+                        <div class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">
+                            لا توجد فروع مسجلة. ارفع ملف الفروع للبدء.
+                        </div>
+                    `;
+                } else {
+                    gridContainer.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full";
+                    gridContainer.innerHTML = mapHtml;
                 }
 
-                mapHtml += `
-                    <button onclick="showShelfDetails('${shelfId}')" class="flex flex-col items-center justify-center p-4 rounded-xl border text-center transition cursor-pointer shadow-sm ${colorClass}">
-                        <span class="text-xs font-bold font-mono tracking-tight text-slate-800">${shelfId}</span>
-                        <span class="text-[10px] font-bold mt-1">${qty.toLocaleString('ar-EG')} قطعة</span>
-                    </button>
-                `;
-            });
-            gridContainer.innerHTML = mapHtml;
+            } else {
+                // --- VIEW SINGLE BRANCH (VIRTUAL SHELF LAYOUT) ---
+                const branchName = activeBranchFilter;
+                const zones = ['A', 'B', 'C', 'D', 'E'];
+                
+                if (!zones.includes(selectedMapZone)) {
+                    selectedMapZone = 'A';
+                }
+
+                let selectorHtml = '';
+                zones.forEach(zone => {
+                    const activeClass = zone === selectedMapZone
+                        ? 'bg-brand-deep text-white shadow-sm font-bold scale-105'
+                        : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200';
+                    selectorHtml += `
+                        <button onclick="selectMapZone('${zone}')" class="px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition duration-200 ${activeClass}">
+                            المنطقة ${zone} (${getCategoryName(zone).split(' ')[0]})
+                        </button>
+                    `;
+                });
+                selectorContainer.innerHTML = selectorHtml;
+
+                const branchInventory = getBranchFilteredInventory();
+                const zoneItems = branchInventory.filter(item => getProductCategory(item.barcode) === selectedMapZone);
+
+                const shelfCount = 6;
+                const shelfItemsMap = {};
+                for (let s = 1; s <= shelfCount; s++) {
+                    shelfItemsMap[`الرف ${selectedMapZone}-${s}`] = [];
+                }
+
+                zoneItems.forEach((item, idx) => {
+                    const shelfIndex = (idx % shelfCount) + 1;
+                    shelfItemsMap[`الرف ${selectedMapZone}-${shelfIndex}`].push(item);
+                });
+
+                let mapHtml = '';
+                for (let s = 1; s <= shelfCount; s++) {
+                    const shelfId = `الرف ${selectedMapZone}-${s}`;
+                    const itemsOnShelf = shelfItemsMap[shelfId];
+                    const qty = itemsOnShelf.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100/70'; 
+                    if (qty > 0 && qty <= 50) {
+                        colorClass = 'bg-rose-50/50 border-rose-200 text-rose-700 hover:bg-rose-100/70'; 
+                    } else if (qty > 50 && qty <= 500) {
+                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100/70'; 
+                    } else if (qty > 500) {
+                        colorClass = 'bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70'; 
+                    }
+
+                    mapHtml += `
+                        <button onclick="showVirtualShelfDetails('${branchName}', '${selectedMapZone}', ${s})" 
+                                class="flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03]">
+                            <span class="text-xs font-black tracking-tight text-slate-800">${shelfId}</span>
+                            <span class="text-[10px] font-extrabold mt-1 text-slate-500">${qty.toLocaleString('ar-EG')} قطعة</span>
+                            <span class="text-[9px] font-semibold mt-0.5 opacity-70">${itemsOnShelf.length} صنف</span>
+                        </button>
+                    `;
+                }
+
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 gap-4 w-full";
+                gridContainer.innerHTML = mapHtml;
+            }
         }
 
         function selectMapZone(zone) {
             selectedMapZone = zone;
             renderWarehouseMap();
-            document.getElementById('map-shelf-details').classList.add('hidden');
+            const panel = document.getElementById('map-shelf-details');
+            if (panel) panel.classList.add('hidden');
         }
 
         function showShelfDetails(shelfId) {
+            // Backwards compatibility mapper
+            const branchName = activeBranchFilter && activeBranchFilter !== 'all' ? activeBranchFilter : 'الفرع';
+            const parts = shelfId.split('-');
+            const zone = parts[0] ? parts[0].toUpperCase() : 'A';
+            const shelfNum = parts[1] ? parseInt(parts[1], 10) : 1;
+            showVirtualShelfDetails(branchName, zone, isNaN(shelfNum) ? 1 : shelfNum);
+        }
+
+        function showVirtualShelfDetails(branchName, zone, shelfNumber) {
             const panel = document.getElementById('map-shelf-details');
             const titleEl = document.getElementById('map-selected-shelf-id');
             const qtyEl = document.getElementById('map-selected-shelf-qty');
             const listEl = document.getElementById('map-shelf-items-list');
             if (!panel || !titleEl || !qtyEl || !listEl) return;
 
-            titleEl.textContent = shelfId;
+            const shelfId = `الرف ${zone}-${shelfNumber}`;
+            titleEl.textContent = `${branchName} - ${shelfId}`;
             panel.classList.remove('hidden');
 
-            const shelfItems = liveInventoryData.filter(item => item.location_id === shelfId && item.quantity > 0);
+            const branchInventory = getBranchFilteredInventory();
+            const zoneItems = branchInventory.filter(item => getProductCategory(item.barcode) === zone);
+
+            const shelfItems = zoneItems.filter((item, idx) => (idx % 6) + 1 === shelfNumber && item.quantity > 0);
             const totalQty = shelfItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
             qtyEl.textContent = `إجمالي: ${totalQty.toLocaleString('ar-EG')} قطعة`;
 
@@ -4376,22 +4588,36 @@
 
         // ================= EXECUTIVE DASHBOARD LOGIC =================
         function renderExecutiveDashboard() {
+            const filteredInventory = getBranchFilteredInventory();
+            const filteredCatalog = getBranchFilteredCatalog();
+
             // 1. Calculate Total Inventory Value (Mocking 250 EGP per unit on average for display)
-            let totalQty = liveInventoryData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            let totalQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
             let estimatedValue = totalQty * 250;
             document.getElementById('exec-inventory-value').textContent = `EGP ${estimatedValue.toLocaleString('ar-EG')}`;
 
             // 2. Shrinkage/Discrepancy Count
-            let discrepancyCount = auditLogsData.filter(log => log.action === 'تسجيل عجز بالرف').length;
+            let discrepancyCount = auditLogsData.filter(log => {
+                if (log.action !== 'تسجيل عجز بالرف') return false;
+                if (!activeBranchFilter || activeBranchFilter === 'all') return true;
+                return log.details && log.details.includes(activeBranchFilter);
+            }).length;
             document.getElementById('exec-discrepancy-count').textContent = discrepancyCount.toLocaleString('ar-EG');
 
             // 3. Dead Stock Percent
             const orderedBarcodes = new Set();
-            liveOrdersData.forEach(o => {
+            const branchBarcodes = new Set(filteredInventory.map(item => item.barcode));
+            const filteredOrders = (!activeBranchFilter || activeBranchFilter === 'all')
+                ? liveOrdersData
+                : liveOrdersData.filter(order => {
+                    if (!order.items) return false;
+                    return order.items.some(item => branchBarcodes.has(cleanBarcode(item.sku)));
+                });
+            filteredOrders.forEach(o => {
                 if(o.items) o.items.forEach(i => orderedBarcodes.add(cleanBarcode(i.sku)));
             });
-            const deadItems = liveCatalogData.filter(c => !orderedBarcodes.has(cleanBarcode(c.barcode)));
-            const catalogCount = liveCatalogData.length;
+            const deadItems = filteredCatalog.filter(c => !orderedBarcodes.has(cleanBarcode(c.barcode)));
+            const catalogCount = filteredCatalog.length;
             let deadPercent = catalogCount > 0 ? Math.round((deadItems.length / catalogCount) * 100) : 0;
             document.getElementById('exec-dead-stock-percent').textContent = `${deadPercent}%`;
 
@@ -4399,15 +4625,19 @@
             let todayOps = auditLogsData.filter(log => {
                 const logDate = new Date(log.created_at || log.timestamp).toDateString();
                 const today = new Date().toDateString();
-                return logDate === today;
+                if (logDate !== today) return false;
+                if (!activeBranchFilter || activeBranchFilter === 'all') return true;
+                return log.details && log.details.includes(activeBranchFilter);
             }).length;
             document.getElementById('exec-daily-ops').textContent = todayOps.toLocaleString('ar-EG');
 
             // 5. Health Score
             let healthScore = 100 - deadPercent - (discrepancyCount > 0 ? Math.min(discrepancyCount, 20) : 0);
             const healthEl = document.getElementById('exec-health-score');
-            healthEl.textContent = `${Math.max(0, healthScore)}%`;
-            healthEl.className = `text-3xl font-black ${healthScore >= 80 ? 'text-emerald-400' : (healthScore >= 50 ? 'text-amber-400' : 'text-rose-400')}`;
+            if (healthEl) {
+                healthEl.textContent = `${Math.max(0, healthScore)}%`;
+                healthEl.className = `text-3xl font-black ${healthScore >= 80 ? 'text-emerald-400' : (healthScore >= 50 ? 'text-amber-400' : 'text-rose-400')}`;
+            }
 
             // 6. Render Heatmap (A-Z)
             renderWarehouseHeatmap();
@@ -4415,53 +4645,80 @@
 
         function renderWarehouseHeatmap() {
             const container = document.getElementById('exec-heatmap-container');
+            const descEl = document.getElementById('exec-heatmap-description');
             if (!container) return;
 
-            // Group inventory by first letter of location_id
-            const zoneDensity = {};
-            for (let charCode = 65; charCode <= 90; charCode++) {
-                zoneDensity[String.fromCharCode(charCode)] = 0; // Initialize A-Z with 0
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            const branchDensity = {};
+
+            if (descEl) {
+                descEl.textContent = isAll 
+                    ? "توزيع كثافة المخزون الإجمالي على فروع العلامة التجارية TREE. اضغط على أي فرع للفلترة المباشرة."
+                    : `توزيع مخزون فرع (${activeBranchFilter}) حسب تصنيفات المنتجات.`;
             }
 
-            liveInventoryData.forEach(item => {
-                if (item.location_id) {
-                    const zone = item.location_id.charAt(0).toUpperCase();
-                    if (zoneDensity[zone] !== undefined) {
-                        zoneDensity[zone] += Number(item.quantity || 0);
+            if (isAll) {
+                // Initialize branches with 0
+                liveLocationsData.forEach(loc => {
+                    if (loc.location_id) branchDensity[loc.location_id] = 0;
+                });
+                // Accumulate stock per branch
+                liveInventoryData.forEach(item => {
+                    if (item.location_id && branchDensity[item.location_id] !== undefined) {
+                        branchDensity[item.location_id] += Number(item.quantity || 0);
                     }
-                }
-            });
+                });
+            } else {
+                // If a specific branch is selected, show category distribution
+                const categories = ["A", "B", "C", "D", "E"];
+                categories.forEach(c => branchDensity[getCategoryName(c)] = 0);
 
-            let maxDensity = Math.max(...Object.values(zoneDensity), 1); // Avoid div by 0
+                const branchInventory = getBranchFilteredInventory();
+                branchInventory.forEach(item => {
+                    const cat = getProductCategory(item.barcode);
+                    const catName = getCategoryName(cat);
+                    if (branchDensity[catName] !== undefined) {
+                        branchDensity[catName] += Number(item.quantity || 0);
+                    }
+                });
+            }
+
+            let maxDensity = Math.max(...Object.values(branchDensity), 1); // Avoid div by 0
 
             let html = '';
-            for (const [zone, qty] of Object.entries(zoneDensity)) {
+            for (const [zone, qty] of Object.entries(branchDensity)) {
                 let densityRatio = qty / maxDensity;
-                let bgColor = 'bg-slate-100 text-slate-400';
-                let borderCol = 'border-slate-200';
+                let bgColor = 'bg-slate-50 text-slate-500 border-slate-200';
+                let badgeColor = 'bg-slate-200/60 text-slate-700';
                 
                 if (qty > 0) {
                     if (densityRatio > 0.7) {
-                        bgColor = 'bg-rose-500 text-white';
-                        borderCol = 'border-rose-600';
+                        bgColor = 'bg-emerald-50 text-emerald-950 border-emerald-200 hover:bg-emerald-100/60';
+                        badgeColor = 'bg-emerald-500 text-white';
                     } else if (densityRatio > 0.3) {
-                        bgColor = 'bg-amber-300 text-amber-900';
-                        borderCol = 'border-amber-400';
+                        bgColor = 'bg-emerald-50/50 text-emerald-900 border-emerald-100 hover:bg-emerald-50';
+                        badgeColor = 'bg-emerald-400 text-white';
                     } else {
-                        bgColor = 'bg-emerald-100 text-emerald-800';
-                        borderCol = 'border-emerald-200';
+                        bgColor = 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+                        badgeColor = 'bg-slate-300 text-slate-800';
                     }
                 }
 
                 html += `
-                    <div class="flex flex-col items-center justify-center p-3 rounded-xl border ${bgColor} ${borderCol} shadow-sm transition hover:scale-105 cursor-pointer" title="المنطقة ${zone} - القطع: ${qty}">
-                        <span class="text-lg font-black font-mono leading-none">${zone}</span>
-                        <span class="text-[10px] font-bold mt-1 opacity-80">${qty > 0 ? qty : 'فارغ'}</span>
+                    <div class="flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition hover:scale-[1.02] cursor-pointer" 
+                         onclick="${isAll ? `onBranchFilterChange('${zone}')` : ''}" 
+                         title="${zone} - القطع: ${qty}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black tracking-tight">${zone}</span>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                        </div>
+                        <div class="w-full bg-slate-200/40 rounded-full h-1.5 mt-1 overflow-hidden">
+                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${Math.round(densityRatio * 100)}%"></div>
+                        </div>
                     </div>
                 `;
             }
             container.innerHTML = html;
-            lucide.createIcons();
         }
 
         // ================= DISCREPANCY REPORTING LOGIC =================
@@ -4492,7 +4749,8 @@
         async function submitDiscrepancy(barcode, systemQty, actualQty, diff) {
             logToConsole('system', "جاري إرسال بلاغ عجز للإدارة عن الصنف " + barcode + "...");
             try {
-                await addActivityLog('تسجيل عجز بالرف', "تم الإبلاغ عن فارق جرد للباركود " + barcode + " (النظام: " + systemQty + "، الفعلي: " + actualQty + ")");
+                const branchText = (activeBranchFilter && activeBranchFilter !== "all") ? " في الفرع: " + activeBranchFilter : "";
+                await addActivityLog('تسجيل عجز بالرف', "تم الإبلاغ عن فارق جرد للباركود " + barcode + branchText + " (النظام: " + systemQty + "، الفعلي: " + actualQty + ")");
                 
                 logToConsole('success', "تم رفع تقرير العجز للإدارة بنجاح.");
                 alert("تم تسجيل البلاغ ورفعه للإدارة بنجاح!");
