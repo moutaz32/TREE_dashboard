@@ -1305,16 +1305,18 @@
             }
         }
 
-        // إعادة بناء فهرس كميات المخزون والمواقع الفعلي
+// إعادة بناء فهرس كميات المخزون والمواقع الفعلي
         function rebuildInventoryIndex() {
             inventoryQtyByBarcodeMap = new Map();
-            inventoryLocationsByTokenMap = new Map(); // تصفير الفهرس الجديد
+            inventoryLocationsByTokenMap = new Map(); 
+            inventoryQtyByBranchBarcodeMap = new Map(); // تصفير خريطة الفروع الجديدة
             
             for (const item of liveInventoryData) {
                 const bc = item.barcode;
                 const qty = Number(item.quantity || 0);
+                const locId = item.location_id;
                 
-                // 1. فهرس الكميات
+                // 1. فهرس الكميات الإجمالي
                 inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + qty);
                 
                 // 2. فهرس المواقع السريع (لمنع التهنيج في شاشة التحضير)
@@ -1325,10 +1327,15 @@
                         inventoryLocationsByTokenMap.set(tokens, []);
                     }
                     inventoryLocationsByTokenMap.get(tokens).push(item);
+
+                    // 3. فهرس مخصص لكمية كل صنف داخل كل فرع (من أجل نواقص الفروع)
+                    if(locId) {
+                        const branchKey = `${locId}_${bc}`;
+                        inventoryQtyByBranchBarcodeMap.set(branchKey, (inventoryQtyByBranchBarcodeMap.get(branchKey) || 0) + qty);
+                    }
                 }
             }
         }
-
         // دالة جلب كائن الكتالوج المطابق للباركود (O(1) باستخدام الفهارس)
         function getProductCatalogItem(barcode) {
             if (!barcode) return null;
