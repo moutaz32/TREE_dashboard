@@ -41,7 +41,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
     <!-- SheetJS (xlsx.full.min.js) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -268,7 +268,7 @@
             <i data-lucide="boxes" class="w-5 h-5"></i>
             <span>المخزن</span>
         </button>
-        <button onclick="switchTab('picker')" id="mobile-tab-picker" class="flex flex-col items-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+        <button onclick="switchTab('picker')" id="mobile-tab-picker" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="package-check" class="w-5 h-5"></i>
             <span>التحضير</span>
         </button>
@@ -1154,6 +1154,19 @@
 
     <!-- UI JAVASCRIPT LOGIC -->
     <script>
+        // دالة آمنة لتحميل الأيقونات وتجنب خطأ (lucide is not defined)
+        function safeCreateIcons(options) {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                try {
+                    lucide.createIcons(options);
+                } catch (e) {
+                    console.warn("Lucide icons error:", e);
+                }
+            } else {
+                console.warn("Lucide library is not available yet.");
+            }
+        }
+
         // SUPABASE CONNECTION SETTINGS
         const supabaseUrl = "https://auwnaivrovqqmthmljvg.supabase.co";
         const supabaseKey = "sb_publishable_oHUfVrGohNstb9bUvNyS5A_YxsESG93";
@@ -1175,7 +1188,7 @@
             return locId.toString()
                 .trim()
                 .replace(/\s+/g, ' ')                        // دمج المسافات المتكررة
-                .replace(/ة\b/g, 'ه')                         // تحويل التاء المربوطة في نهاية الكلمة إلى هاء
+                .replace(/ة\b/g, 'ه')                          // تحويل التاء المربوطة في نهاية الكلمة إلى هاء
                 .replace(/أ|إ|آ/g, 'ا')                       // توحيد الألفات (أ، إ، آ) إلى ألف عادية
                 .replace(/ى\b/g, 'ي');                        // تحويل الألف اللينة في نهاية الكلمة إلى ياء
         }
@@ -1216,11 +1229,10 @@
             return baseA && baseB && baseA === baseB;
         }
 
-        // دالة جلب البيانات كاملة من Supabase مع تجنب قيود الـ 1000 سجل عبر الـ parallel ranges
+        // دالة جلب البيانات من Supabase بالتسلسل لمنع تهنيج المتصفح
         async function fetchAllFromTable(tableName) {
             if (!supabaseClient) return [];
             try {
-                // استعلام الرأس للحصول على العدد الإجمالي للسجلات
                 const { count, error: countErr } = await supabaseClient
                     .from(tableName)
                     .select('*', { count: 'exact', head: true });
@@ -1229,38 +1241,33 @@
                 if (!count) return [];
 
                 const limit = 1000;
-                const promises = [];
+                const results = [];
+                // الجلب بالتسلسل (await داخل اللوب) لمنع إغراق الشبكة والرامات
                 for (let from = 0; from < count; from += limit) {
-                    promises.push(
-                        supabaseClient
-                            .from(tableName)
-                            .select('*')
-                            .range(from, from + limit - 1)
-                            .then(res => {
-                                if (res.error) throw res.error;
-                                return res.data || [];
-                            })
-                    );
+                    const res = await supabaseClient
+                        .from(tableName)
+                        .select('*')
+                        .range(from, from + limit - 1);
+                    
+                    if (res.error) throw res.error;
+                    if (res.data) results.push(...res.data);
                 }
-
-                const results = await Promise.all(promises);
-                return results.flat();
+                return results;
             } catch (err) {
                 console.error(`Error in fetchAllFromTable for ${tableName}:`, err);
-                // Fallback to simple select if HEAD/count fails
-                const { data, error } = await supabaseClient.from(tableName).select('*');
+                const { data, error } = await supabaseClient.from(tableName).select('*').limit(1000);
                 if (error) throw error;
                 return data || [];
             }
         }
 
         // ================= FAST INDEX MAPS (O(1) LOOKUP) =================
-        // خرائط الفهرسة السريعة - تُبنى مرة واحدة عند تحميل البيانات بدلاً من البحث الخطي المتكرر
-        let catalogByBarcodeMap = new Map();      // cleanBarcode -> catalog item
-        let catalogByTokenKeyMap = new Map();     // sorted-token-key -> catalog item
-        let catalogByBaseMap = new Map();          // base numeric barcode -> first catalog item
-        let imageByBaseMap = new Map();            // base numeric barcode -> first image_url found
-        let inventoryQtyByBarcodeMap = new Map();  // barcode -> total shelf qty
+        let catalogByBarcodeMap = new Map();      
+        let catalogByTokenKeyMap = new Map();     
+        let catalogByBaseMap = new Map();          
+        let imageByBaseMap = new Map();            
+        let inventoryQtyByBarcodeMap = new Map();  
+        let inventoryLocationsByTokenMap = new Map(); // خريطة سريعة جديدة للمواقع
 
         // إعادة بناء فهارس الكتالوج بعد كل تحميل بيانات (عملية واحدة سريعة O(N))
         function rebuildCatalogIndexes() {
@@ -1298,12 +1305,27 @@
             }
         }
 
-        // إعادة بناء فهرس كميات المخزون الفعلي
+        // إعادة بناء فهرس كميات المخزون والمواقع الفعلي
         function rebuildInventoryIndex() {
             inventoryQtyByBarcodeMap = new Map();
+            inventoryLocationsByTokenMap = new Map(); // تصفير الفهرس الجديد
+            
             for (const item of liveInventoryData) {
                 const bc = item.barcode;
-                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + Number(item.quantity || 0));
+                const qty = Number(item.quantity || 0);
+                
+                // 1. فهرس الكميات
+                inventoryQtyByBarcodeMap.set(bc, (inventoryQtyByBarcodeMap.get(bc) || 0) + qty);
+                
+                // 2. فهرس المواقع السريع (لمنع التهنيج في شاشة التحضير)
+                if (qty > 0) {
+                    const clean = cleanBarcode(bc);
+                    const tokens = clean.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
+                    if (!inventoryLocationsByTokenMap.has(tokens)) {
+                        inventoryLocationsByTokenMap.set(tokens, []);
+                    }
+                    inventoryLocationsByTokenMap.get(tokens).push(item);
+                }
             }
         }
 
@@ -1423,7 +1445,7 @@
 
         // ================= RBAC CONFIG =================
         const USERS = [
-            { username: 'admin',  password: 'TREE123', role: 'admin',           branch: null },
+            { username: 'admin',  password: 'TREE123', role: 'admin',            branch: null },
             { username: 'branch', password: '21587',   role: 'branch_employee', branch: null },
             // لإضافة فرع بكلمة سر خاصة أضف سطراً جديداً هنا:
             // { username: 'samouha', password: 'SAM001', role: 'branch_employee', branch: 'فرع سموحة' },
@@ -1484,7 +1506,7 @@
             setTimeout(() => {
                 try {
                     applyRBACRules(user.role, user.branch);
-                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    safeCreateIcons();
                     const defaultTab = (user.role === 'branch_employee') ? 'query' : 'dashboard';
                     if (typeof switchTab === 'function') switchTab(defaultTab);
                     if (typeof initializeDatabaseConnection === 'function') initializeDatabaseConnection();
@@ -1535,7 +1557,7 @@
                 const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
                 if (headerRight) { 
                     headerRight.appendChild(logoutBtn); 
-                    if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); 
+                    safeCreateIcons({ root: logoutBtn }); 
                 }
             }, 150);
         }
@@ -1553,7 +1575,7 @@
 
         // DOM Initializations - RBAC Aware
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            safeCreateIcons();
             updateClock();
             setInterval(updateClock, 1000);
             window.addEventListener('resize', updateUploadCardsResponsiveState);
@@ -2110,7 +2132,7 @@
                 });
             }
             container.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         async function addActivityLog(action, details) {
@@ -2762,7 +2784,7 @@
                         </td>
                     </tr>
                 `;
-                lucide.createIcons();
+                safeCreateIcons();
                 document.getElementById('pagination-status').textContent = 'يعرض 0 من أصل 0 سجل';
                 document.getElementById('btn-prev').setAttribute('disabled', 'true');
                 document.getElementById('btn-next').setAttribute('disabled', 'true');
@@ -2882,8 +2904,7 @@
             }
 
             tbody.innerHTML = html;
-            // Task 2: استدعاء Lucide محدود للعنصر فقط بدلاً من مسح المستند كاملاً
-            lucide.createIcons({ root: tbody });
+            safeCreateIcons({ root: tbody });
 
             document.getElementById('pagination-status').textContent = `يعرض ${(startIdx + 1).toLocaleString('ar-EG')} إلى ${endIdx.toLocaleString('ar-EG')} من أصل ${total.toLocaleString('ar-EG')} سجل`;
             
@@ -2920,7 +2941,7 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
+                safeCreateIcons();
                 return;
             }
 
@@ -2931,22 +2952,27 @@
                 const customer = order.customer_name || 'عميل شوبيفاي';
                 const items = order.items || [];
                 
-                // OPTIMIZE PICKING PATH: Sort items inside the order based on their physical shelf locations
-                items.sort((a, b) => {
-                    let locsA = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, a.sku) && inv.quantity > 0);
-                    if (locsA.length === 0) {
-                        locsA = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, a.sku) && inv.quantity > 0);
-                    }
-                    const locA = locsA.length > 0 ? locsA[0].location_id : 'ZZZZ';
+                // OPTIMIZE PICKING PATH: استخدام الفهرس السريع O(1) بدلاً من البحث البطيء O(N)
+                items.forEach(item => {
+                    const cleanSku = cleanBarcode(item.sku);
+                    const tokens = cleanSku.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
                     
-                    let locsB = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, b.sku) && inv.quantity > 0);
-                    if (locsB.length === 0) {
-                        locsB = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, b.sku) && inv.quantity > 0);
-                    }
-                    const locB = locsB.length > 0 ? locsB[0].location_id : 'ZZZZ';
+                    let locs = inventoryLocationsByTokenMap.get(tokens) || [];
                     
-                    return locA.localeCompare(locB);
+                    // Fallback to base
+                    if (locs.length === 0) {
+                        const baseSku = extractBaseBarcode(cleanSku);
+                        if (baseSku) {
+                            const baseTokens = baseSku.toLowerCase().split(/[^a-z0-9]/).filter(t => t.length > 0).sort().join('|');
+                            locs = inventoryLocationsByTokenMap.get(baseTokens) || [];
+                        }
+                    }
+                    
+                    item._cachedLoc = locs.length > 0 ? locs[0].location_id : 'ZZZZ';
                 });
+
+                // ترتيب سريع بناءً على المواقع المجهزة مسبقاً (لن يسبب أي تهنيج)
+                items.sort((a, b) => a._cachedLoc.localeCompare(b._cachedLoc));
 
                 let itemsHtml = '';
                 
@@ -3033,7 +3059,7 @@
             });
 
             container.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         async function markOrderCompleted(orderNumber) {
@@ -3176,7 +3202,7 @@
                             <p class="text-xs text-slate-400">القطعة غير مسجلة في كتالوج Supabase أو مسكنة بالرفوف.</p>
                         </div>
                     `;
-                    lucide.createIcons();
+                    safeCreateIcons();
                     return;
                 }
 
@@ -3305,7 +3331,7 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
+                safeCreateIcons();
             } catch (err) {
                 console.error("Direct query lookup error:", err);
                 resultContainer.innerHTML = `
@@ -3315,7 +3341,7 @@
                         <p class="text-xs text-slate-400 mt-1">${err.message || err.details || ''}</p>
                     </div>
                 `;
-                lucide.createIcons();
+                safeCreateIcons();
             }
 
             // Auto focus and clear input for next scan
@@ -3721,7 +3747,7 @@
                 });
             }
             listEl.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function filterPrintItems() {
@@ -3856,7 +3882,7 @@
             } else {
                 imgContainer.innerHTML = '<i data-lucide="shirt" class="w-5 h-5"></i>';
             }
-            lucide.createIcons();
+            safeCreateIcons();
 
             document.getElementById('edit-qty-modal').classList.remove('hidden');
             document.getElementById('modal-quantity-input').focus();
@@ -3961,7 +3987,7 @@
                 `;
             });
             grid.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         // 4. EXPORTING REPORTS
@@ -4134,7 +4160,7 @@
                 `;
             });
             tableBody.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
 
             if (pageInfo) {
                 pageInfo.textContent = `عرض ${(startIndex + 1).toLocaleString('ar-EG')} - ${endIndex.toLocaleString('ar-EG')} من أصل ${totalRecords.toLocaleString('ar-EG')} حركة`;
@@ -4180,7 +4206,7 @@
                 `;
 
                 paginationContainer.innerHTML = paginationHtml;
-                lucide.createIcons();
+                safeCreateIcons();
             }
         }
 
@@ -4245,7 +4271,6 @@
             logToConsole('success', `تم تصدير سجل العمليات بنجاح إلى ملف: ${filename}`);
         }
 
-        // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
         // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
         function renderWarehouseMap() {
             const gridContainer = document.getElementById('warehouse-grid-map');
@@ -4450,7 +4475,7 @@
                 `;
             });
             listEl.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
@@ -4520,7 +4545,7 @@
                 `;
             });
             grid.innerHTML = html;
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
@@ -4528,7 +4553,7 @@
 
         function openScanner() {
             document.getElementById('scanner-modal').classList.remove('hidden');
-            lucide.createIcons();
+            safeCreateIcons();
             
             if (typeof Html5Qrcode === 'undefined') {
                 alert("جاري تحميل مكتبة الكاميرا، يرجى التأكد من الاتصال بالإنترنت.");
@@ -4762,6 +4787,7 @@
             }
         }
     </script>
+
     <!-- Edit Stock Quantity Modal -->
     <div id="edit-qty-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-slate-200">
