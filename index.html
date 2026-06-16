@@ -396,12 +396,20 @@
             </div>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
+            <select id="export-season-filter" onchange="renderLowStockAlerts()" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-2 py-1.5 rounded-lg outline-none cursor-pointer">
+                <option value="all">كل المواسم</option>
+                <option value="summer">الصيفي فقط</option>
+                <option value="winter">الشتوي فقط</option>
+            </select>
+            <select id="export-category-filter" onchange="renderLowStockAlerts()" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-2 py-1.5 rounded-lg outline-none cursor-pointer">
+                <option value="all">كل الفئات</option>
+                <option value="hoodie">هوديز / سويت شيرت</option>
+                <option value="pants">بناطيل / بنطلون</option>
+                <option value="shirt">قمصان / قميص</option>
+                <option value="jacket">جاكيت / بليزر</option>
+                <option value="tshirt">تي شيرت</option>
+            </select>
             <div id="export-wrapper" style="display: none;" class="flex items-center gap-2">
-                <select id="export-season-filter" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-2 py-1.5 rounded-lg outline-none cursor-pointer">
-                    <option value="all">كل المواسم</option>
-                    <option value="summer">الصيفي فقط</option>
-                    <option value="winter">الشتوي فقط</option>
-                </select>
                 <button onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
                     <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
                     تصدير طلبية النواقص
@@ -434,6 +442,10 @@
                                 <p id="dead-stock-subtitle" class="text-[10px] text-slate-400 font-medium">المنتجات المتوفرة بالمخزن والتي لم يسبق طلبها بأي من طلبات شوبيفاي المرفوعة.</p>
                             </div>
                         </div>
+                        <button onclick="openLiquidationPlanner()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5 self-start sm:self-auto">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            مخطط العروض والتصفيات
+                        </button>
                     </div>
                     <!-- Dead Stock Grid -->
                     <div id="dead-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
@@ -2583,28 +2595,63 @@
                     });
 
                     const deadStockBarcodesByBranch = {};
+                    let shortageCount = 0;
+                    let shortageItems = 0;
+                    let surplusCount = 0;
+                    let surplusItems = 0;
+                    const diffDetails = [];
+
                     data.forEach(item => {
                         const cleanBC = item.barcode;
                         const locIdClean = item.location_id;
                         const newQty = Number(item.quantity || 0);
                         
                         const key = cleanBC + '_' + locIdClean;
-                        const oldQty = oldQtyMap.get(key);
+                        const oldQty = oldQtyMap.get(key) || 0;
+                        const diff = newQty - oldQty;
                         
-                        if (oldQty !== undefined && newQty > 0 && oldQty === newQty) {
+                        if (oldQty > 0 && newQty > 0 && oldQty === newQty) {
                             if (!deadStockBarcodesByBranch[locIdClean]) {
                                 deadStockBarcodesByBranch[locIdClean] = [];
                             }
                             deadStockBarcodesByBranch[locIdClean].push(cleanBC);
                         }
+
+                        if (diff < 0) {
+                            shortageCount += Math.abs(diff);
+                            shortageItems++;
+                            if (diffDetails.length < 10) {
+                                const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
+                                const name = prod ? prod.product_name : 'صنف غير معروف';
+                                diffDetails.push('عجز: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + Math.abs(diff) + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
+                            }
+                        } else if (diff > 0) {
+                            surplusCount += diff;
+                            surplusItems++;
+                            if (diffDetails.length < 10) {
+                                const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
+                                const name = prod ? prod.product_name : 'صنف غير معروف';
+                                diffDetails.push('زيادة: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + diff + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
+                            }
+                        }
                     });
+
+                    let detailsStr = 'تقرير الفروقات الإجمالي: عجز إجمالي قدره ' + shortageCount + ' قطعة في ' + shortageItems + ' صنف، وزيادة إجمالية قدره ' + surplusCount + ' قطعة في ' + surplusItems + ' صنف.\n\n';
+                    if (diffDetails.length > 0) {
+                        detailsStr += 'بعض الفروقات المرصودة:\n' + diffDetails.join('\n');
+                    } else {
+                        detailsStr += 'لا توجد أي فروقات جرد، الأرصدة مطابقة تماماً!';
+                    }
                     
                     try {
                         await supabaseClient.from('activity_logs').insert([
                             { action: 'dead_stock_snapshot', details: JSON.stringify(deadStockBarcodesByBranch) }
                         ]);
+                        await supabaseClient.from('activity_logs').insert([
+                            { action: 'تقرير فروقات جرد المخزون', details: detailsStr }
+                        ]);
                     } catch (e) {
-                        console.error('Error saving dead stock snapshot:', e);
+                        console.error('Error saving weekly snapshots and reports:', e);
                     }
                 }
 
@@ -4121,11 +4168,9 @@
             const panel = document.getElementById('low-stock-alert-panel');
             if (!grid || !panel) return;
 
-            // استخدام الفهرس السريع بدلاً من إعادة حساب الكميات في كل مرة
             const lowStockItems = [];
-            const maxAlerts = 50; // الحد الأقصى لعدد التنبيهات المعروضة لمنع تجمد الـ DOM
+            const maxAlerts = 50;
             
-            // تحديد خريطة الكميات والكتالوج بناءً على الفلتر النشط للفرع
             let qtyMap = inventoryQtyByBarcodeMap;
             let targetCatalog = liveCatalogData;
             
@@ -4140,8 +4185,36 @@
                 });
             }
 
+            const seasonFilter = document.getElementById('export-season-filter') ? document.getElementById('export-season-filter').value : 'all';
+            const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+
+            const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
+            const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+            
+            const categoryKeywords = {
+                hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
+                pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
+                shirt: ['قمصان', 'قميص', 'shirt'],
+                jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
+                tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
+            };
+
             for (const product of targetCatalog) {
                 if (lowStockItems.length >= maxAlerts) break;
+                
+                const name = (product.product_name || '').toLowerCase();
+                
+                if (seasonFilter === 'winter') {
+                    if (!winterKeywords.some(kw => name.includes(kw))) continue;
+                } else if (seasonFilter === 'summer') {
+                    if (!summerKeywords.some(kw => name.includes(kw))) continue;
+                }
+                
+                if (categoryFilter !== 'all') {
+                    const kws = categoryKeywords[categoryFilter] || [];
+                    if (!kws.some(kw => name.includes(kw))) continue;
+                }
+
                 const physicalQty = qtyMap.get(product.barcode) || 0;
                 if (physicalQty < lowStockThreshold) {
                     lowStockItems.push({
@@ -4262,10 +4335,20 @@
         }
     });
 
-    // 3. فلتر المواسم
+    // 3. فلتر المواسم والفئات
     const seasonFilter = document.getElementById('export-season-filter').value;
-    const winterKeywords = ['شتوي', 'هودي', 'جاكيت', 'سويت', 'بلوفر', 'مخمل', 'صوف', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover'];
-    const summerKeywords = ['صيفي', 'نص كم', 'شورت', 'كت', 'تيشرت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+    const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+
+    const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
+    const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+    
+    const categoryKeywords = {
+        hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
+        pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
+        shirt: ['قمصان', 'قميص', 'shirt'],
+        jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
+        tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
+    };
 
     const shortages = [];
     
@@ -4278,6 +4361,12 @@
             if (!winterKeywords.some(kw => name.includes(kw))) continue;
         } else if (seasonFilter === 'summer') {
             if (!summerKeywords.some(kw => name.includes(kw))) continue;
+        }
+        
+        // تطبيق فلتر الفئة
+        if (categoryFilter !== 'all') {
+            const kws = categoryKeywords[categoryFilter] || [];
+            if (!kws.some(kw => name.includes(kw))) continue;
         }
         
         const physicalQty = branchQtyMap.get(product.barcode) || 0;
@@ -4781,16 +4870,26 @@
                 }
             });
 
+            // Group inventory quantities by barcode and branch for matchmaking
+            const barcodeBranchQty = {};
+            liveInventoryData.forEach(item => {
+                const bc = item.barcode;
+                const br = item.location_id;
+                if (!barcodeBranchQty[bc]) barcodeBranchQty[bc] = {};
+                barcodeBranchQty[bc][br] = (barcodeBranchQty[bc][br] || 0) + Number(item.quantity || 0);
+            });
+
+            // Find unique branches
+            const branchSet = new Set();
+            liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            const branchesList = Array.from(branchSet);
+
             const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
             const isOnline = !isAll && isOnlineBranch(activeBranchFilter);
 
             if (isAll) {
                 if (titleEl) titleEl.textContent = 'الأصناف الراكدة (Dead Stock - فروع متعددة)';
                 if (subtitleEl) subtitleEl.textContent = 'المنتجات الراكدة في الفروع (مبيعات صفر للبيع الإلكتروني، ورصيد ثابت للفروع الأخرى).';
-
-                const branchSet = new Set();
-                liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
-                const branches = Array.from(branchSet);
 
                 const branchBarcodeQty = {};
                 liveInventoryData.forEach(item => {
@@ -4806,7 +4905,7 @@
                     let isDead = false;
                     let totalQty = 0;
                     
-                    for (const br of branches) {
+                    for (const br of branchesList) {
                         const qty = (branchBarcodeQty[br] && branchBarcodeQty[br][product.barcode]) || 0;
                         if (qty > 0) {
                             if (isOnlineBranch(br)) {
@@ -4854,11 +4953,48 @@
                     if (!orderedSkus.has(cleanBC)) {
                         const physicalQty = qtyMap.get(product.barcode) || 0;
                         if (physicalQty > 0) {
+                            // Matchmaking
+                            let recHtml = '';
+                            let bestTarget = null;
+                            let bestType = '';
+                            for (const br of branchesList) {
+                                if (normalizeLocationId(br) === normalizeLocationId(activeBranchFilter)) continue;
+                                const qtyInB = (barcodeBranchQty[product.barcode] && barcodeBranchQty[product.barcode][br]) || 0;
+                                if (qtyInB < lowStockThreshold) {
+                                    bestTarget = br;
+                                    bestType = 'shortage';
+                                    break;
+                                }
+                                const normBr = normalizeLocationId(br);
+                                const deadBarcodesInB = liveDeadStockSnapshot[normBr] || [];
+                                if (!deadBarcodesInB.includes(cleanBC) && qtyInB > 0) {
+                                    bestTarget = br;
+                                    bestType = 'active';
+                                }
+                            }
+                            if (bestTarget) {
+                                const badgeClass = bestType === 'shortage' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800';
+                                const badgeText = bestType === 'shortage' ? `⚠️ مطلوب لـ ${bestTarget} (عجز هناك)` : `✨ نشط في ${bestTarget}`;
+                                const btnClass = bestType === 'shortage' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700';
+                                recHtml = `
+                                    <div class="mt-2 flex items-center justify-between gap-2 border-t border-amber-100 pt-2">
+                                        <span class="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold ${badgeClass}">
+                                            ${badgeText}
+                                        </span>
+                                        <button onclick="openTransferModal('${product.barcode}', '${product.product_name.replace(/'/g, "\\'")}', '${activeBranchFilter}', '${bestTarget}', ${physicalQty})" 
+                                                class="${btnClass} text-white text-[9px] font-bold px-2 py-0.5 rounded transition">
+                                            طلب تحويل
+                                        </button>
+                                    </div>
+                                `;
+                            }
+
                             deadStockItems.push({
                                 barcode: product.barcode,
                                 name: product.product_name,
                                 physicalQty: physicalQty,
-                                imageUrl: getProductImage(product.barcode)
+                                imageUrl: getProductImage(product.barcode),
+                                recommendationHtml: recHtml
                             });
                         }
                     }
@@ -4887,16 +5023,62 @@
                     if (deadSet.has(cleanBC)) {
                         const physicalQty = qtyMap.get(product.barcode) || 0;
                         if (physicalQty > 0) {
+                            // Matchmaking
+                            let recHtml = '';
+                            let bestTarget = null;
+                            let bestType = '';
+                            for (const br of branchesList) {
+                                if (normalizeLocationId(br) === normalizeLocationId(activeBranchFilter)) continue;
+                                const qtyInB = (barcodeBranchQty[product.barcode] && barcodeBranchQty[product.barcode][br]) || 0;
+                                if (qtyInB < lowStockThreshold) {
+                                    bestTarget = br;
+                                    bestType = 'shortage';
+                                    break;
+                                }
+                                if (isOnlineBranch(br)) {
+                                    if (orderedSkus.has(cleanBC)) {
+                                        bestTarget = br;
+                                        bestType = 'active';
+                                    }
+                                } else {
+                                    const normBr = normalizeLocationId(br);
+                                    const deadBarcodesInB = liveDeadStockSnapshot[normBr] || [];
+                                    if (!deadBarcodesInB.includes(cleanBC) && qtyInB > 0) {
+                                        bestTarget = br;
+                                        bestType = 'active';
+                                    }
+                                }
+                            }
+                            if (bestTarget) {
+                                const badgeClass = bestType === 'shortage' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800';
+                                const badgeText = bestType === 'shortage' ? `⚠️ مطلوب لـ ${bestTarget} (عجز هناك)` : `✨ نشط في ${bestTarget}`;
+                                const btnClass = bestType === 'shortage' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700';
+                                recHtml = `
+                                    <div class="mt-2 flex items-center justify-between gap-2 border-t border-amber-100 pt-2">
+                                        <span class="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold ${badgeClass}">
+                                            ${badgeText}
+                                        </span>
+                                        <button onclick="openTransferModal('${product.barcode}', '${product.product_name.replace(/'/g, "\\'")}', '${activeBranchFilter}', '${bestTarget}', ${physicalQty})" 
+                                                class="${btnClass} text-white text-[9px] font-bold px-2 py-0.5 rounded transition">
+                                            طلب تحويل
+                                        </button>
+                                    </div>
+                                `;
+                            }
+
                             deadStockItems.push({
                                 barcode: product.barcode,
                                 name: product.product_name,
                                 physicalQty: physicalQty,
-                                imageUrl: getProductImage(product.barcode)
+                                imageUrl: getProductImage(product.barcode),
+                                recommendationHtml: recHtml
                             });
                         }
                     }
                 }
             }
+
+            activeDeadStockItemsList = deadStockItems;
 
             if (deadStockItems.length === 0) {
                 if (isAll || isOnline) {
@@ -4939,22 +5121,148 @@
                     : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
                 
                 html += `
-                    <div class="flex items-center gap-3 p-3 bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-xl transition">
-                        ${imgHtml}
-                        <div class="flex-1 min-w-0">
-                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
-                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                    <div class="flex flex-col p-3 bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-xl transition">
+                        <div class="flex items-center gap-3">
+                            ${imgHtml}
+                            <div class="flex-1 min-w-0">
+                                <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                                <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                            </div>
+                            <div class="text-left">
+                                <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">
+                                    رصيد: ${item.physicalQty}
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-left">
-                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">
-                                رصيد: ${item.physicalQty}
-                            </span>
-                        </div>
+                        ${item.recommendationHtml || ''}
                     </div>
                 `;
             });
             grid.innerHTML = html;
             lucide.createIcons();
+        }
+
+        let activeDeadStockItemsList = [];
+
+        function openTransferModal(barcode, productName, sourceBranch, targetBranch, maxQty) {
+            document.getElementById('transfer-product-name').textContent = productName;
+            document.getElementById('transfer-product-barcode').textContent = 'باركود: ' + barcode;
+            document.getElementById('transfer-source-branch').value = sourceBranch;
+            document.getElementById('transfer-target-branch').value = targetBranch;
+            
+            const qtyInput = document.getElementById('transfer-qty-input');
+            qtyInput.value = maxQty;
+            qtyInput.max = maxQty;
+            
+            document.getElementById('transfer-qty-max-label').textContent = 'من أصل ' + maxQty + ' قطع';
+            
+            window.activeTransferData = { barcode, productName, sourceBranch, targetBranch, maxQty };
+            
+            document.getElementById('transfer-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeTransferModal() {
+            document.getElementById('transfer-modal').classList.add('hidden');
+        }
+
+        async function confirmStockTransfer() {
+            if (!supabaseClient || !window.activeTransferData) return;
+            const qtyInput = document.getElementById('transfer-qty-input');
+            const qty = Number(qtyInput.value || 1);
+            const data = window.activeTransferData;
+            
+            if (qty <= 0 || qty > data.maxQty) {
+                alert('يرجى إدخال كمية صحيحة لا تتعدى الرصيد الراكد المتوفر (' + data.maxQty + ' قطعة).');
+                return;
+            }
+            
+            try {
+                const logMsg = 'طلب تحويل عدد ' + qty + ' قطعة من الصنف (' + data.productName + ' - ' + data.barcode + ') من فرع ' + data.sourceBranch + ' إلى فرع ' + data.targetBranch;
+                await supabaseClient.from('activity_logs').insert([
+                    { action: 'طلب تحويل مخزون', details: logMsg }
+                ]);
+                
+                alert('تم إرسال طلب التحويل بنجاح وسجل المعاملة في لوحة التحكم!');
+                closeTransferModal();
+            } catch (err) {
+                console.error('Error creating transfer request:', err);
+                alert('فشل إرسال طلب التحويل: ' + err.message);
+            }
+        }
+
+        function openLiquidationPlanner() {
+            const tbody = document.getElementById('liquidation-tbody');
+            if (!tbody) return;
+            
+            if (activeDeadStockItemsList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-400">لا توجد أصناف راكدة معروضة حالياً لتخطيط العروض.</td></tr>';
+                document.getElementById('liquidation-modal').classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+            
+            let html = '';
+            activeDeadStockItemsList.forEach(item => {
+                const qty = item.physicalQty;
+                let promo = '';
+                if (qty >= 10) {
+                    promo = 'عرض قطعة + قطعة مجاناً (BOGO)';
+                } else if (qty >= 5) {
+                    promo = 'خصم 30% لتسريع حركة المخزون';
+                } else {
+                    promo = 'خصم 15% أو بيع كحزمة (Bundle) مع أصناف أخرى';
+                }
+                
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-all">
+                        <td class="p-2.5 font-bold text-slate-700">
+                            <div>${item.name}</div>
+                            <div class="text-[9px] text-slate-400 font-mono mt-0.5">${item.barcode}</div>
+                        </td>
+                        <td class="p-2.5 text-center font-bold font-mono text-amber-700 bg-amber-50/50">${qty}</td>
+                        <td class="p-2.5 text-left font-bold text-emerald-600">${promo}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            document.getElementById('liquidation-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLiquidationModal() {
+            document.getElementById('liquidation-modal').classList.add('hidden');
+        }
+
+        function copyLiquidationPlan() {
+            if (activeDeadStockItemsList.length === 0) {
+                alert('لا توجد عروض لنسخها.');
+                return;
+            }
+            
+            let text = 'خطة عروض وتصفيات الرواكد - مستودع الشجرة TREE\\n';
+            text += 'تاريخ الخطة: ' + new Date().toLocaleDateString('ar-EG') + '\\n\\n';
+            
+            activeDeadStockItemsList.forEach((item, idx) => {
+                const qty = item.physicalQty;
+                let promo = '';
+                if (qty >= 10) {
+                    promo = 'عرض قطعة + قطعة مجاناً (BOGO)';
+                } else if (qty >= 5) {
+                    promo = 'خصم 30% لتسريع حركة المخزون';
+                } else {
+                    promo = 'خصم 15% أو بيع كحزمة (Bundle)';
+                }
+                text += (idx + 1) + '. ' + item.name + ' (' + item.barcode + ') - الرصيد: ' + qty + ' قطع -> العرض المقترح: ' + promo + '\\n';
+            });
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('تم نسخ خطة العروض والتصفيات إلى الحافظة بنجاح!');
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                alert('فشل نسخ الخطة تلقائياً. يرجى محاولة تحديد الجدول ونسخه يدوياً.');
+            });
         }
 
         // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
@@ -5320,6 +5628,100 @@
             </div>
             <div class="text-center text-xs text-slate-500">
                 ضع باركود المنتج داخل مربع المسح للكشف التلقائي.
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Transfer Modal -->
+    <div id="transfer-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 flex flex-col space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5 text-brand-accent">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                    <h3 class="font-black text-slate-800 text-base">إنشاء طلب تحويل مخزني</h3>
+                </div>
+                <button onclick="closeTransferModal()" class="text-slate-400 hover:text-slate-600 transition-all p-1 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-1">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">الصنف المراد تحويله</p>
+                    <h4 id="transfer-product-name" class="font-bold text-xs text-slate-800">-</h4>
+                    <p id="transfer-product-barcode" class="text-[9px] text-slate-400 font-mono">باركود: -</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1">الفرع الحالي (المرسل)</label>
+                        <input type="text" id="transfer-source-branch" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-bold focus:outline-none" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1">الفرع المستهدف (المستقبل)</label>
+                        <input type="text" id="transfer-target-branch" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-bold focus:outline-none" readonly>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">الكمية المراد تحويلها</label>
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                        <input type="number" id="transfer-qty-input" value="1" min="1" class="w-full bg-transparent text-xs font-bold text-slate-800 outline-none">
+                        <span id="transfer-qty-max-label" class="text-[10px] text-slate-400 font-bold whitespace-nowrap">من أصل - قطع</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button onclick="confirmStockTransfer()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition duration-200">
+                    تأكيد وإرسال الطلب
+                </button>
+                <button onclick="closeTransferModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition duration-200">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liquidation Planner Modal -->
+    <div id="liquidation-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5 text-amber-600">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <h3 class="font-black text-slate-800 text-base">مخطط العروض والتصفيات للرواكد</h3>
+                </div>
+                <button onclick="closeLiquidationModal()" class="text-slate-400 hover:text-slate-600 transition-all p-1 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-500 leading-relaxed">
+                يقترح النظام الحملات التسويقية التالية لتسريع بيع الرواكد المحددة وتخفيض حجم المخزون الراكد بناءً على الكميات المتوفرة.
+            </p>
+
+            <div class="max-h-[300px] overflow-y-auto pr-1">
+                <table class="w-full text-right text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-600">
+                            <th class="p-2.5 font-bold">الصنف / الباركود</th>
+                            <th class="p-2.5 font-bold text-center">الرصيد الراكد</th>
+                            <th class="p-2.5 font-bold text-left">العرض الترويجي المقترح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="liquidation-tbody">
+                        <!-- Dynamic campaign items will go here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button onclick="copyLiquidationPlan()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition duration-200">
+                    نسخ خطة العروض
+                </button>
+                <button onclick="closeLiquidationModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition duration-200">
+                    إغلاق
+                </button>
             </div>
         </div>
     </div>
