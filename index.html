@@ -222,6 +222,11 @@
                     المخزون والكتالوج
                 </button>
 
+                <button onclick="switchTab('transfers')" id="tab-transfers" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                    طلبات تحويل المخزون
+                </button>
+
                 <button onclick="switchTab('picker')" id="tab-picker" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="package-check" class="w-5 h-5"></i>
                     تحضير طلبات شوبيفاي
@@ -267,6 +272,10 @@
         <button onclick="switchTab('inventory')" id="mobile-tab-inventory" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="boxes" class="w-5 h-5"></i>
             <span>المخزن</span>
+        </button>
+        <button onclick="switchTab('transfers')" id="mobile-tab-transfers" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+            <span>التحويلات</span>
         </button>
         <button onclick="switchTab('picker')" id="mobile-tab-picker" class="flex flex-col items-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="package-check" class="w-5 h-5"></i>
@@ -878,9 +887,6 @@
                     <button onclick="switchInventorySubTab('print')" id="subtab-print" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         طباعة باركود A4
                     </button>
-                    <button onclick="switchInventorySubTab('transfers')" id="subtab-transfers" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
-                        طلبات تحويل المخزون
-                    </button>
                 </div>
 
                 <!-- Search and Live Metric Header -->
@@ -1044,11 +1050,14 @@
                     </div>
                 </div>
 
-                <!-- ================= STOCK TRANSFERS WORKSPACE TAB ================= -->
-                <div id="inventory-transfers-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+            </section>
+
+            <!-- ================= STOCK TRANSFERS WORKSPACE TAB ================= -->
+            <section id="section-transfers" class="hidden space-y-6">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
-                            <h4 class="font-bold text-slate-800 text-sm">إدارة ومتابعة طلبات تحويل البضائع بين الفروع</h4>
+                            <h3 class="text-lg font-bold text-slate-800">إدارة ومتابعة طلبات تحويل البضائع بين الفروع</h3>
                             <p class="text-xs text-slate-500">استعرض الشحنات الواردة والصادرة لفرعك، وقم بتحديث حالاتها لخصم وإضافة الأرصدة تلقائياً.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
@@ -1795,7 +1804,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -1832,7 +1841,8 @@
                 inventory: 'المخازن والكتالوجات الحية',
                 picker: 'تحضير وفرز طلبات شوبيفاي',
                 query: 'استعلام الباركود السريع',
-                logs: 'سجل حركات المخزن التفصيلي (Audit Logs)'
+                logs: 'سجل حركات المخزن التفصيلي (Audit Logs)',
+                transfers: 'إدارة طلبات التحويل بين الفروع'
             };
             document.getElementById('current-section-title').textContent = titles[tabId];
 
@@ -1848,6 +1858,8 @@
             } else if (tabId === 'logs') {
                 auditLogsCurrentPage = 1;
                 fetchAuditLogs();
+            } else if (tabId === 'transfers') {
+                renderTransfersWorkspace();
             }
         }
 
@@ -1875,6 +1887,8 @@
                 renderExecutiveDashboard();
             } else if (activeTab === 'logs') {
                 fetchAuditLogs();
+            } else if (activeTab === 'transfers') {
+                renderTransfersWorkspace();
             }
         }
 
@@ -2811,17 +2825,15 @@
             const subtabDiscrepancy = document.getElementById('subtab-discrepancy');
             const subtabMap = document.getElementById('subtab-map');
             const subtabPrint = document.getElementById('subtab-print');
-            const subtabTransfers = document.getElementById('subtab-transfers');
             
             const subTitle = document.getElementById('inventory-sub-title');
             
             const tableContainer = document.getElementById('inventory-table-container');
             const mapContainer = document.getElementById('inventory-map-container');
             const printContainer = document.getElementById('inventory-print-container');
-            const transfersContainer = document.getElementById('inventory-transfers-container');
             
             // Toggle active classes on subtab buttons
-            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint, subtabTransfers].forEach(tab => {
+            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint].forEach(tab => {
                 if (tab) {
                     tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
                 }
@@ -2831,7 +2843,6 @@
             if (tableContainer) tableContainer.classList.add('hidden');
             if (mapContainer) mapContainer.classList.add('hidden');
             if (printContainer) printContainer.classList.add('hidden');
-            if (transfersContainer) transfersContainer.classList.add('hidden');
 
             if (subTabId === 'stock') {
                 if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
@@ -2863,7 +2874,7 @@
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 
                 let discrepantItems = getDiscrepantItems();
-                document.getElementById('inventory-total-qty').textContent = discrepantItems.length.toLocaleString('ar-EG');
+                document.getElementById('inventory-total-qty').textContent = discrepantItems.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = discrepantItems.length.toLocaleString('ar-EG');
                 
                 filterInventory();
@@ -2893,16 +2904,6 @@
                 document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
                 
                 renderPrintItemsList();
-            }
-            else if (subTabId === 'transfers') {
-                if (subtabTransfers) subtabTransfers.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
-                subTitle.textContent = "طلبات تحويل المخزون بين الفروع";
-                if (transfersContainer) transfersContainer.classList.remove('hidden');
-                
-                document.getElementById('inventory-total-qty').textContent = "نقل";
-                document.getElementById('inventory-total-records').textContent = "-";
-                
-                renderTransfersWorkspace();
             }
         }
 
