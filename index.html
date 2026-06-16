@@ -395,11 +395,17 @@
                                 <p class="text-[10px] text-slate-400 font-medium">المنتجات التي يقل رصيدها بالرفوف عن حد الأمان المطلوب.</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 flex-wrap">
-                            <button id="btn-export-shortages" style="display: none;" onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
-                                <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
-                                تصدير طلبية النواقص
-                            </button>
+                        <div id="export-wrapper" style="display: none;" class="flex items-center gap-2">
+    <select id="export-season-filter" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-2 py-1.5 rounded-lg outline-none cursor-pointer">
+        <option value="all">كل المواسم</option>
+        <option value="summer">الصيفي فقط</option>
+        <option value="winter">الشتوي فقط</option>
+    </select>
+    <button onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
+        <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+        تصدير طلبية النواقص
+    </button>
+</div>
                             <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
                                 <span class="text-xs text-slate-500 font-bold">حد الأمان:</span>
                                 <input type="number" id="low-stock-threshold-input" value="5" min="1" onchange="updateLowStockThreshold(this.value)" 
@@ -2035,17 +2041,16 @@
     renderLowStockAlerts();
     renderDeadStockAlerts();
 
-    // إظهار وإخفاء زر تصدير النواقص بناءً على اختيار الفرع
-    const exportBtn = document.getElementById('btn-export-shortages');
-    if (exportBtn) {
+    // إظهار وإخفاء زر تصدير النواقص وفلتر الموسم بناءً على اختيار الفرع
+    const exportWrapper = document.getElementById('export-wrapper');
+    if (exportWrapper) {
         if (val && val !== 'all') {
-            exportBtn.style.display = 'flex';
+            exportWrapper.style.display = 'flex';
         } else {
-            exportBtn.style.display = 'none';
+            exportWrapper.style.display = 'none';
         }
     }
 }
-
         // ===== helper: apply branch filter to inventory array =====
         function getBranchFilteredInventory() {
             if (!activeBranchFilter || activeBranchFilter === 'all') return liveInventoryData;
@@ -4169,10 +4174,24 @@
         }
     });
 
+    // 3. فلتر المواسم
+    const seasonFilter = document.getElementById('export-season-filter').value;
+    const winterKeywords = ['شتوي', 'هودي', 'جاكيت', 'سويت', 'بلوفر', 'مخمل', 'صوف', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover'];
+    const summerKeywords = ['صيفي', 'نص كم', 'شورت', 'كت', 'تيشرت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+
     const shortages = [];
     
     // نمر على كل الكتالوج لاكتشاف النواقص حتى لو رصيدها صفر في الفرع
     for (const product of liveCatalogData) {
+        const name = (product.product_name || "").toLowerCase();
+        
+        // تطبيق فلتر الموسم
+        if (seasonFilter === 'winter') {
+            if (!winterKeywords.some(kw => name.includes(kw))) continue;
+        } else if (seasonFilter === 'summer') {
+            if (!summerKeywords.some(kw => name.includes(kw))) continue;
+        }
+        
         const physicalQty = branchQtyMap.get(product.barcode) || 0;
         
         if (physicalQty < lowStockThreshold) {
