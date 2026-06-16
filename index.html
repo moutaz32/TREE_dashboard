@@ -2205,6 +2205,8 @@
                 if (snapshotLog) {
                     try {
                         liveDeadStockSnapshot = JSON.parse(snapshotLog.details || '{}');
+                        renderDeadStockAlerts();
+                        if (activeTab === 'executive') renderExecutiveDashboard();
                     } catch (e) {
                         console.error('Error parsing dead stock snapshot:', e);
                     }
@@ -2237,9 +2239,13 @@
                         .limit(1);
                     if (!altError && altData && altData.length > 0) {
                         liveDeadStockSnapshot = JSON.parse(altData[0].details || '{}');
+                        renderDeadStockAlerts();
+                        if (activeTab === 'executive') renderExecutiveDashboard();
                     }
                 } else if (data && data.length > 0) {
                     liveDeadStockSnapshot = JSON.parse(data[0].details || '{}');
+                    renderDeadStockAlerts();
+                    if (activeTab === 'executive') renderExecutiveDashboard();
                 }
             } catch (err) {
                 console.error("Failed to load dead stock snapshot:", err);
@@ -4893,8 +4899,35 @@
             }
 
             if (deadStockItems.length === 0) {
-                panel.classList.add('hidden');
-                grid.innerHTML = '';
+                if (isAll || isOnline) {
+                    panel.classList.add('hidden');
+                    grid.innerHTML = '';
+                } else {
+                    panel.classList.remove('hidden');
+                    const normBranch = normalizeLocationId(activeBranchFilter);
+                    const hasSnapshot = liveDeadStockSnapshot && (liveDeadStockSnapshot[normBranch] !== undefined);
+                    
+                    let msgTitle = '';
+                    let msgDesc = '';
+                    if (!hasSnapshot) {
+                        msgTitle = 'لم يتم حساب الرواكد لـ ' + activeBranchFilter + ' بعد';
+                        msgDesc = 'يرجى رفع ملف المخزون الأسبوعي الجديد لمقارنته بالرصيد السابق وتحديد الرواكد.';
+                    } else {
+                        msgTitle = 'لا توجد أصناف راكدة في فرع ' + activeBranchFilter;
+                        msgDesc = 'رائع! تم تغيير كميات جميع المنتجات المتوفرة في الفرع ولا يوجد مخزون راكد.';
+                    }
+                    
+                    grid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center p-6 text-center bg-slate-50 border border-dashed rounded-xl space-y-2">
+                            <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                            </div>
+                            <p class="text-xs font-bold text-slate-700">${msgTitle}</p>
+                            <p class="text-[10px] text-slate-400 font-medium">${msgDesc}</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
                 return;
             }
 
