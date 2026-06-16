@@ -878,6 +878,9 @@
                     <button onclick="switchInventorySubTab('print')" id="subtab-print" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         طباعة باركود A4
                     </button>
+                    <button onclick="switchInventorySubTab('transfers')" id="subtab-transfers" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        طلبات تحويل المخزون
+                    </button>
                 </div>
 
                 <!-- Search and Live Metric Header -->
@@ -1038,6 +1041,46 @@
                     <!-- Print Items Selectable Grid/List -->
                     <div id="print-items-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-1">
                         <!-- Dynamic items with qty controls render here -->
+                    </div>
+                </div>
+
+                <!-- ================= STOCK TRANSFERS WORKSPACE TAB ================= -->
+                <div id="inventory-transfers-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">إدارة ومتابعة طلبات تحويل البضائع بين الفروع</h4>
+                            <p class="text-xs text-slate-500">استعرض الشحنات الواردة والصادرة لفرعك، وقم بتحديث حالاتها لخصم وإضافة الأرصدة تلقائياً.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                                <span class="text-xs text-slate-500 font-bold">نوع الطلبات:</span>
+                                <select id="transfers-filter-type" onchange="renderTransfersWorkspace()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700">
+                                    <option value="incoming">طلبات التحويل الواردة (الواردة إلى فرعي لشحنها)</option>
+                                    <option value="outgoing">طلبات التحويل الصادرة (التي طلبتها من فروع أخرى)</option>
+                                    <option value="all">كل طلبات التحويل في النظام</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transfers List Container -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <th class="p-3 font-bold">التاريخ</th>
+                                    <th class="p-3 font-bold">الصنف / الباركود</th>
+                                    <th class="p-3 font-bold text-center">الكمية</th>
+                                    <th class="p-3 font-bold">من فرع (المرسل)</th>
+                                    <th class="p-3 font-bold">إلى فرع (المستقبل)</th>
+                                    <th class="p-3 font-bold text-center">الحالة</th>
+                                    <th class="p-3 font-bold text-left">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transfers-tbody">
+                                <!-- Dynamic transfers list will go here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -2768,15 +2811,17 @@
             const subtabDiscrepancy = document.getElementById('subtab-discrepancy');
             const subtabMap = document.getElementById('subtab-map');
             const subtabPrint = document.getElementById('subtab-print');
+            const subtabTransfers = document.getElementById('subtab-transfers');
             
             const subTitle = document.getElementById('inventory-sub-title');
             
             const tableContainer = document.getElementById('inventory-table-container');
             const mapContainer = document.getElementById('inventory-map-container');
             const printContainer = document.getElementById('inventory-print-container');
+            const transfersContainer = document.getElementById('inventory-transfers-container');
             
             // Toggle active classes on subtab buttons
-            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint].forEach(tab => {
+            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint, subtabTransfers].forEach(tab => {
                 if (tab) {
                     tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
                 }
@@ -2786,6 +2831,7 @@
             if (tableContainer) tableContainer.classList.add('hidden');
             if (mapContainer) mapContainer.classList.add('hidden');
             if (printContainer) printContainer.classList.add('hidden');
+            if (transfersContainer) transfersContainer.classList.add('hidden');
 
             if (subTabId === 'stock') {
                 if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
@@ -2847,6 +2893,16 @@
                 document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
                 
                 renderPrintItemsList();
+            }
+            else if (subTabId === 'transfers') {
+                if (subtabTransfers) subtabTransfers.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                subTitle.textContent = "طلبات تحويل المخزون بين الفروع";
+                if (transfersContainer) transfersContainer.classList.remove('hidden');
+                
+                document.getElementById('inventory-total-qty').textContent = "نقل";
+                document.getElementById('inventory-total-records').textContent = "-";
+                
+                renderTransfersWorkspace();
             }
         }
 
@@ -4235,23 +4291,86 @@
 
             panel.classList.remove('hidden');
             let html = '';
+            
+            // Build branch quantity map
+            const barcodeBranchQty = {};
+            liveInventoryData.forEach(invItem => {
+                const bc = invItem.barcode;
+                const br = invItem.location_id;
+                if (bc && br) {
+                    if (!barcodeBranchQty[bc]) barcodeBranchQty[bc] = {};
+                    barcodeBranchQty[bc][br] = (barcodeBranchQty[bc][br] || 0) + Number(invItem.quantity || 0);
+                }
+            });
+            
+            const branchSet = new Set();
+            liveInventoryData.forEach(invItem => {
+                if (invItem.location_id) branchSet.add(invItem.location_id);
+            });
+            const branchesList = Array.from(branchSet);
+
             lowStockItems.forEach(item => {
                 const imgHtml = item.imageUrl 
                     ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
                     : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
                 
+                // Matchmaking
+                let availabilityHtml = '';
+                if (activeBranchFilter && activeBranchFilter !== 'all') {
+                    const otherBranchesWithStock = [];
+                    branchesList.forEach(br => {
+                        if (normalizeLocationId(br) === normalizeLocationId(activeBranchFilter)) return;
+                        const qtyInB = (barcodeBranchQty[item.barcode] && barcodeBranchQty[item.barcode][br]) || 0;
+                        if (qtyInB > 0) {
+                            otherBranchesWithStock.push({ branch: br, qty: qtyInB });
+                        }
+                    });
+                    
+                    if (otherBranchesWithStock.length > 0) {
+                        availabilityHtml += `
+                            <div class="mt-2 pt-2 border-t border-rose-100/50 space-y-1.5 w-full">
+                                <p class="text-[9px] text-slate-500 font-bold">متوفر في فروع أخرى:</p>
+                                <div class="flex flex-col gap-1 w-full">
+                        `;
+                        otherBranchesWithStock.forEach(obs => {
+                            availabilityHtml += `
+                                    <div class="flex items-center justify-between gap-1 text-[9px] bg-white px-2 py-1 rounded border border-rose-100 w-full">
+                                        <span class="font-medium text-slate-600">${obs.branch} (${obs.qty} قطعة)</span>
+                                        <button onclick="openTransferModal('${item.barcode}', '${item.name.replace(/'/g, "\\'")}', '${obs.branch}', '${activeBranchFilter}', ${obs.qty})" 
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-bold px-1.5 py-0.5 rounded transition">
+                                            طلب تحويل
+                                        </button>
+                                    </div>
+                            `;
+                        });
+                        availabilityHtml += `
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        availabilityHtml += `
+                            <div class="mt-2 pt-2 border-t border-rose-100/50 w-full text-center">
+                                <span class="text-[8px] font-bold text-slate-400">غير متوفر في أي فرع آخر</span>
+                            </div>
+                        `;
+                    }
+                }
+
                 html += `
-                    <div class="flex items-center gap-3 p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
-                        ${imgHtml}
-                        <div class="flex-1 min-w-0">
-                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
-                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                    <div class="flex flex-col p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
+                        <div class="flex items-center gap-3 w-full">
+                            ${imgHtml}
+                            <div class="flex-1 min-w-0">
+                                <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                                <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                            </div>
+                            <div class="text-left">
+                                <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
+                                    رصيد: ${item.physicalQty}
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-left">
-                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
-                                رصيد: ${item.physicalQty}
-                            </span>
-                        </div>
+                        ${availabilityHtml}
                     </div>
                 `;
             });
@@ -4516,6 +4635,22 @@
                     badgeClass = 'bg-amber-50 text-amber-700 border border-amber-100';
                 }
 
+                let displayDetails = log.details || '';
+                if (displayDetails.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(displayDetails);
+                        if (parsed.productName) {
+                            if (log.action === 'طلب تحويل مخزون') {
+                                displayDetails = "طلب تحويل عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + " - " + parsed.barcode + ") من فرع " + parsed.sourceBranch + " إلى فرع " + parsed.targetBranch;
+                            } else if (log.action === 'شحن تحويل مخزون') {
+                                displayDetails = "تم شحن عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + " - " + parsed.barcode + ") من فرع " + parsed.sourceBranch + " إلى فرع " + parsed.targetBranch;
+                            } else if (log.action === 'استلام تحويل مخزون') {
+                                displayDetails = "تم استلام وتحديث مخزون عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + " - " + parsed.barcode + ") في فرع " + parsed.targetBranch;
+                            }
+                        }
+                    } catch (e) {}
+                }
+
                 html += `
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-6 py-4 whitespace-nowrap text-slate-500 font-mono tracking-wide">${dateStr}</td>
@@ -4525,7 +4660,7 @@
                                 ${log.action}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-slate-600 font-bold">${log.details}</td>
+                        <td class="px-6 py-4 text-slate-600 font-bold">${displayDetails}</td>
                     </tr>
                 `;
             });
@@ -5173,18 +5308,28 @@
             const data = window.activeTransferData;
             
             if (qty <= 0 || qty > data.maxQty) {
-                alert('يرجى إدخال كمية صحيحة لا تتعدى الرصيد الراكد المتوفر (' + data.maxQty + ' قطعة).');
+                alert('يرجى إدخال كمية صحيحة لا تتعدى الرصيد المتوفر (' + data.maxQty + ' قطعة).');
                 return;
             }
             
             try {
-                const logMsg = 'طلب تحويل عدد ' + qty + ' قطعة من الصنف (' + data.productName + ' - ' + data.barcode + ') من فرع ' + data.sourceBranch + ' إلى فرع ' + data.targetBranch;
+                const detailsObj = {
+                    barcode: data.barcode,
+                    productName: data.productName,
+                    qty: qty,
+                    sourceBranch: data.sourceBranch,
+                    targetBranch: data.targetBranch,
+                    status: 'PENDING',
+                    created_at: new Date().toISOString()
+                };
+                
                 await supabaseClient.from('activity_logs').insert([
-                    { action: 'طلب تحويل مخزون', details: logMsg }
+                    { action: 'طلب تحويل مخزون', details: JSON.stringify(detailsObj) }
                 ]);
                 
                 alert('تم إرسال طلب التحويل بنجاح وسجل المعاملة في لوحة التحكم!');
                 closeTransferModal();
+                if (activeInventorySubTab === 'transfers') renderTransfersWorkspace();
             } catch (err) {
                 console.error('Error creating transfer request:', err);
                 alert('فشل إرسال طلب التحويل: ' + err.message);
@@ -5263,6 +5408,269 @@
                 console.error('Failed to copy text:', err);
                 alert('فشل نسخ الخطة تلقائياً. يرجى محاولة تحديد الجدول ونسخه يدوياً.');
             });
+        }
+
+        // ================= SYSTEM FOR STOCK TRANSFERS BETWEEN BRANCHES =================
+        function parseTransferDetails(log) {
+            const details = log.details || '';
+            if (details.startsWith('{')) {
+                try {
+                    return JSON.parse(details);
+                } catch(e) {}
+            }
+            const regex = /طلب تحويل عدد (\d+) قطعة من الصنف \((.*?) - (.*?)\) من فرع (.*?) إلى فرع (.*)/;
+            const match = details.match(regex);
+            if (match) {
+                return {
+                    qty: parseInt(match[1], 10),
+                    productName: match[2].trim(),
+                    barcode: match[3].trim(),
+                    sourceBranch: match[4].trim(),
+                    targetBranch: match[5].trim(),
+                    status: 'PENDING'
+                };
+            }
+            return null;
+        }
+
+        async function renderTransfersWorkspace() {
+            if (!supabaseClient) return;
+            const tbody = document.getElementById('transfers-tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">جاري تحميل طلبات التحويل من Supabase...</td></tr>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activity_logs')
+                    .select('*')
+                    .in('action', ['طلب تحويل مخزون', 'شحن تحويل مخزون', 'استلام تحويل مخزون'])
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                const transferStates = {};
+                data.forEach(log => {
+                    if (log.action === 'شحن تحويل مخزون') {
+                        try {
+                            const parsed = JSON.parse(log.details);
+                            const tid = parsed.transfer_log_id;
+                            if (tid && (!transferStates[tid] || transferStates[tid] === 'PENDING')) {
+                                transferStates[tid] = 'SHIPPED';
+                            }
+                        } catch(e) {}
+                    } else if (log.action === 'استلام تحويل مخزون') {
+                        try {
+                            const parsed = JSON.parse(log.details);
+                            const tid = parsed.transfer_log_id;
+                            if (tid) {
+                                transferStates[tid] = 'COMPLETED';
+                            }
+                        } catch(e) {}
+                    }
+                });
+                
+                const requests = data.filter(log => log.action === 'طلب تحويل مخزون');
+                const filterType = document.getElementById('transfers-filter-type') ? document.getElementById('transfers-filter-type').value : 'incoming';
+                const normActiveBranch = (activeBranchFilter && activeBranchFilter !== 'all') ? normalizeLocationId(activeBranchFilter) : null;
+                
+                let filteredRequests = [];
+                requests.forEach(log => {
+                    const parsed = parseTransferDetails(log);
+                    if (!parsed) return;
+                    
+                    const status = transferStates[log.id] || 'PENDING';
+                    parsed.id = log.id;
+                    parsed.status = status;
+                    parsed.created_at = log.created_at || log.timestamp;
+                    
+                    const normSource = normalizeLocationId(parsed.sourceBranch);
+                    const normTarget = normalizeLocationId(parsed.targetBranch);
+                    
+                    if (normActiveBranch) {
+                        if (filterType === 'incoming' && normSource !== normActiveBranch) return;
+                        if (filterType === 'outgoing' && normTarget !== normActiveBranch) return;
+                        if (filterType === 'all' && normSource !== normActiveBranch && normTarget !== normActiveBranch) return;
+                    }
+                    
+                    filteredRequests.push(parsed);
+                });
+                
+                if (filteredRequests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">لا توجد طلبات تحويل مطابقة للخيارات الحالية.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                filteredRequests.forEach(req => {
+                    const dateObj = new Date(req.created_at);
+                    const dateStr = dateObj.getFullYear() + "-" + String(dateObj.getMonth()+1).padStart(2,'0') + "-" + String(dateObj.getDate()).padStart(2,'0') + " " + String(dateObj.getHours()).padStart(2,'0') + ":" + String(dateObj.getMinutes()).padStart(2,'0');
+                    
+                    let statusBadge = '';
+                    if (req.status === 'PENDING') {
+                        statusBadge = '<span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">⏳ بانتظار الشحن</span>';
+                    } else if (req.status === 'SHIPPED') {
+                        statusBadge = '<span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">🚚 تم الشحن</span>';
+                    } else {
+                        statusBadge = '<span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">✅ مكتمل</span>';
+                    }
+                    
+                    let actionHtml = '';
+                    const normSource = normalizeLocationId(req.sourceBranch);
+                    const normTarget = normalizeLocationId(req.targetBranch);
+                    const isSourceBranch = normActiveBranch ? (normSource === normActiveBranch) : true;
+                    const isTargetBranch = normActiveBranch ? (normTarget === normActiveBranch) : true;
+                    
+                    actionHtml += `
+                        <button onclick="printTransferSlip('${req.barcode}', '${req.productName.replace(/'/g, "\\'")}', ${req.qty}, '${req.sourceBranch}', '${req.targetBranch}', '${dateStr}', '${req.status}')" 
+                                class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-[10px] px-2 py-1 rounded transition ml-1.5">
+                            إذن الشحن
+                        </button>
+                    `;
+                    
+                    if (req.status === 'PENDING' && isSourceBranch) {
+                        actionHtml += `
+                            <button onclick="shipTransfer(${req.id})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-2 py-1 rounded transition">
+                                شحن البضاعة
+                            </button>
+                        `;
+                    } else if (req.status === 'SHIPPED' && isTargetBranch) {
+                        actionHtml += `
+                            <button onclick="receiveTransfer(${req.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2 py-1 rounded transition">
+                                تأكيد الاستلام
+                            </button>
+                        `;
+                    }
+                    
+                    html += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                            <td class="p-3 text-slate-500 font-mono">${dateStr}</td>
+                            <td class="p-3">
+                                <div class="font-bold text-slate-800">${req.productName}</div>
+                                <div class="text-[10px] text-slate-400 font-mono">${req.barcode}</div>
+                            </td>
+                            <td class="p-3 text-center font-bold font-mono text-slate-700">${req.qty}</td>
+                            <td class="p-3 font-semibold text-slate-600">${req.sourceBranch}</td>
+                            <td class="p-3 font-semibold text-slate-600">${req.targetBranch}</td>
+                            <td class="p-3 text-center">${statusBadge}</td>
+                            <td class="p-3 text-left">${actionHtml}</td>
+                        </tr>
+                    `;
+                });
+                
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Error loading transfers workspace:", err);
+                tbody.innerHTML = "<tr><td colspan='7' class='p-6 text-center text-rose-500'>حدث خطأ أثناء تحميل طلبات التحويل: " + err.message + "</td></tr>";
+            }
+        }
+
+        async function shipTransfer(logId) {
+            if (!supabaseClient) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activity_logs')
+                    .select('*')
+                    .eq('id', logId)
+                    .single();
+                if (error) throw error;
+                
+                const parsed = parseTransferDetails(data);
+                if (!parsed) return;
+                
+                if (!confirm("هل أنت متأكد من شحن عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + ") من فرعك؟")) return;
+                
+                const detailsObj = {
+                    transfer_log_id: logId,
+                    barcode: parsed.barcode,
+                    productName: parsed.productName,
+                    qty: parsed.qty,
+                    sourceBranch: parsed.sourceBranch,
+                    targetBranch: parsed.targetBranch,
+                    status: 'SHIPPED',
+                    shipper: currentUser ? currentUser.username : 'موظف',
+                    date: new Date().toISOString()
+                };
+                
+                await supabaseClient.from('activity_logs').insert([
+                    { action: 'شحن تحويل مخزون', details: JSON.stringify(detailsObj) }
+                ]);
+                
+                alert('تم تسجيل الشحن بنجاح!');
+                renderTransfersWorkspace();
+            } catch(err) {
+                console.error("Error shipping transfer:", err);
+                alert("حدث خطأ أثناء الشحن: " + err.message);
+            }
+        }
+
+        async function receiveTransfer(logId) {
+            if (!supabaseClient) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activity_logs')
+                    .select('*')
+                    .eq('id', logId)
+                    .single();
+                if (error) throw error;
+                
+                const parsed = parseTransferDetails(data);
+                if (!parsed) return;
+                
+                if (!confirm("تأكيد استلام عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + ")؟ سيتم تحديث رصيد الفرعين تلقائياً.")) return;
+                
+                // 1. Subtract from source branch
+                const normSource = normalizeLocationId(parsed.sourceBranch);
+                const sourceItem = liveInventoryData.find(item => item.barcode === parsed.barcode && normalizeLocationId(item.location_id) === normSource);
+                if (sourceItem) {
+                    const currentQty = Number(sourceItem.quantity || 0);
+                    const newQty = Math.max(0, currentQty - parsed.qty);
+                    await supabaseClient.from('warehouse_inventory').update({ quantity: newQty }).eq('barcode', parsed.barcode).eq('location_id', sourceItem.location_id);
+                }
+                
+                // 2. Add to target branch
+                const normTarget = normalizeLocationId(parsed.targetBranch);
+                const targetItem = liveInventoryData.find(item => item.barcode === parsed.barcode && normalizeLocationId(item.location_id) === normTarget);
+                if (targetItem) {
+                    const currentQty = Number(targetItem.quantity || 0);
+                    const newQty = currentQty + parsed.qty;
+                    await supabaseClient.from('warehouse_inventory').update({ quantity: newQty }).eq('barcode', parsed.barcode).eq('location_id', targetItem.location_id);
+                } else {
+                    await supabaseClient.from('warehouse_inventory').insert([
+                        { barcode: parsed.barcode, location_id: parsed.targetBranch, quantity: parsed.qty }
+                    ]);
+                }
+                
+                const detailsObj = {
+                    transfer_log_id: logId,
+                    barcode: parsed.barcode,
+                    productName: parsed.productName,
+                    qty: parsed.qty,
+                    sourceBranch: parsed.sourceBranch,
+                    targetBranch: parsed.targetBranch,
+                    status: 'COMPLETED',
+                    receiver: currentUser ? currentUser.username : 'موظف',
+                    date: new Date().toISOString()
+                };
+                
+                await supabaseClient.from('activity_logs').insert([
+                    { action: 'استلام تحويل مخزون', details: JSON.stringify(detailsObj) }
+                ]);
+                
+                alert('تم تأكيد الاستلام وتعديل مخزون الفروع بنجاح!');
+                renderTransfersWorkspace();
+            } catch(err) {
+                console.error("Error receiving transfer:", err);
+                alert("حدث خطأ أثناء الاستلام: " + err.message);
+            }
+        }
+
+        function printTransferSlip(barcode, productName, qty, sourceBranch, targetBranch, dateStr, status) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write("<html><head><title>إذن شحن داخلي - مستودع الشجرة</title><style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; padding: 40px; color: #333; } .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; } .title { font-size: 24px; font-weight: bold; margin-bottom: 5px; } .subtitle { font-size: 14px; color: #666; } .details-table { width: 100%; border-collapse: collapse; margin-top: 20px; } .details-table th, .details-table td { border: 1px solid #ddd; padding: 12px; text-align: right; } .details-table th { background-color: #f5f5f5; } .signatures { display: flex; justify-content: space-between; margin-top: 60px; } .sig-box { text-align: center; width: 45%; } .sig-line { border-top: 1px dashed #333; margin-top: 50px; width: 150px; display: inline-block; }</style></head><body onload='window.print(); window.close();'><div class='header'><div class='title'>إذن شحن داخلي (طلب تحويل مخزني)</div><div class='subtitle'>مستودع الشجرة الموحد - TREE Warehouse</div></div><p><strong>التاريخ:</strong> " + dateStr + "</p><p><strong>حالة الشحنة الحالية:</strong> " + (status === 'COMPLETED' ? 'تم الاستلام' : status === 'SHIPPED' ? 'تحت الشحن' : 'بانتظار الشحن') + "</p><table class='details-table'><thead><tr><th>البيان</th><th>التفاصيل</th></tr></thead><tbody><tr><td><strong>اسم المنتج</strong></td><td>" + productName + "</td></tr><tr><td><strong>الباركود</strong></td><td>" + barcode + "</td></tr><tr><td><strong>الكمية</strong></td><td>" + qty + " قطع</td></tr><tr><td><strong>الفرع المرسل (المصدر)</strong></td><td>" + sourceBranch + "</td></tr><tr><td><strong>الفرع المستلم (الوجهة)</strong></td><td>" + targetBranch + "</td></tr></tbody></table><div class='signatures'><div class='sig-box'><p>أمين مخزن فرع المرسل</p><span class='sig-line'></span></div><div class='sig-box'><p>أمين مخزن فرع المستلم</p><span class='sig-line'></span></div></div></body></html>");
+            printWindow.document.close();
         }
 
         // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
