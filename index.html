@@ -430,8 +430,8 @@
                                 <i data-lucide="package" class="w-5 h-5 animate-pulse"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold text-slate-800 text-sm">الأصناف الراكدة (Dead Stock - مخزون بلا مبيعات)</h4>
-                                <p class="text-[10px] text-slate-400 font-medium">المنتجات المتوفرة بالمخزن والتي لم يسبق طلبها بأي من طلبات شوبيفاي المرفوعة.</p>
+                                <h4 id="dead-stock-title" class="font-bold text-slate-800 text-sm">الأصناف الراكدة (Dead Stock - مخزون بلا مبيعات)</h4>
+                                <p id="dead-stock-subtitle" class="text-[10px] text-slate-400 font-medium">المنتجات المتوفرة بالمخزن والتي لم يسبق طلبها بأي من طلبات شوبيفاي المرفوعة.</p>
                             </div>
                         </div>
                     </div>
@@ -1503,6 +1503,13 @@
 
         // Branch Filter State
         let activeBranchFilter = 'all';
+        let liveDeadStockSnapshot = {};
+
+        function isOnlineBranch(branchName) {
+            if (!branchName) return false;
+            const norm = normalizeLocationId(branchName).toLowerCase();
+            return norm.includes('الكتروني') || norm.includes('البيع') || norm.includes('online');
+        }
 
         // Dashboard Chart instances
         let zoneChart = null;
@@ -1833,6 +1840,7 @@
             await loadLocationsData();
             await loadOrdersData();
             await loadActivityLogs();
+            await loadLatestDeadStockSnapshot();
 
             // 2. Set Up Realtime WebSockets - Smart Patch Mode (لا يعيد جلب الجداول بالكامل)
             // بدلاً من refetch كامل، نُعدّل المصفوفات المحلية مباشرةً من الـ payload
@@ -2192,10 +2200,49 @@
                 
                 auditLogsData = data || [];
                 renderActivityLogsUI(data.slice(0, 10));
+
+                const snapshotLog = auditLogsData.find(log => log.action === 'dead_stock_snapshot');
+                if (snapshotLog) {
+                    try {
+                        liveDeadStockSnapshot = JSON.parse(snapshotLog.details || '{}');
+                    } catch (e) {
+                        console.error('Error parsing dead stock snapshot:', e);
+                    }
+                } else {
+                    loadLatestDeadStockSnapshot();
+                }
             } catch (err) {
                 console.error("Error loading activity logs from Supabase:", err);
                 const container = document.getElementById('dashboard-activity-logs');
                 if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">سجل العمليات غير متوفر أو لم يتم إنشاء جدول activity_logs بعد.</p>';
+            }
+        }
+
+        async function loadLatestDeadStockSnapshot() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activity_logs')
+                    .select('details')
+                    .eq('action', 'dead_stock_snapshot')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                
+                if (error) {
+                    const { data: altData, error: altError } = await supabaseClient
+                        .from('activity_logs')
+                        .select('details')
+                        .eq('action', 'dead_stock_snapshot')
+                        .order('timestamp', { ascending: false })
+                        .limit(1);
+                    if (!altError && altData && altData.length > 0) {
+                        liveDeadStockSnapshot = JSON.parse(altData[0].details || '{}');
+                    }
+                } else if (data && data.length > 0) {
+                    liveDeadStockSnapshot = JSON.parse(data[0].details || '{}');
+                }
+            } catch (err) {
+                console.error("Failed to load dead stock snapshot:", err);
             }
         }
 
@@ -2522,6 +2569,39 @@
             logToConsole('system', `بدء المزامنة لـ ${totalRecords} سجل في Supabase...`);
 
             try {
+                if (type === 'inventory') {
+                    const oldQtyMap = new Map();
+                    liveInventoryData.forEach(item => {
+                        const key = cleanBarcode(item.barcode) + '_' + normalizeLocationId(item.location_id);
+                        oldQtyMap.set(key, Number(item.quantity || 0));
+                    });
+
+                    const deadStockBarcodesByBranch = {};
+                    data.forEach(item => {
+                        const cleanBC = item.barcode;
+                        const locIdClean = item.location_id;
+                        const newQty = Number(item.quantity || 0);
+                        
+                        const key = cleanBC + '_' + locIdClean;
+                        const oldQty = oldQtyMap.get(key);
+                        
+                        if (oldQty !== undefined && newQty > 0 && oldQty === newQty) {
+                            if (!deadStockBarcodesByBranch[locIdClean]) {
+                                deadStockBarcodesByBranch[locIdClean] = [];
+                            }
+                            deadStockBarcodesByBranch[locIdClean].push(cleanBC);
+                        }
+                    });
+                    
+                    try {
+                        await supabaseClient.from('activity_logs').insert([
+                            { action: 'dead_stock_snapshot', details: JSON.stringify(deadStockBarcodesByBranch) }
+                        ]);
+                    } catch (e) {
+                        console.error('Error saving dead stock snapshot:', e);
+                    }
+                }
+
                 for (let i = 0; i < totalRecords; i += batchLimit) {
                     const chunkRaw = data.slice(i, i + batchLimit);
                     const chunk = chunkRaw.map(item => {
@@ -4679,9 +4759,13 @@
         function renderDeadStockAlerts() {
             const grid = document.getElementById('dead-stock-items-grid');
             const panel = document.getElementById('dead-stock-alert-panel');
+            const titleEl = document.getElementById('dead-stock-title');
+            const subtitleEl = document.getElementById('dead-stock-subtitle');
             if (!grid || !panel) return;
 
-            // 1. تجميع الباركودات المطلوبة في كل الطلبات المرفوعة لشوبيفاي (باستخدام المجموعات المجهزة مسبقاً)
+            const maxAlerts = 50;
+            const deadStockItems = [];
+
             const orderedSkus = new Set();
             liveOrdersData.forEach(order => {
                 if (order.cleanedBarcodes) {
@@ -4691,38 +4775,119 @@
                 }
             });
 
-            // 2. تصفية الأصناف: متوفرة بالمخزن فيزيائياً ولكن صفر مبيعات في الطلبات
-            const deadStockItems = [];
-            const maxAlerts = 50; // حد أقصى للحفاظ على سرعة المتصفح
-            
-            // تحديد خريطة الكميات والكتالوج بناءً على الفلتر النشط للفرع
-            let qtyMap = inventoryQtyByBarcodeMap;
-            let targetCatalog = liveCatalogData;
-            
-            if (activeBranchFilter && activeBranchFilter !== 'all') {
-                const branchInventory = getBranchFilteredInventory();
-                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
-                targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
-                
-                qtyMap = new Map();
-                branchInventory.forEach(item => {
-                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
-                });
-            }
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            const isOnline = !isAll && isOnlineBranch(activeBranchFilter);
 
-            for (const product of targetCatalog) {
-                if (deadStockItems.length >= maxAlerts) break;
-                
-                const cleanBC = getCleanedProductBarcode(product);
-                if (!orderedSkus.has(cleanBC)) {
-                    const physicalQty = qtyMap.get(product.barcode) || 0;
-                    if (physicalQty > 0) {
+            if (isAll) {
+                if (titleEl) titleEl.textContent = 'الأصناف الراكدة (Dead Stock - فروع متعددة)';
+                if (subtitleEl) subtitleEl.textContent = 'المنتجات الراكدة في الفروع (مبيعات صفر للبيع الإلكتروني، ورصيد ثابت للفروع الأخرى).';
+
+                const branchSet = new Set();
+                liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+                const branches = Array.from(branchSet);
+
+                const branchBarcodeQty = {};
+                liveInventoryData.forEach(item => {
+                    const br = item.location_id;
+                    if (!branchBarcodeQty[br]) branchBarcodeQty[br] = {};
+                    branchBarcodeQty[br][item.barcode] = (branchBarcodeQty[br][item.barcode] || 0) + Number(item.quantity || 0);
+                });
+
+                for (const product of liveCatalogData) {
+                    if (deadStockItems.length >= maxAlerts) break;
+                    const cleanBC = getCleanedProductBarcode(product);
+                    
+                    let isDead = false;
+                    let totalQty = 0;
+                    
+                    for (const br of branches) {
+                        const qty = (branchBarcodeQty[br] && branchBarcodeQty[br][product.barcode]) || 0;
+                        if (qty > 0) {
+                            if (isOnlineBranch(br)) {
+                                if (!orderedSkus.has(cleanBC)) {
+                                    isDead = true;
+                                    totalQty += qty;
+                                }
+                            } else {
+                                const normBr = normalizeLocationId(br);
+                                const deadBarcodes = liveDeadStockSnapshot[normBr] || [];
+                                if (deadBarcodes.includes(cleanBC)) {
+                                    isDead = true;
+                                    totalQty += qty;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (isDead) {
                         deadStockItems.push({
                             barcode: product.barcode,
                             name: product.product_name,
-                            physicalQty: physicalQty,
+                            physicalQty: totalQty,
                             imageUrl: getProductImage(product.barcode)
                         });
+                    }
+                }
+            } else if (isOnline) {
+                if (titleEl) titleEl.textContent = 'الأصناف الراكدة (Dead Stock - مخزون بلا مبيعات)';
+                if (subtitleEl) subtitleEl.textContent = 'المنتجات المتوفرة بالمخزن والتي لم يسبق طلبها بأي من طلبات شوبيفاي المرفوعة.';
+
+                const branchInventory = getBranchFilteredInventory();
+                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+                const targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+                
+                const qtyMap = new Map();
+                branchInventory.forEach(item => {
+                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                });
+
+                for (const product of targetCatalog) {
+                    if (deadStockItems.length >= maxAlerts) break;
+                    
+                    const cleanBC = getCleanedProductBarcode(product);
+                    if (!orderedSkus.has(cleanBC)) {
+                        const physicalQty = qtyMap.get(product.barcode) || 0;
+                        if (physicalQty > 0) {
+                            deadStockItems.push({
+                                barcode: product.barcode,
+                                name: product.product_name,
+                                physicalQty: physicalQty,
+                                imageUrl: getProductImage(product.barcode)
+                            });
+                        }
+                    }
+                }
+            } else {
+                if (titleEl) titleEl.textContent = 'الأصناف الراكدة (Dead Stock - رصيد ثابت)';
+                if (subtitleEl) subtitleEl.textContent = 'المنتجات التي لم تتغير كميتها في هذا الفرع بين آخر تحديثين لملف المخزون (الرصيد ثابت).';
+
+                const branchInventory = getBranchFilteredInventory();
+                const qtyMap = new Map();
+                branchInventory.forEach(item => {
+                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                });
+
+                const normBranch = normalizeLocationId(activeBranchFilter);
+                const deadBarcodes = liveDeadStockSnapshot[normBranch] || [];
+                const deadSet = new Set(deadBarcodes);
+
+                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+                const targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+
+                for (const product of targetCatalog) {
+                    if (deadStockItems.length >= maxAlerts) break;
+                    
+                    const cleanBC = getCleanedProductBarcode(product);
+                    if (deadSet.has(cleanBC)) {
+                        const physicalQty = qtyMap.get(product.barcode) || 0;
+                        if (physicalQty > 0) {
+                            deadStockItems.push({
+                                barcode: product.barcode,
+                                name: product.product_name,
+                                physicalQty: physicalQty,
+                                imageUrl: getProductImage(product.barcode)
+                            });
+                        }
                     }
                 }
             }
@@ -4840,22 +5005,77 @@
             }).length;
             document.getElementById('exec-discrepancy-count').textContent = discrepancyCount.toLocaleString('ar-EG');
 
-            // 3. Dead Stock Percent
-            const orderedBarcodes = new Set();
-            const branchBarcodes = new Set(filteredInventory.map(item => item.barcode));
-            const filteredOrders = (!activeBranchFilter || activeBranchFilter === 'all')
-                ? liveOrdersData
-                : liveOrdersData.filter(order => {
-                    if (!order.items) return false;
-                    return order.items.some(item => branchBarcodes.has(cleanBarcode(item.sku)));
+            // 3. Dead Stock Percent (Branch-aware calculation)
+            let deadItemsCount = 0;
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            const isOnline = !isAll && isOnlineBranch(activeBranchFilter);
+
+            if (isAll) {
+                const orderedSkus = new Set();
+                liveOrdersData.forEach(order => {
+                    if (order.cleanedBarcodes) {
+                        for (const bc of order.cleanedBarcodes) {
+                            orderedSkus.add(bc);
+                        }
+                    }
                 });
-            filteredOrders.forEach(o => {
-                if(o.items) o.items.forEach(i => orderedBarcodes.add(cleanBarcode(i.sku)));
-            });
-            const deadItems = filteredCatalog.filter(c => !orderedBarcodes.has(cleanBarcode(c.barcode)));
+
+                const branchSet = new Set();
+                liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+                const branches = Array.from(branchSet);
+
+                const branchBarcodeQty = {};
+                liveInventoryData.forEach(item => {
+                    const br = item.location_id;
+                    if (!branchBarcodeQty[br]) branchBarcodeQty[br] = {};
+                    branchBarcodeQty[br][item.barcode] = (branchBarcodeQty[br][item.barcode] || 0) + Number(item.quantity || 0);
+                });
+
+                filteredCatalog.forEach(product => {
+                    const cleanBC = getCleanedProductBarcode(product);
+                    let isDead = false;
+                    for (const br of branches) {
+                        const qty = (branchBarcodeQty[br] && branchBarcodeQty[br][product.barcode]) || 0;
+                        if (qty > 0) {
+                            if (isOnlineBranch(br)) {
+                                if (!orderedSkus.has(cleanBC)) isDead = true;
+                            } else {
+                                const normBr = normalizeLocationId(br);
+                                const deadBarcodes = liveDeadStockSnapshot[normBr] || [];
+                                if (deadBarcodes.includes(cleanBC)) isDead = true;
+                            }
+                        }
+                    }
+                    if (isDead) deadItemsCount++;
+                });
+            } else if (isOnline) {
+                const orderedSkus = new Set();
+                liveOrdersData.forEach(order => {
+                    if (order.cleanedBarcodes) {
+                        for (const bc of order.cleanedBarcodes) {
+                            orderedSkus.add(bc);
+                        }
+                    }
+                });
+
+                filteredCatalog.forEach(product => {
+                    const cleanBC = getCleanedProductBarcode(product);
+                    if (!orderedSkus.has(cleanBC)) deadItemsCount++;
+                });
+            } else {
+                const normBranch = normalizeLocationId(activeBranchFilter);
+                const deadBarcodes = liveDeadStockSnapshot[normBranch] || [];
+                const deadSet = new Set(deadBarcodes);
+
+                filteredCatalog.forEach(product => {
+                    const cleanBC = getCleanedProductBarcode(product);
+                    if (deadSet.has(cleanBC)) deadItemsCount++;
+                });
+            }
+
             const catalogCount = filteredCatalog.length;
-            let deadPercent = catalogCount > 0 ? Math.round((deadItems.length / catalogCount) * 100) : 0;
-            document.getElementById('exec-dead-stock-percent').textContent = `${deadPercent}%`;
+            let deadPercent = catalogCount > 0 ? Math.round((deadItemsCount / catalogCount) * 100) : 0;
+            document.getElementById('exec-dead-stock-percent').textContent = deadPercent + "%";
 
             // 4. Daily Ops
             let todayOps = auditLogsData.filter(log => {
