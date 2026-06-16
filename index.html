@@ -396,7 +396,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3 flex-wrap">
-                            <button onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
+                            <button id="btn-export-shortages" style="display: none;" onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
                                 <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
                                 تصدير طلبية النواقص
                             </button>
@@ -2016,25 +2016,35 @@
         }
 
         function onBranchFilterChange(val) {
-            activeBranchFilter = val;
-            updateTopCounters();
-            
-            // أعِد رسم الجداول والخريطة بالفلتر الجديد
-            if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
-                filterInventory();
-            } else if (activeInventorySubTab === 'map') {
-                renderWarehouseMap();
-            }
-            updateDashboardCharts();
-            
-            if (activeTab === 'executive') {
-                renderExecutiveDashboard();
-            }
+    activeBranchFilter = val;
+    updateTopCounters();
+    
+    // أعِد رسم الجداول والخريطة بالفلتر الجديد
+    if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
+        filterInventory();
+    } else if (activeInventorySubTab === 'map') {
+        renderWarehouseMap();
+    }
+    updateDashboardCharts();
+    
+    if (activeTab === 'executive') {
+        renderExecutiveDashboard();
+    }
 
-            // تحديث تنبيهات النواقص والراكد فور تغيير الفرع
-            renderLowStockAlerts();
-            renderDeadStockAlerts();
+    // تحديث تنبيهات النواقص والراكد فور تغيير الفرع
+    renderLowStockAlerts();
+    renderDeadStockAlerts();
+
+    // إظهار وإخفاء زر تصدير النواقص بناءً على اختيار الفرع
+    const exportBtn = document.getElementById('btn-export-shortages');
+    if (exportBtn) {
+        if (val && val !== 'all') {
+            exportBtn.style.display = 'flex';
+        } else {
+            exportBtn.style.display = 'none';
         }
+    }
+}
 
         // ===== helper: apply branch filter to inventory array =====
         function getBranchFilteredInventory() {
@@ -4132,64 +4142,76 @@
         }
 
         function exportShortagesOrder() {
-            if (typeof XLSX === 'undefined') {
-                alert("مكتبة SheetJS غير متوفرة.");
-                return;
-            }
+    if (typeof XLSX === 'undefined') {
+        alert("مكتبة SheetJS غير متوفرة.");
+        return;
+    }
 
-            // تحديد خريطة الكميات والكتالوج بناءً على الفلتر النشط للفرع
-            let qtyMap = inventoryQtyByBarcodeMap;
-            let targetCatalog = liveCatalogData;
-            var branchName = "كل الفروع";
-            if (activeBranchFilter && activeBranchFilter !== "all") {
-                branchName = activeBranchFilter;
-            }
+    if (!activeBranchFilter || activeBranchFilter === "all") {
+        alert("يرجى اختيار فرع محدد أولاً لتصدير طلبيته.");
+        return;
+    }
+
+    var branchName = activeBranchFilter;
+
+    // 1. حساب رصيد الفرع الحالي
+    const branchInventory = getBranchFilteredInventory();
+    let branchQtyMap = new Map();
+    branchInventory.forEach(item => {
+        branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+    });
+
+    // 2. حساب رصيد "مخزن ابيس" (المخزن الرئيسي)
+    let abeesQtyMap = new Map();
+    liveInventoryData.forEach(item => {
+        if (item.location_id && item.location_id.includes('ابيس')) {
+            abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+        }
+    });
+
+    const shortages = [];
+    
+    // نمر على كل الكتالوج لاكتشاف النواقص حتى لو رصيدها صفر في الفرع
+    for (const product of liveCatalogData) {
+        const physicalQty = branchQtyMap.get(product.barcode) || 0;
+        
+        if (physicalQty < lowStockThreshold) {
+            const reqQty = lowStockThreshold - physicalQty;
+            const abeesAvailableQty = abeesQtyMap.get(product.barcode) || 0;
             
-            if (activeBranchFilter && activeBranchFilter !== "all") {
-                const branchInventory = getBranchFilteredInventory();
-                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
-                targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
-                
-                qtyMap = new Map();
-                branchInventory.forEach(item => {
-                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+            // يتم الاعتماد في الطلبية على توافر المنتج في مخزن أبيس
+            if (abeesAvailableQty > 0) {
+                const approvedQty = Math.min(reqQty, abeesAvailableQty);
+                shortages.push({
+                    "الباركود": product.barcode,
+                    "اسم المنتج": product.product_name || "غير مسجل",
+                    "الرصيد الحالي بالفرع": physicalQty,
+                    "الكمية المطلوبة (عجز)": reqQty,
+                    "المتاح في مخزن أبيس": abeesAvailableQty,
+                    "الكمية المعتمدة للطلب": approvedQty
                 });
             }
-
-            const shortages = [];
-            for (const product of targetCatalog) {
-                const physicalQty = qtyMap.get(product.barcode) || 0;
-                if (physicalQty < lowStockThreshold) {
-                    const reqQty = lowStockThreshold - physicalQty;
-                    shortages.push({
-                        "الباركود": product.barcode,
-                        "اسم المنتج": product.product_name || "غير مسجل",
-                        "الكمية الحالية بالفرع": physicalQty,
-                        "حد الأمان": lowStockThreshold,
-                        "الكمية المطلوبة لتغطية النقص": reqQty
-                    });
-                }
-            }
-
-            if (shortages.length === 0) {
-                alert("لا توجد نواقص في " + branchName + " لتصديرها!");
-                return;
-            }
-
-            const worksheet = XLSX.utils.json_to_sheet(shortages);
-            worksheet["!dir"] = "rtl";
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "طلبية بضاعة نواقص");
-            
-            const cleanBranchName = branchName.replace(/\s+/g, "_");
-            const dateStr = new Date().toISOString().slice(0, 10);
-            const filename = "طلبية_نواقص_" + cleanBranchName + "_" + dateStr + ".xlsx";
-            XLSX.writeFile(workbook, filename);
-            
-            logToConsole("success", "تم تصدير طلبية النواقص للفرع بنجاح: " + filename);
         }
+    }
 
+    if (shortages.length === 0) {
+        alert("لا توجد نواقص متوفرة حالياً في مخزن أبيس لتغطية عجز فرع " + branchName + "!");
+        return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(shortages);
+    worksheet["!dir"] = "rtl";
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "طلبية بضاعة");
+    
+    const cleanBranchName = branchName.replace(/\s+/g, "_");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = "طلبية_نواقص_" + cleanBranchName + "_" + dateStr + ".xlsx";
+    XLSX.writeFile(workbook, filename);
+    
+    logToConsole("success", "تم تصدير طلبية النواقص للفرع بنجاح مع تأكيد التوافر في مخزن أبيس: " + filename);
+}
         function printInventoryTable() {
             window.print();
         }
