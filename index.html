@@ -6355,5 +6355,643 @@ HTML
                     (log.action && log.action.toLowerCase().includes(query)) ||
                     (log.details && log.details.toLowerCase().includes(query))
    
+             );
+            }
+
+            if (filtered.length === 0) {
+                alert("لا توجد بيانات لتصديرها.");
+                return;
+            }
+
+            const exportData = filtered.map(log => {
+                const ts = log.created_at || log.timestamp;
+                const dateObj = ts ? new Date(ts) : new Date();
+                const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+
+                return {
+                    "التاريخ والوقت": dateStr,
+                    "نوع الحركة": log.action,
+                    "تفاصيل العملية اللوجستية": log.details
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "سجل حركات المخزن");
+            
+            const filename = `سجل_حركات_المستودع_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+            logToConsole('success', `تم تصدير سجل العمليات بنجاح إلى ملف: ${filename}`);
+        }
+
+        // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
+        // 5. INTERACTIVE WAREHOUSE MAP (HEATMAP)
+        function renderWarehouseMap() {
+            const gridContainer = document.getElementById('warehouse-grid-map');
+            const selectorContainer = document.getElementById('map-zone-selectors');
+            if (!gridContainer || !selectorContainer) return;
+
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+
+            if (isAll) {
+                // --- VIEW ALL BRANCHES ---
+                selectorContainer.innerHTML = `
+                    <div class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
+                        خريطة فروع العلامة التجارية TREE (مستودعات تفاعلية)
+                    </div>
+                `;
+
+                // Calculate stats per branch
+                const branchStats = {};
+                liveLocationsData.forEach(loc => {
+                    if (loc.location_id) {
+                        branchStats[loc.location_id] = { qty: 0, uniqueSKUs: 0 };
+                    }
+                });
+                liveInventoryData.forEach(item => {
+                    if (item.location_id && branchStats[item.location_id]) {
+                        branchStats[item.location_id].qty += Number(item.quantity || 0);
+                        if (Number(item.quantity || 0) > 0) {
+                            branchStats[item.location_id].uniqueSKUs++;
+                        }
+                    }
+                });
+
+                let mapHtml = '';
+                Object.entries(branchStats).sort().forEach(([branchName, stats]) => {
+                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100';
+                    if (stats.qty > 10000) {
+                        colorClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70';
+                    } else if (stats.qty > 1000) {
+                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100';
+                    }
+
+                    mapHtml += `
+                        <div class="flex flex-col p-5 rounded-2xl border transition shadow-sm ${colorClass}">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <h4 class="font-extrabold text-sm text-slate-800">${branchName}</h4>
+                            </div>
+                            <div class="space-y-1.5 my-3 text-xs text-slate-500 font-medium">
+                                <div class="flex justify-between">
+                                    <span>رصيد المخزون:</span>
+                                    <span class="font-bold text-slate-700">${stats.qty.toLocaleString('ar-EG')} قطعة</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>الأصناف الفريدة:</span>
+                                    <span class="font-bold text-slate-700">${stats.uniqueSKUs.toLocaleString('ar-EG')} صنف</span>
+                                </div>
+                            </div>
+                            <button onclick="onBranchFilterChange('${branchName}')" 
+                                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold text-[11px] py-2 rounded-xl transition mt-auto shadow-sm">
+                                عرض تفاصيل الفرع
+                            </button>
+                        </div>
+                    `;
+                });
+
+                if (Object.keys(branchStats).length === 0) {
+                    gridContainer.innerHTML = `
+                        <div class="col-span-full py-8 text-center text-xs text-slate-400 font-semibold">
+                            لا توجد فروع مسجلة. ارفع ملف الفروع للبدء.
+                        </div>
+                    `;
+                } else {
+                    gridContainer.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full";
+                    gridContainer.innerHTML = mapHtml;
+                }
+
+            } else {
+                // --- VIEW SINGLE BRANCH (VIRTUAL SHELF LAYOUT) ---
+                const branchName = activeBranchFilter;
+                const zones = ['A', 'B', 'C', 'D', 'E'];
+                
+                if (!zones.includes(selectedMapZone)) {
+                    selectedMapZone = 'A';
+                }
+
+                let selectorHtml = '';
+                zones.forEach(zone => {
+                    const activeClass = zone === selectedMapZone
+                        ? 'bg-brand-deep text-white shadow-sm font-bold scale-105'
+                        : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200';
+                    selectorHtml += `
+                        <button onclick="selectMapZone('${zone}')" class="px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition duration-200 ${activeClass}">
+                            المنطقة ${zone} (${getCategoryName(zone).split(' ')[0]})
+                        </button>
+                    `;
+                });
+                selectorContainer.innerHTML = selectorHtml;
+
+                const branchInventory = getBranchFilteredInventory();
+                const zoneItems = branchInventory.filter(item => getProductCategory(item.barcode) === selectedMapZone);
+
+                const shelfCount = 6;
+                const shelfItemsMap = {};
+                for (let s = 1; s <= shelfCount; s++) {
+                    shelfItemsMap[`الرف ${selectedMapZone}-${s}`] = [];
+                }
+
+                zoneItems.forEach((item, idx) => {
+                    const shelfIndex = (idx % shelfCount) + 1;
+                    shelfItemsMap[`الرف ${selectedMapZone}-${shelfIndex}`].push(item);
+                });
+
+                let mapHtml = '';
+                for (let s = 1; s <= shelfCount; s++) {
+                    const shelfId = `الرف ${selectedMapZone}-${s}`;
+                    const itemsOnShelf = shelfItemsMap[shelfId];
+                    const qty = itemsOnShelf.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100/70'; 
+                    if (qty > 0 && qty <= 50) {
+                        colorClass = 'bg-rose-50/50 border-rose-200 text-rose-700 hover:bg-rose-100/70'; 
+                    } else if (qty > 50 && qty <= 500) {
+                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100/70'; 
+                    } else if (qty > 500) {
+                        colorClass = 'bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70'; 
+                    }
+
+                    mapHtml += `
+                        <button onclick="showVirtualShelfDetails('${branchName}', '${selectedMapZone}', ${s})" 
+                                class="flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03]">
+                            <span class="text-xs font-black tracking-tight text-slate-800">${shelfId}</span>
+                            <span class="text-[10px] font-extrabold mt-1 text-slate-500">${qty.toLocaleString('ar-EG')} قطعة</span>
+                            <span class="text-[9px] font-semibold mt-0.5 opacity-70">${itemsOnShelf.length} صنف</span>
+                        </button>
+                    `;
+                }
+
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 gap-4 w-full";
+                gridContainer.innerHTML = mapHtml;
+            }
+        }
+
+        function selectMapZone(zone) {
+            selectedMapZone = zone;
+            renderWarehouseMap();
+            const panel = document.getElementById('map-shelf-details');
+            if (panel) panel.classList.add('hidden');
+        }
+
+        function showShelfDetails(shelfId) {
+            // Backwards compatibility mapper
+            const branchName = activeBranchFilter && activeBranchFilter !== 'all' ? activeBranchFilter : 'الفرع';
+            const parts = shelfId.split('-');
+            const zone = parts[0] ? parts[0].toUpperCase() : 'A';
+            const shelfNum = parts[1] ? parseInt(parts[1], 10) : 1;
+            showVirtualShelfDetails(branchName, zone, isNaN(shelfNum) ? 1 : shelfNum);
+        }
+
+        function showVirtualShelfDetails(branchName, zone, shelfNumber) {
+            const panel = document.getElementById('map-shelf-details');
+            const titleEl = document.getElementById('map-selected-shelf-id');
+            const qtyEl = document.getElementById('map-selected-shelf-qty');
+            const listEl = document.getElementById('map-shelf-items-list');
+            if (!panel || !titleEl || !qtyEl || !listEl) return;
+
+            const shelfId = `الرف ${zone}-${shelfNumber}`;
+            titleEl.textContent = `${branchName} - ${shelfId}`;
+            panel.classList.remove('hidden');
+
+            const branchInventory = getBranchFilteredInventory();
+            const zoneItems = branchInventory.filter(item => getProductCategory(item.barcode) === zone);
+
+            const shelfItems = zoneItems.filter((item, idx) => (idx % 6) + 1 === shelfNumber && item.quantity > 0);
+            const totalQty = shelfItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            qtyEl.textContent = `إجمالي: ${totalQty.toLocaleString('ar-EG')} قطعة`;
+
+            if (shelfItems.length === 0) {
+                listEl.innerHTML = '<p class="col-span-full text-center py-4 text-[10px] text-slate-400">الرف فارغ حالياً.</p>';
+                return;
+            }
+
+            let html = '';
+            shelfItems.forEach(item => {
+                const catalogItem = getProductCatalogItem(item.barcode);
+                const name = catalogItem ? catalogItem.product_name : 'صنف غير مسجل في الكتالوج';
+                const imgUrl = getProductImage(item.barcode);
+                const imgHtml = imgUrl 
+                    ? `<img src="${imgUrl}" class="w-8 h-8 object-cover rounded bg-white shadow-sm border" alt="">`
+                    : `<div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+
+                html += `
+                    <div class="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-lg hover:shadow-sm transition">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-slate-700 truncate">${name}</p>
+                            <p class="text-[9px] text-slate-400 font-mono mt-0.5 truncate">${item.barcode}</p>
+                        </div>
+                        <div class="font-extrabold text-[11px] font-mono text-slate-800 bg-slate-50 px-2 py-0.5 rounded border">
+                            ${item.quantity}
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+            lucide.createIcons();
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ================= الأصناف الراكدة (DEAD STOCK ALERTS) =================
+        function renderDeadStockAlerts() {
+            const grid = document.getElementById('dead-stock-items-grid');
+            const panel = document.getElementById('dead-stock-alert-panel');
+            if (!grid || !panel) return;
+
+            // 1. تجميع الباركودات المطلوبة في كل الطلبات المرفوعة لشوبيفاي (باستخدام المجموعات المجهزة مسبقاً)
+            const orderedSkus = new Set();
+            liveOrdersData.forEach(order => {
+                if (order.cleanedBarcodes) {
+                    for (const bc of order.cleanedBarcodes) {
+                        orderedSkus.add(bc);
+                    }
+                }
+            });
+
+            // 2. تصفية الأصناف: متوفرة بالمخزن فيزيائياً ولكن صفر مبيعات في الطلبات
+            const deadStockItems = [];
+            const maxAlerts = 50; // حد أقصى للحفاظ على سرعة المتصفح
+            
+            // تحديد خريطة الكميات والكتالوج بناءً على الفلتر النشط للفرع
+            let qtyMap = inventoryQtyByBarcodeMap;
+            let targetCatalog = liveCatalogData;
+            
+            if (activeBranchFilter && activeBranchFilter !== 'all') {
+                const branchInventory = getBranchFilteredInventory();
+                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+                targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+                
+                qtyMap = new Map();
+                branchInventory.forEach(item => {
+                    qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                });
+            }
+
+            for (const product of targetCatalog) {
+                if (deadStockItems.length >= maxAlerts) break;
+                
+                const cleanBC = getCleanedProductBarcode(product);
+                if (!orderedSkus.has(cleanBC)) {
+                    const physicalQty = qtyMap.get(product.barcode) || 0;
+                    if (physicalQty > 0) {
+                        deadStockItems.push({
+                            barcode: product.barcode,
+                            name: product.product_name,
+                            physicalQty: physicalQty,
+                            imageUrl: getProductImage(product.barcode)
+                        });
+                    }
+                }
+            }
+
+            if (deadStockItems.length === 0) {
+                panel.classList.add('hidden');
+                grid.innerHTML = '';
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            let html = '';
+            deadStockItems.forEach(item => {
+                const imgHtml = item.imageUrl 
+                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
+                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                
+                html += `
+                    <div class="flex items-center gap-3 p-3 bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-xl transition">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
+                            <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                        </div>
+                        <div class="text-left">
+                            <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">
+                                رصيد: ${item.physicalQty}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // ================= كاميرا الهاتف لمسح الباركود (MOBILE BARCODE SCANNER) =================
+        let html5QrcodeScanner = null;
+
+        function openScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            lucide.createIcons();
+            
+            if (typeof Html5Qrcode === 'undefined') {
+                alert("جاري تحميل مكتبة الكاميرا، يرجى التأكد من الاتصال بالإنترنت.");
+                return;
+            }
+
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    startScanning();
+                }).catch(() => {
+                    startScanning();
+                });
+            } else {
+                startScanning();
+            }
+        }
+
+        function startScanning() {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: function(width, height) {
+                        return { width: Math.floor(width * 0.8), height: Math.floor(height * 0.4) }; // مستطيل مناسب للباركود
+                    }
+                },
+                (decodedText) => {
+                    const bcInput = document.getElementById('query-barcode-input');
+                    if (bcInput) {
+                        bcInput.value = decodedText;
+                        handleQuerySearch();
+                    }
+                    closeScanner();
+                },
+                (errorMessage) => {
+                    // أخطاء القراءة المستمرة أثناء المسح طبيعية جداً
+                }
+            ).catch(err => {
+                console.error("Camera access failed:", err);
+                alert("فشل الوصول إلى الكاميرا: " + err);
+                closeScanner();
+            });
+        }
+
+        function closeScanner() {
+            document.getElementById('scanner-modal').classList.add('hidden');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner = null;
+                }).catch(err => {
+                    console.error("Error stopping scanner:", err);
+                    html5QrcodeScanner = null;
+                });
+            }
+        }
+
+        // ================= EXECUTIVE DASHBOARD LOGIC =================
+        function renderExecutiveDashboard() {
+            const filteredInventory = getBranchFilteredInventory();
+            const filteredCatalog = getBranchFilteredCatalog();
+
+            // 1. Calculate Total Inventory Value (Mocking 250 EGP per unit on average for display)
+            let totalQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            let estimatedValue = totalQty * 250;
+            document.getElementById('exec-inventory-value').textContent = `EGP ${estimatedValue.toLocaleString('ar-EG')}`;
+
+            // 2. Shrinkage/Discrepancy Count
+            let discrepancyCount = auditLogsData.filter(log => {
+                if (log.action !== 'تسجيل عجز بالرف') return false;
+                if (!activeBranchFilter || activeBranchFilter === 'all') return true;
+                return log.details && log.details.includes(activeBranchFilter);
+            }).length;
+            document.getElementById('exec-discrepancy-count').textContent = discrepancyCount.toLocaleString('ar-EG');
+
+            // 3. Dead Stock Percent
+            const orderedBarcodes = new Set();
+            const branchBarcodes = new Set(filteredInventory.map(item => item.barcode));
+            const filteredOrders = (!activeBranchFilter || activeBranchFilter === 'all')
+                ? liveOrdersData
+                : liveOrdersData.filter(order => {
+                    if (!order.items) return false;
+                    return order.items.some(item => branchBarcodes.has(cleanBarcode(item.sku)));
+                });
+            filteredOrders.forEach(o => {
+                if(o.items) o.items.forEach(i => orderedBarcodes.add(cleanBarcode(i.sku)));
+            });
+            const deadItems = filteredCatalog.filter(c => !orderedBarcodes.has(cleanBarcode(c.barcode)));
+            const catalogCount = filteredCatalog.length;
+            let deadPercent = catalogCount > 0 ? Math.round((deadItems.length / catalogCount) * 100) : 0;
+            document.getElementById('exec-dead-stock-percent').textContent = `${deadPercent}%`;
+
+            // 4. Daily Ops
+            let todayOps = auditLogsData.filter(log => {
+                const logDate = new Date(log.created_at || log.timestamp).toDateString();
+                const today = new Date().toDateString();
+                if (logDate !== today) return false;
+                if (!activeBranchFilter || activeBranchFilter === 'all') return true;
+                return log.details && log.details.includes(activeBranchFilter);
+            }).length;
+            document.getElementById('exec-daily-ops').textContent = todayOps.toLocaleString('ar-EG');
+
+            // 5. Health Score
+            let healthScore = 100 - deadPercent - (discrepancyCount > 0 ? Math.min(discrepancyCount, 20) : 0);
+            const healthEl = document.getElementById('exec-health-score');
+            if (healthEl) {
+                healthEl.textContent = `${Math.max(0, healthScore)}%`;
+                healthEl.className = `text-3xl font-black ${healthScore >= 80 ? 'text-emerald-400' : (healthScore >= 50 ? 'text-amber-400' : 'text-rose-400')}`;
+            }
+
+            // 6. Render Heatmap (A-Z)
+            renderWarehouseHeatmap();
+        }
+
+        function renderWarehouseHeatmap() {
+            const container = document.getElementById('exec-heatmap-container');
+            const descEl = document.getElementById('exec-heatmap-description');
+            if (!container) return;
+
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            const branchDensity = {};
+
+            if (descEl) {
+                descEl.textContent = isAll 
+                    ? "توزيع كثافة المخزون الإجمالي على فروع العلامة التجارية TREE. اضغط على أي فرع للفلترة المباشرة."
+                    : `توزيع مخزون فرع (${activeBranchFilter}) حسب تصنيفات المنتجات.`;
+            }
+
+            if (isAll) {
+                // Initialize branches with 0
+                liveLocationsData.forEach(loc => {
+                    if (loc.location_id) branchDensity[loc.location_id] = 0;
+                });
+                // Accumulate stock per branch
+                liveInventoryData.forEach(item => {
+                    if (item.location_id && branchDensity[item.location_id] !== undefined) {
+                        branchDensity[item.location_id] += Number(item.quantity || 0);
+                    }
+                });
+            } else {
+                // If a specific branch is selected, show category distribution
+                const categories = ["A", "B", "C", "D", "E"];
+                categories.forEach(c => branchDensity[getCategoryName(c)] = 0);
+
+                const branchInventory = getBranchFilteredInventory();
+                branchInventory.forEach(item => {
+                    const cat = getProductCategory(item.barcode);
+                    const catName = getCategoryName(cat);
+                    if (branchDensity[catName] !== undefined) {
+                        branchDensity[catName] += Number(item.quantity || 0);
+                    }
+                });
+            }
+
+            let maxDensity = Math.max(...Object.values(branchDensity), 1); // Avoid div by 0
+
+            let html = '';
+            for (const [zone, qty] of Object.entries(branchDensity)) {
+                let densityRatio = qty / maxDensity;
+                let bgColor = 'bg-slate-50 text-slate-500 border-slate-200';
+                let badgeColor = 'bg-slate-200/60 text-slate-700';
+                
+                if (qty > 0) {
+                    if (densityRatio > 0.7) {
+                        bgColor = 'bg-emerald-50 text-emerald-950 border-emerald-200 hover:bg-emerald-100/60';
+                        badgeColor = 'bg-emerald-500 text-white';
+                    } else if (densityRatio > 0.3) {
+                        bgColor = 'bg-emerald-50/50 text-emerald-900 border-emerald-100 hover:bg-emerald-50';
+                        badgeColor = 'bg-emerald-400 text-white';
+                    } else {
+                        bgColor = 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+                        badgeColor = 'bg-slate-300 text-slate-800';
+                    }
+                }
+
+                html += `
+                    <div class="flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition hover:scale-[1.02] cursor-pointer" 
+                         onclick="${isAll ? `onBranchFilterChange('${zone}')` : ''}" 
+                         title="${zone} - القطع: ${qty}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black tracking-tight">${zone}</span>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                        </div>
+                        <div class="w-full bg-slate-200/40 rounded-full h-1.5 mt-1 overflow-hidden">
+                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${Math.round(densityRatio * 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // ================= DISCREPANCY REPORTING LOGIC =================
+        function promptDiscrepancy(barcode, systemQty) {
+            const actualQtyStr = prompt("الرصيد النظامي هو " + systemQty + " قطعة.\nما هي الكمية التي وجدتها بالفعل على الرف؟");
+            if (actualQtyStr === null || actualQtyStr.trim() === '') return;
+
+            const actualQty = parseInt(actualQtyStr, 10);
+            if (isNaN(actualQty) || actualQty < 0) {
+                alert("الرجاء إدخال رقم صحيح.");
+                return;
+            }
+
+            const diff = actualQty - systemQty;
+            if (diff === 0) {
+                alert("الكمية مطابقة للنظام، لا يوجد عجز!");
+                return;
+            }
+
+            const diffMsg = diff > 0 ? "زيادة بمقدار " + diff : "عجز بمقدار " + Math.abs(diff);
+            const confirmMsg = "تأكيد تسجيل الفارق؟\nالكمية الفعلية المدخلة: " + actualQty + "\nالفارق المكتشف: " + diffMsg + "\nسيتم إشعار الإدارة فوراً.";
+            
+            if (confirm(confirmMsg)) {
+                submitDiscrepancy(barcode, systemQty, actualQty, diff);
+            }
+        }
+
+        async function submitDiscrepancy(barcode, systemQty, actualQty, diff) {
+            logToConsole('system', "جاري إرسال بلاغ عجز للإدارة عن الصنف " + barcode + "...");
+            try {
+                const branchText = (activeBranchFilter && activeBranchFilter !== "all") ? " في الفرع: " + activeBranchFilter : "";
+                await addActivityLog('تسجيل عجز بالرف', "تم الإبلاغ عن فارق جرد للباركود " + barcode + branchText + " (النظام: " + systemQty + "، الفعلي: " + actualQty + ")");
+                
+                logToConsole('success', "تم رفع تقرير العجز للإدارة بنجاح.");
+                alert("تم تسجيل البلاغ ورفعه للإدارة بنجاح!");
+                
+                if(activeTab === 'executive') renderExecutiveDashboard();
+            } catch (err) {
+                console.error("Discrepancy submit error:", err);
+                alert("حدث خطأ أثناء تسجيل العجز.");
+            }
+        }
+    </script>
+    <!-- Edit Stock Quantity Modal -->
+    <div id="edit-qty-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-brand-accent"></i>
+                    تعديل المخزون الفعلي بالرف يدوياً
+                </h4>
+                <button onclick="closeEditQtyModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">الباركود</span>
+                        <p id="modal-barcode" class="text-xs font-bold text-slate-700 font-mono mt-0.5">-</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">الرف (الموقع)</span>
+                        <p id="modal-location" class="text-xs font-bold text-slate-700 font-mono mt-0.5">-</p>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded bg-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400" id="modal-img-container">
+                        <i data-lucide="shirt" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p id="modal-product-name" class="text-xs font-bold text-slate-700 truncate">اسم المنتج</p>
+                        <p id="modal-system-info" class="text-[10px] text-slate-400 mt-0.5">الكمية النظامية: -</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="modal-quantity-input" class="text-xs font-bold text-slate-600 block">الكمية الفعلية الجديدة بالرف:</label>
+                    <input type="number" id="modal-quantity-input" min="0" 
+                           class="w-full px-4 py-2.5 border-2 border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-4 focus:ring-brand-accent/20 focus:border-brand-accent rounded-xl text-base font-bold transition text-center">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-3 border-t border-slate-100 justify-end">
+                <button onclick="closeEditQtyModal()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 font-bold text-xs rounded-xl transition">إلغاء</button>
+                <button onclick="saveManualQtyAdjustment()" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-brand-deep/10">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    حفظ التغييرات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanner Modal for Camera scanning -->
+    <div id="scanner-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-fadeIn relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="camera" class="w-5 h-5 text-brand-accent"></i>
+                    مسح الباركود بكاميرا الجوال
+                </h3>
+                <button onclick="closeScanner()" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-slate-200">
+                <div id="reader" class="w-full h-full"></div>
+            </div>
+            <div class="text-center text-xs text-slate-500">
+                ضع باركود المنتج داخل مربع المسح للكشف التلقائي.
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Print Barcode Area optimized for A4 grid printing -->
+    <div id="print-barcode-area"></div>
+</body>
+</html>
 TREE_dashboard_v4.html
 جارٍ عرض "TREE_dashboard_v4.html".
