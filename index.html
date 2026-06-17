@@ -334,15 +334,15 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-3 flex-shrink-0">
-                        <button onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-upload" onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             مركز الرفع
                         </button>
-                        <button onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-picker" onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="package-check" class="w-4 h-4"></i>
                             شاشة التحضير
                         </button>
-                        <button onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-logs" onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="history" class="w-4 h-4"></i>
                             سجل العمليات
                         </button>
@@ -1779,6 +1779,15 @@
                     shopifyPanel.style.display = 'block';
                 }
             }
+
+            // إظهار أو إخفاء أزرار لوحة القيادة السريعة بناءً على الدور لمنع التنقل غير المصرح به
+            const dashUpload = document.getElementById('btn-dashboard-upload');
+            const dashPicker = document.getElementById('btn-dashboard-picker');
+            const dashLogs   = document.getElementById('btn-dashboard-logs');
+
+            if (dashUpload) dashUpload.style.display = (role === 'admin') ? 'flex' : 'none';
+            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online') ? 'flex' : 'none';
+            if (dashLogs)   dashLogs.style.display   = (role === 'admin') ? 'flex' : 'none';
 
             if (role === 'branch' && branch) {
                 const normBranch = normalizeLocationId(branch);
