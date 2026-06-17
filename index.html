@@ -301,7 +301,7 @@
                     استعلام الباركود الفوري
                 </button>
 
-                <button onclick="switchTab('analytics')" id="tab-analytics" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                <button onclick="switchTab('analytics')" id="tab-analytics" data-role="admin,online" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-400"></i>
                     التحليلات والأداء (WMS)
                 </button>
@@ -354,7 +354,7 @@
             <i data-lucide="undo-2" class="w-5 h-5"></i>
             <span>المرتجعات</span>
         </button>
-        <button onclick="switchTab('analytics')" id="mobile-tab-analytics" data-role="admin" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+        <button onclick="switchTab('analytics')" id="mobile-tab-analytics" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
             <span>الأداء</span>
         </button>
@@ -1505,6 +1505,116 @@
                 .replace(/ى\b/g, 'ي');                        // تحويل الألف اللينة في نهاية الكلمة إلى ياء
         }
 
+        // دالة تنظيف وتوحيد أسماء المدن والمحافظات
+        function normalizeCityName(city) {
+            if (!city) return 'أخرى';
+            let clean = city.toString().trim();
+            let lower = clean.toLowerCase();
+
+            // English mappings to standardized Arabic names
+            if (lower === 'cairo' || lower === 'cairo governorate' || lower === 'shippington') {
+                return 'القاهرة';
+            }
+            if (lower === 'alexandria' || lower === 'alex' || lower === 'el-alamein' || lower === 'agami' || lower === 'al-agami') {
+                return 'الإسكندرية';
+            }
+            if (lower === 'giza' || lower === 'giza governorate') {
+                return 'الجيزة';
+            }
+            if (lower === 'mansoura' || lower === 'el mansoura') {
+                return 'المنصورة';
+            }
+            if (lower === 'tanta') {
+                return 'طنطا';
+            }
+            if (lower === 'hurghada') {
+                return 'الغردقة';
+            }
+            if (lower === 'sharm el sheikh' || lower === 'sharm el-sheikh') {
+                return 'شرم الشيخ';
+            }
+            if (lower === 'port said') {
+                return 'بورسعيد';
+            }
+            if (lower === 'suez') {
+                return 'السويس';
+            }
+            if (lower === 'ismailia') {
+                return 'الإسماعيلية';
+            }
+            if (lower === 'fayoum' || lower === 'el fayoum') {
+                return 'الفيوم';
+            }
+            if (lower === 'zagazig') {
+                return 'الزقازيق';
+            }
+            if (lower === 'damietta') {
+                return 'دمياط';
+            }
+            if (lower === 'minya' || lower === 'el minya') {
+                return 'المنيا';
+            }
+            if (lower === 'asyut' || lower === 'assiut') {
+                return 'أسيوط';
+            }
+            if (lower === 'sohag') {
+                return 'سوهاج';
+            }
+            if (lower === 'luxor') {
+                return 'الأقصر';
+            }
+            if (lower === 'aswan') {
+                return 'أسوان';
+            }
+            if (lower === 'qena') {
+                return 'قنا';
+            }
+            if (lower === 'banha' || lower === 'benha') {
+                return 'بنها';
+            }
+
+            // Arabic cleaning and grouping
+            if (clean.includes('اسكندرية') || clean.includes('إسكندرية') || clean.includes('العجمي') || clean.includes('عجمي')) {
+                return 'الإسكندرية';
+            }
+            if (clean.includes('القاهرة') || clean === 'قاهره' || clean === 'القاهره') {
+                return 'القاهرة';
+            }
+            if (clean.includes('الجيزة') || clean === 'جيزة' || clean === 'الجيزه' || clean === 'جيزه') {
+                return 'الجيزة';
+            }
+            if (clean.includes('المنصورة') || clean === 'المنصوره' || clean === 'منصورة' || clean === 'منصوره') {
+                return 'المنصورة';
+            }
+            if (clean.includes('إسماعيلية') || clean.includes('اسماعيلية') || clean.includes('الإسماعيلية') || clean.includes('الاسماعيلية') || clean.includes('الاسماعيليه')) {
+                return 'الإسماعيلية';
+            }
+
+            let normalized = clean
+                .replace(/أ|إ|آ/g, 'ا')
+                .replace(/ة\b/g, 'ه')
+                .replace(/ى\b/g, 'ي');
+
+            if (normalized === 'الاسكندريه' || normalized === 'اسكندريه') return 'الإسكندرية';
+            if (normalized === 'القاهره' || normalized === 'قاهره') return 'القاهرة';
+            if (normalized === 'الجيزه' || normalized === 'جيزه') return 'الجيزة';
+            if (normalized === 'المنصوره' || normalized === 'منصوره') return 'المنصورة';
+            if (normalized === 'الاسماعيليه' || normalized === 'اسماعيليه') return 'الإسماعيلية';
+            if (normalized === 'الفيوم' || normalized === 'فيوم') return 'الفيوم';
+            if (normalized === 'بورسعيد') return 'بورسعيد';
+            if (normalized === 'السويس') return 'السويس';
+            if (normalized === 'الغردقه' || normalized === 'غردقه') return 'الغردقة';
+            if (normalized === 'المنيا' || normalized === 'منيا') return 'المنيا';
+            if (normalized === 'اسيوط' || normalized === 'اسيوط') return 'أسيوط';
+            if (normalized === 'سوهاج') return 'سوهاج';
+            if (normalized === 'الاقصر' || normalized === 'اقصر') return 'الأقصر';
+            if (normalized === 'اسوان') return 'أسوان';
+            if (normalized === 'قنا') return 'قنا';
+            if (normalized === 'بنها') return 'بنها';
+
+            return clean;
+        }
+
         // استخراج الباركود الرقمي الأساسي المكون من 10 إلى 14 رقمًا (EAN-13)
         function extractBaseBarcode(sku) {
             if (!sku) return '';
@@ -1946,7 +2056,7 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'transfers', 'logs', 'analytics'];
+                hiddenTabs = ['executive', 'upload', 'transfers', 'logs'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
@@ -5485,7 +5595,7 @@
                 const orderNo = order.order_number || order.order_id || '-';
                 const customer = order.customer_name || 'عميل شوبيفاي';
                 const phone = order.customer_phone || '-';
-                const city = order.city || '-';
+                const city = order.city ? normalizeCityName(order.city) : '-';
                 const address = order.address || '-';
                 const price = order.total_price ? Number(order.total_price).toLocaleString('ar-EG') + ' ج.م' : '-';
                 
@@ -6697,7 +6807,7 @@
             
             const customerName = order.customer_name || 'عميل شوبيفاي';
             const customerPhone = order.customer_phone || order.phone || '01000000000';
-            const city = order.city || order.shipping_city || 'القاهرة';
+            const city = normalizeCityName(order.city || order.shipping_city || 'القاهرة');
             const address = order.address || order.shipping_address || 'جمهورية مصر العربية';
             const dateStr = new Date().toLocaleDateString('ar-EG');
             const itemsArr = Array.isArray(order.items) ? order.items : [order.items];
@@ -6965,7 +7075,8 @@
             
             const cityCounts = {};
             liveOrdersData.forEach(o => {
-                const city = o.city || 'أخرى';
+                const rawCity = o.city || o.shipping_city || 'أخرى';
+                const city = normalizeCityName(rawCity);
                 cityCounts[city] = (cityCounts[city] || 0) + 1;
             });
             
