@@ -151,8 +151,12 @@
                 <div class="space-y-4">
                     <div>
                         <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم</label>
-                        <input id="login-username" type="text" placeholder="admin" autocomplete="username"
-                            class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition">
+                        <select id="login-username"
+                            class="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-brand-deep transition cursor-pointer">
+                            <option value="admin" class="bg-brand-deep text-white">الإدارة</option>
+                            <option value="online" class="bg-brand-deep text-white">الأونلاين</option>
+                            <option value="branch" class="bg-brand-deep text-white">الفروع</option>
+                        </select>
                     </div>
                     <div>
                         <label class="text-brand-200 text-xs font-bold block mb-1.5">كلمة المرور / رمز الدخول</label>
@@ -169,15 +173,19 @@
 
                 <!-- Role hints -->
                 <div class="mt-5 pt-4 border-t border-white/10 space-y-2">
-                    <p class="text-brand-300 text-[10px] font-bold uppercase tracking-wider text-center mb-2">أدوار الدخول</p>
-                    <div class="flex gap-2">
-                        <div class="flex-1 bg-white/5 rounded-lg p-2 text-center">
-                            <p class="text-white text-xs font-bold">مدير النظام</p>
-                            <p class="text-brand-300 text-[10px]">كل الصلاحيات</p>
+                    <p class="text-brand-300 text-[10px] font-bold uppercase tracking-wider text-center mb-2">كلمات المرور الافتراضية للأدوار</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white/5 rounded-lg p-2 text-center">
+                            <p class="text-white text-xs font-bold">الإدارة</p>
+                            <p class="text-brand-300 text-[10px] font-mono select-all">TREE123</p>
                         </div>
-                        <div class="flex-1 bg-white/5 rounded-lg p-2 text-center">
-                            <p class="text-white text-xs font-bold">موظف فرع</p>
-                            <p class="text-brand-300 text-[10px]">الاستعلام والمخزون</p>
+                        <div class="bg-white/5 rounded-lg p-2 text-center">
+                            <p class="text-white text-xs font-bold">الأونلاين</p>
+                            <p class="text-brand-300 text-[10px] font-mono select-all">ONLINE123</p>
+                        </div>
+                        <div class="bg-white/5 rounded-lg p-2 text-center">
+                            <p class="text-white text-xs font-bold">الفروع</p>
+                            <p class="text-brand-300 text-[10px] font-mono select-all">21587</p>
                         </div>
                     </div>
                 </div>
@@ -1651,10 +1659,9 @@
 
         // ================= RBAC CONFIG =================
         const USERS = [
-            { username: 'admin',  password: 'TREE123', role: 'admin',           branch: null },
-            { username: 'branch', password: '21587',   role: 'branch_employee', branch: null },
-            // لإضافة فرع بكلمة سر خاصة أضف سطراً جديداً هنا:
-            // { username: 'samouha', password: 'SAM001', role: 'branch_employee', branch: 'فرع سموحة' },
+            { username: 'admin',  password: 'TREE123',   role: 'admin',  branch: null },
+            { username: 'online', password: 'ONLINE123', role: 'online', branch: null },
+            { username: 'branch', password: '21587',     role: 'branch', branch: null }
         ];
 
         let currentUser = null;
@@ -1671,7 +1678,7 @@
                     .trim();
             }
 
-            const username = normalize(usernameRaw).toLowerCase();
+            const username = usernameRaw.toLowerCase();
             const pin      = normalize(pinRaw).toUpperCase();
 
             // بحث بدون حساسية حالة الأحرف بالاسم والرقم السري
@@ -1679,11 +1686,6 @@
                 u.username.trim().toLowerCase() === username &&
                 u.password.trim().toUpperCase() === pin
             );
-
-            // تسهيل الدخول: إذا لم يكتب المستخدم اسم مستخدم، نبحث بكلمة المرور/الرمز فقط
-            if (!user && !username) {
-                user = USERS.find(u => u.password.trim().toUpperCase() === pin);
-            }
 
             const errEl = document.getElementById('login-error');
             if (!user) {
@@ -1713,7 +1715,16 @@
                 try {
                     applyRBACRules(user.role, user.branch);
                     if (typeof lucide !== 'undefined') lucide.createIcons();
-                    const defaultTab = (user.role === 'branch_employee') ? 'query' : 'dashboard';
+                    
+                    let defaultTab = 'dashboard';
+                    if (user.role === 'branch') {
+                        defaultTab = 'inventory';
+                    } else if (user.role === 'online') {
+                        defaultTab = 'dashboard';
+                    } else { // admin
+                        defaultTab = 'executive';
+                    }
+                    
                     if (typeof switchTab === 'function') switchTab(defaultTab);
                     if (typeof initializeDatabaseConnection === 'function') initializeDatabaseConnection();
                     if (typeof updateUploadCardsResponsiveState === 'function') updateUploadCardsResponsiveState();
@@ -1724,32 +1735,60 @@
         }
 
         function applyRBACRules(role, branch) {
-            const adminOnlyTabs    = ['executive', 'upload', 'picker', 'logs'];
-            const adminOnlyMobTabs = ['executive', 'upload', 'picker'];
+            // إعادة ضبط ظهور جميع التبويبات أولاً
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs'];
+            allTabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                if (btn) btn.style.display = 'flex';
+                const mobBtn = document.getElementById('mobile-tab-' + t);
+                if (mobBtn) mobBtn.style.display = 'flex';
+            });
 
-            if (role === 'branch_employee') {
-                adminOnlyTabs.forEach(t => {
-                    const btn = document.getElementById('tab-' + t);
-                    if (btn) btn.style.display = 'none';
-                });
-                adminOnlyMobTabs.forEach(t => {
-                    const btn = document.getElementById('mobile-tab-' + t);
-                    if (btn) btn.style.display = 'none';
-                });
-                if (branch) {
-                    const normBranch = normalizeLocationId(branch);
-                    activeBranchFilter = normBranch;
-                    const sel = document.getElementById('branch-filter-select');
-                    if (sel) sel.value = normBranch;
-                }
-                setTimeout(() => {
-                    const badge = document.createElement('span');
-                    badge.className = 'text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200';
-                    badge.innerHTML = '<span style="font-style:normal">&#128100;</span> موظف فرع';
-                    const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
-                    if (headerRight) headerRight.prepend(badge);
-                }, 300);
+            // تحديد التبويبات المخفية وخصائص الشارة حسب الدور
+            let hiddenTabs = [];
+            let roleLabel = '';
+            let roleClass = '';
+
+            if (role === 'online') {
+                hiddenTabs = ['executive', 'upload', 'transfers', 'logs'];
+                roleLabel = '💻 قسم الأونلاين';
+                roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
+            } else if (role === 'branch') {
+                hiddenTabs = ['executive', 'upload', 'dashboard', 'picker', 'logs'];
+                roleLabel = '🏪 موظف الفرع';
+                roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
+            } else { // admin
+                roleLabel = '👑 مدير النظام';
+                roleClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
             }
+
+            // إخفاء التبويبات غير المسموحة للمستخدم الحالي
+            hiddenTabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                if (btn) btn.style.display = 'none';
+                const mobBtn = document.getElementById('mobile-tab-' + t);
+                if (mobBtn) mobBtn.style.display = 'none';
+            });
+
+            if (role === 'branch' && branch) {
+                const normBranch = normalizeLocationId(branch);
+                activeBranchFilter = normBranch;
+                const sel = document.getElementById('branch-filter-select');
+                if (sel) sel.value = normBranch;
+            }
+
+            // إظهار شارة الدور في الهيدر
+            setTimeout(() => {
+                const existing = document.getElementById('rbac-role-badge');
+                if (existing) existing.remove();
+
+                const badge = document.createElement('span');
+                badge.id = 'rbac-role-badge';
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border ' + roleClass;
+                badge.textContent = roleLabel;
+                const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+                if (headerRight) headerRight.prepend(badge);
+            }, 300);
 
             // إظهار زر تسجيل الخروج للجميع دائماً
             setTimeout(() => {
@@ -2945,8 +2984,9 @@
                 subTitle.textContent = "كاشف فروقات ومطابقة الجرد الفيزيائي والنظامي";
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 
-                let discrepantItems = getDiscrepantItems();
-                document.getElementById('inventory-total-qty').textContent = discrepantItems.toLocaleString('ar-EG');
+                const discrepantItems = getDiscrepantItems();
+                const totalDiffQty = discrepantItems.reduce((sum, item) => sum + Math.abs(item.diff), 0);
+                document.getElementById('inventory-total-qty').textContent = totalDiffQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = discrepantItems.length.toLocaleString('ar-EG');
                 
                 filterInventory();
