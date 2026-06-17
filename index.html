@@ -462,6 +462,49 @@
                     </div>
                 </div>
 
+                <!-- Live Shopify Orders Section -->
+                <div id="dashboard-orders-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-50 p-2.5 rounded-xl text-emerald-600 border border-emerald-100">
+                                <i data-lucide="shopping-cart" class="w-5 h-5 animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">طلبات شوبيفاي المزامنة لايف (Supabase Realtime)</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">أحدث الطلبات المستلمة وتحديثات حالتها مباشرة بدون تحديث الصفحة.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                            <span class="text-xs text-slate-500 font-bold">الحالة:</span>
+                            <select id="dashboard-orders-status-filter" onchange="renderDashboardOrders()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700">
+                                <option value="all">كل الحالات</option>
+                                <option value="PENDING">قيد الانتظار (PENDING)</option>
+                                <option value="COMPLETED">مكتمل (COMPLETED)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Orders Table/List -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <th class="p-3 font-bold">رقم الأوردر</th>
+                                    <th class="p-3 font-bold">العميل</th>
+                                    <th class="p-3 font-bold">الهاتف</th>
+                                    <th class="p-3 font-bold">المدينة والعنوان</th>
+                                    <th class="p-3 font-bold text-center">عدد القطع</th>
+                                    <th class="p-3 font-bold text-left">القيمة الإجمالية</th>
+                                    <th class="p-3 font-bold text-center">الحالة</th>
+                                    <th class="p-3 font-bold">تاريخ الطلب</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-orders-tbody">
+                                <!-- Live orders rows will render here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Real-time Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Chart 1: Stock Distribution by Zone -->
@@ -1482,14 +1525,41 @@
             return product.cleanedBarcode;
         }
 
+        // Shopify orders helpers to support various JSONB formats dynamically
+        function getOrderItemSku(item) {
+            if (!item) return '';
+            return item.sku || item.barcode || item.line_item_sku || item.variant_sku || item.item_code || '';
+        }
+
+        function getOrderItemQty(item) {
+            if (!item) return 0;
+            const q = item.quantity !== undefined ? item.quantity : (item.qty !== undefined ? item.qty : item.quantity_ordered);
+            return q !== undefined ? Number(q) : 1;
+        }
+
+        function getOrderItemName(item) {
+            if (!item) return '';
+            return item.itemName || item.name || item.title || item.product_name || 'منتج شوبيفاي';
+        }
+
         // دالة لتنظيف وتجهيز باركودات طلبات شوبيفاي دفعة واحدة عند تحميلها لتجنب التكرار في الحلقات
         function preprocessOrdersBarcodes(orders) {
             if (!orders) return;
             orders.forEach(order => {
+                // Safe JSON parsing if items is returned as string from database
+                if (typeof order.items === 'string') {
+                    try {
+                        order.items = JSON.parse(order.items);
+                    } catch(e) {
+                        console.error("Failed to parse items string for order", order.order_id, e);
+                    }
+                }
                 if (order.items && !order.cleanedBarcodes) {
                     const barcodeSet = new Set();
-                    order.items.forEach(item => {
-                        const clean = cleanBarcode(item.sku);
+                    const itemsArr = Array.isArray(order.items) ? order.items : [order.items];
+                    itemsArr.forEach(item => {
+                        const sku = getOrderItemSku(item);
+                        const clean = cleanBarcode(sku);
                         if (clean) barcodeSet.add(clean);
                     });
                     order.cleanedBarcodes = barcodeSet;
@@ -1875,6 +1945,7 @@
                 updateDashboardCharts();
                 renderLowStockAlerts();
                 renderDeadStockAlerts();
+                renderDashboardOrders();
             } else if (activeTab === 'inventory') {
                 if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
                     filterInventory();
@@ -2243,6 +2314,7 @@
 
                 renderOrderPicker();
                 renderDeadStockAlerts();
+                renderDashboardOrders();
             } catch (err) {
                 console.error("Error loading orders data from Supabase:", err);
             }
@@ -3251,22 +3323,28 @@
                 
                 // OPTIMIZE PICKING PATH: Sort items inside the order based on their physical shelf locations
                 items.sort((a, b) => {
-                    const locA = getSkuFirstLocation(a.sku);
-                    const locB = getSkuFirstLocation(b.sku);
+                    const skuA = getOrderItemSku(a);
+                    const skuB = getOrderItemSku(b);
+                    const locA = getSkuFirstLocation(skuA);
+                    const locB = getSkuFirstLocation(skuB);
                     return locA.localeCompare(locB);
                 });
 
                 let itemsHtml = '';
                 
                 items.forEach(item => {
-                    const imgUrl = getProductImage(item.sku);
+                    const sku = getOrderItemSku(item);
+                    const qty = getOrderItemQty(item);
+                    const name = getOrderItemName(item);
+                    
+                    const imgUrl = getProductImage(sku);
                     
                     const imgHtml = imgUrl 
                         ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl bg-slate-50 shadow-sm" alt="صورة الصنف">`
                         : `<div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-6 h-6"></i></div>`;
 
                     // Find shelves matching this variant using O(1) indexes
-                    const cleanSKU = cleanBarcode(item.sku);
+                    const cleanSKU = cleanBarcode(sku);
                     let locationsWithStock = inventoryLocationsByBarcodeMap.get(cleanSKU) || [];
                     if (locationsWithStock.length === 0) {
                         const baseSKU = extractBaseBarcode(cleanSKU);
@@ -3300,8 +3378,8 @@
                             <div class="flex items-center gap-4">
                                 ${imgHtml}
                                 <div>
-                                    <h5 class="text-sm font-bold text-slate-800">${item.itemName || 'اسم صنف غير معروف'}</h5>
-                                    <p class="text-xs text-slate-400 font-mono mt-0.5">باركد: ${item.sku} | الكمية المطلوبة: <span class="font-bold text-slate-700 text-sm">${item.quantity.toLocaleString('ar-EG')}</span></p>
+                                    <h5 class="text-sm font-bold text-slate-800">${name}</h5>
+                                    <p class="text-xs text-slate-400 font-mono mt-0.5">باركود: ${sku} | الكمية المطلوبة: <span class="font-bold text-slate-700 text-sm">${qty.toLocaleString('ar-EG')}</span></p>
                                 </div>
                             </div>
                             
@@ -3362,15 +3440,16 @@
                 
                 // For each item in the order, deduct from inventory shelves
                 for (const item of orderItems) {
-                    const cleanSku = cleanBarcode(item.sku);
-                    let quantityNeeded = Number(item.quantity || 0);
+                    const sku = getOrderItemSku(item);
+                    const cleanSku = cleanBarcode(sku);
+                    let quantityNeeded = getOrderItemQty(item);
                     
                     // Find all shelves with stock for this SKU (try exact variant token match first)
-                    let shelves = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, item.sku) && inv.quantity > 0);
+                    let shelves = liveInventoryData.filter(inv => matchBarcodesExact(inv.barcode, sku) && inv.quantity > 0);
                     
                     // Fallback to base barcode match if no exact variant inventory is found
                     if (shelves.length === 0) {
-                        shelves = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, item.sku) && inv.quantity > 0);
+                        shelves = liveInventoryData.filter(inv => matchBarcodesBase(inv.barcode, sku) && inv.quantity > 0);
                     }
                     
                     // Deduct sequentially from shelves
@@ -3381,7 +3460,7 @@
                         if (shelf.quantity >= quantityNeeded) {
                             newQty = shelf.quantity - quantityNeeded;
                             quantityNeeded = 0;
-                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${shelf.barcode} بمقدار ${item.quantity}`);
+                            logToConsole('success', `سيتم خصم من الرف ${shelf.location_id} الصنف ${shelf.barcode} بمقدار ${getOrderItemQty(item)}`);
                         } else {
                             quantityNeeded -= shelf.quantity;
                             newQty = 0;
@@ -4984,6 +5063,95 @@
             listEl.innerHTML = html;
             lucide.createIcons();
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ================= طلبات شوبيفاي المزامنة لايف (LIVE SHOPIFY ORDERS) =================
+        function renderDashboardOrders() {
+            const tbody = document.getElementById('dashboard-orders-tbody');
+            if (!tbody) return;
+
+            if (liveOrdersData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">لا توجد طلبات شوبيفاي مسجلة حالياً في قاعدة البيانات.</td></tr>';
+                return;
+            }
+
+            const statusFilter = document.getElementById('dashboard-orders-status-filter') 
+                ? document.getElementById('dashboard-orders-status-filter').value 
+                : 'all';
+
+            let filtered = liveOrdersData;
+            
+            if (activeBranchFilter && activeBranchFilter !== 'all') {
+                const filteredInventory = getBranchFilteredInventory();
+                const branchBarcodes = new Set(filteredInventory.map(item => item.barcode));
+                filtered = filtered.filter(order => {
+                    if (!order.cleanedBarcodes) return false;
+                    for (const bc of order.cleanedBarcodes) {
+                        if (branchBarcodes.has(bc)) return true;
+                    }
+                    return false;
+                });
+            }
+
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(order => {
+                    const statusUpper = (order.status || '').toUpperCase();
+                    return statusUpper === statusFilter.toUpperCase();
+                });
+            }
+
+            filtered.sort((a, b) => {
+                const dateA = a.created_at || a.timestamp ? new Date(a.created_at || a.timestamp) : 0;
+                const dateB = b.created_at || b.timestamp ? new Date(b.created_at || b.timestamp) : 0;
+                return dateB - dateA;
+            });
+
+            const displayOrders = filtered.slice(0, 20);
+
+            if (displayOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">لا توجد طلبات مطابقة للفلاتر المحددة.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            displayOrders.forEach(order => {
+                const orderNo = order.order_number || order.order_id || '-';
+                const customer = order.customer_name || 'عميل شوبيفاي';
+                const phone = order.customer_phone || '-';
+                const city = order.city || '-';
+                const address = order.address || '-';
+                const price = order.total_price ? Number(order.total_price).toLocaleString('ar-EG') + ' ج.م' : '-';
+                
+                const itemsCount = (order.items && Array.isArray(order.items)) ? order.items.reduce((sum, item) => sum + getOrderItemQty(item), 0) : 0;
+                
+                let statusBadge = '';
+                const statusStr = (order.status || '').toUpperCase();
+                if (statusStr === 'PENDING') {
+                    statusBadge = '<span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">⏳ قيد التحضير</span>';
+                } else if (statusStr === 'COMPLETED') {
+                    statusBadge = '<span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">✅ مكتمل</span>';
+                } else {
+                    statusBadge = `<span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">${order.status || 'غير محدد'}</span>`;
+                }
+
+                const dateObj = (order.created_at || order.timestamp) ? new Date(order.created_at || order.timestamp) : new Date();
+                const dateStr = dateObj.getFullYear() + "-" + String(dateObj.getMonth()+1).padStart(2,'0') + "-" + String(dateObj.getDate()).padStart(2,'0') + " " + String(dateObj.getHours()).padStart(2,'0') + ":" + String(dateObj.getMinutes()).padStart(2,'0');
+
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td class="p-3 font-bold font-mono text-slate-800">#${orderNo}</td>
+                        <td class="p-3 font-semibold text-slate-700">${customer}</td>
+                        <td class="p-3 font-mono text-slate-500">${phone}</td>
+                        <td class="p-3 text-slate-600">${city} - ${address}</td>
+                        <td class="p-3 text-center font-bold font-mono text-brand-deep">${itemsCount}</td>
+                        <td class="p-3 text-left font-bold text-slate-700">${price}</td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-slate-500 font-mono">${dateStr}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
         }
 
         // ================= الأصناف الراكدة (DEAD STOCK ALERTS) =================
