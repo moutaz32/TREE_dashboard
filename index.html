@@ -1718,7 +1718,7 @@
                     
                     let defaultTab = 'dashboard';
                     if (user.role === 'branch') {
-                        defaultTab = 'inventory';
+                        defaultTab = 'dashboard';
                     } else if (user.role === 'online') {
                         defaultTab = 'dashboard';
                     } else { // admin
@@ -1754,7 +1754,7 @@
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
-                hiddenTabs = ['executive', 'upload', 'dashboard', 'picker', 'logs'];
+                hiddenTabs = ['executive', 'upload', 'picker', 'logs'];
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else { // admin
@@ -1769,6 +1769,16 @@
                 const mobBtn = document.getElementById('mobile-tab-' + t);
                 if (mobBtn) mobBtn.style.display = 'none';
             });
+
+            // إظهار أو إخفاء جدول طلبات شوبيفاي المباشرة في لوحة التحكم بناءً على الدور
+            const shopifyPanel = document.getElementById('dashboard-orders-panel');
+            if (shopifyPanel) {
+                if (role === 'branch') {
+                    shopifyPanel.style.display = 'none';
+                } else {
+                    shopifyPanel.style.display = 'block';
+                }
+            }
 
             if (role === 'branch' && branch) {
                 const normBranch = normalizeLocationId(branch);
