@@ -4132,7 +4132,8 @@
             filteredInventory.forEach(item => {
                 let key = 'غير محدد';
                 if (isAll) {
-                    key = item.location_id || 'غير محدد';
+                    const loc = item.location_id || 'غير محدد';
+                    key = loc !== 'غير محدد' ? "المنطقة " + loc.charAt(0).toUpperCase() : 'غير محدد';
                 } else {
                     const cat = getProductCategory(item.barcode);
                     key = getCategoryName(cat);
