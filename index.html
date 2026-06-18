@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="h-full bg-slate-50">
+<html lang="ar" dir="rtl" class="h-full bg-brand-tint">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,18 +13,32 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            200: '#bbf7d0',
-                            300: '#86efac',
-                            400: '#4ade80',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                            900: '#14532d',
-                            deep: '#064e3b',     // Brand deep emerald green
-                            accent: '#10b981'   // Brand bright mint green
+                            50: '#F5F6F3',
+                            100: '#E1DCD3',      // Soft cream (Logo text color)
+                            200: '#D5CEC0',
+                            300: '#C5BFA9',      // Accent cream
+                            400: '#A4A89C',
+                            500: '#757D71',
+                            600: '#525B50',
+                            700: '#3D473F',
+                            800: '#2B3A32',      // Deep olive green (Logo background color)
+                            900: '#212A24',
+                            deep: '#2B3A32',     // Brand deep olive green
+                            accent: '#C5BFA9',   // Brand earthy cream accent
+                            tint: '#F9F8F6',     // Brand very light tint
+                            highlight: '#D2C8A4' // Slight gold for highlights
+                        },
+                        emerald: {
+                            50: '#F5F6F3',
+                            100: '#E1DCD3',
+                            200: '#D5CEC0',
+                            300: '#C5BFA9',
+                            400: '#A4A89C',
+                            500: '#757D71',
+                            600: '#525B50',
+                            700: '#3D473F',
+                            800: '#2B3A32',
+                            900: '#212A24',
                         }
                     },
                     fontFamily: {
@@ -75,6 +89,20 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+
+        /* Product card grid */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .product-card {
+            will-change: transform;
+        }
+        .product-card:hover {
+            border-color: #d1fae5;
         }
 
         /* Print formatting */
@@ -185,7 +213,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        body, .bg-slate-50 {
+        body, .bg-brand-tint {
             background: linear-gradient(-45deg, #f2faf6, #ecfdf5, #fffdf0, #f2faf6) !important;
             background-size: 400% 400% !important;
             animation: liquid-aurora 25s ease infinite !important;
@@ -315,24 +343,24 @@
             background-origin: border-box !important;
             background-clip: content-box, border-box !important;
         }
-        .bg-emerald-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #10b981, #34d399) !important; }
+        .bg-emerald-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #C5BFA9, #D2C8A4) !important; }
         .bg-blue-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #3b82f6, #60a5fa) !important; }
         .bg-purple-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #8b5cf6, #a78bfa) !important; }
         .bg-amber-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #eab308, #fbbf24) !important; }
 
         /* Table headers */
         tr.bg-slate-50, thead tr {
-            background-color: #edf5f1 !important;
-            border-bottom: 1px solid rgba(6, 78, 59, 0.06) !important;
+            background-color: #F9F8F6 !important;
+            border-bottom: 1px solid rgba(43, 58, 50, 0.08) !important;
         }
 
         tr.border-b, tr.border-slate-100 {
-            border-color: rgba(6, 78, 59, 0.05) !important;
+            border-color: rgba(43, 58, 50, 0.06) !important;
         }
 
         /* Table rows hover */
         tbody tr:hover {
-            background-color: rgba(16, 185, 129, 0.05) !important;
+            background-color: rgba(197, 191, 169, 0.15) !important;
         }
 
         /* Inputs, selectors and dropdowns */
@@ -344,8 +372,8 @@
         }
         
         input:focus, select:focus, textarea:focus {
-            border-color: #10b981 !important;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+            border-color: #C5BFA9 !important;
+            box-shadow: 0 0 0 3px rgba(197, 191, 169, 0.25) !important;
         }
 
         /* Dropdown options styling */
@@ -356,16 +384,16 @@
 
         /* Mobile bottom nav */
         nav.fixed.bottom-0 {
-            background-color: rgba(255, 255, 255, 0.85) !important;
+            background-color: rgba(249, 248, 246, 0.9) !important;
             backdrop-filter: blur(15px) !important;
             -webkit-backdrop-filter: blur(15px) !important;
-            border-top: 1px solid rgba(6, 78, 59, 0.06) !important;
+            border-top: 1px solid rgba(43, 58, 50, 0.08) !important;
         }
         nav.fixed.bottom-0 button {
             color: #64748b !important;
         }
         nav.fixed.bottom-0 button.text-white {
-            color: #064e3b !important;
+            color: #2B3A32 !important;
             font-weight: bold !important;
         }
 
@@ -383,9 +411,9 @@
 
         /* Badges & Alerts */
         .bg-emerald-50, .bg-emerald-100\/50, .bg-green-50 {
-            background-color: #ecfdf5 !important;
-            color: #065f46 !important;
-            border: 1px solid #a7f3d0 !important;
+            background-color: #E1DCD3 !important;
+            color: #2B3A32 !important;
+            border: 1px solid #C5BFA9 !important;
         }
         .bg-blue-50, .bg-blue-100\/50 {
             background-color: #eff6ff !important;
@@ -410,7 +438,7 @@
 
         /* Login screen premium glass overrides */
         #login-overlay {
-            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #fffdf0 100%) !important;
+            background: #2B3A32 !important;
         }
         #login-overlay .bg-white\/10 {
             background-color: rgba(255, 255, 255, 0.88) !important;
@@ -421,7 +449,7 @@
             border-radius: 30px !important;
         }
         #login-overlay h1, #login-overlay h2, #login-overlay label {
-            color: #064e3b !important;
+            color: #2B3A32 !important;
         }
         #login-overlay select, #login-overlay input {
             background-color: #ffffff !important;
@@ -474,7 +502,7 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased overflow-hidden">
+<body class="h-full flex flex-col md:flex-row bg-brand-tint text-slate-800 antialiased overflow-hidden">
 
     <!-- ======= LOGIN SCREEN OVERLAY ======= -->
     <div id="login-overlay" class="fixed inset-0 z-[200] flex items-center justify-center bg-brand-deep">
@@ -1427,6 +1455,19 @@
                                    class="w-full pr-9 pl-4 py-2 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent rounded-xl text-sm transition">
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <!-- Grid / Table Toggle (shows only in catalog mode) -->
+                            <div id="catalog-view-toggle" class="hidden items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                <button id="btn-grid-view" onclick="setCatalogView('grid')" title="عرض الكروت"
+                                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep text-white text-xs font-bold transition-all">
+                                    <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                                    كروت
+                                </button>
+                                <button id="btn-table-view" onclick="setCatalogView('table')" title="عرض الجدول"
+                                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-600 text-xs font-bold transition-all hover:bg-white">
+                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                    جدول
+                                </button>
+                            </div>
                             <button id="btn-sort-primary" onclick="sortInventoryData('barcode')" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-600 transition">
                                 <i data-lucide="sort-asc" class="w-3.5 h-3.5"></i> ترتيب الباركود
                             </button>
@@ -1463,6 +1504,23 @@
                                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
                             </button>
                             <button onclick="changePage(1)" id="btn-next" class="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 disabled:opacity-40 disabled:hover:bg-transparent" disabled>
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== CATALOG PRODUCT CARD GRID (shown when grid view is active) ===== -->
+                <div id="catalog-grid-container" class="hidden">
+                    <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5"></div>
+                    <!-- Grid Pagination -->
+                    <div class="py-5 flex items-center justify-between">
+                        <span id="grid-pagination-status" class="text-xs text-slate-500 font-semibold">يعرض 0 من أصل 0 منتج</span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="changeGridPage(-1)" id="btn-grid-prev" class="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 disabled:opacity-40" disabled>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="changeGridPage(1)" id="btn-grid-next" class="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 disabled:opacity-40" disabled>
                                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -4018,36 +4076,51 @@
                 if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "تفاصيل الأصناف والتسكين بالمواقع";
                 if (tableContainer) tableContainer.classList.remove('hidden');
-                
+                // Hide toggle and grid for non-catalog tabs
+                const toggleEl = document.getElementById('catalog-view-toggle');
+                const gridContainer = document.getElementById('catalog-grid-container');
+                if (toggleEl) { toggleEl.classList.add('hidden'); toggleEl.classList.remove('flex'); }
+                if (gridContainer) gridContainer.classList.add('hidden');
+
                 const filteredInventory = getBranchFilteredInventory();
                 let totalStockQty = filteredInventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalStockQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = filteredInventory.length.toLocaleString('ar-EG');
-                
+
                 filterInventory();
             } 
             else if (subTabId === 'catalog') {
                 if (subtabCatalog) subtabCatalog.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "كتالوج منتجات الملبوسات والصور المزامنة";
-                if (tableContainer) tableContainer.classList.remove('hidden');
-                
+
+                // Show grid/table toggle
+                const toggleEl = document.getElementById('catalog-view-toggle');
+                if (toggleEl) toggleEl.classList.remove('hidden');
+                toggleEl.classList.add('flex');
+
                 const filteredCatalog = getBranchFilteredCatalog();
                 let totalCatalogQty = filteredCatalog.reduce((sum, item) => sum + Number(item.system_qty || 0), 0);
                 document.getElementById('inventory-total-qty').textContent = totalCatalogQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
-                
-                filterInventory();
+
+                // Default to grid view for catalog
+                if (!window.catalogViewMode) window.catalogViewMode = 'grid';
+                setCatalogView(window.catalogViewMode);
             }
             else if (subTabId === 'discrepancy') {
                 if (subtabDiscrepancy) subtabDiscrepancy.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
                 subTitle.textContent = "كاشف فروقات ومطابقة الجرد الفيزيائي والنظامي";
                 if (tableContainer) tableContainer.classList.remove('hidden');
-                
+                const toggleElD = document.getElementById('catalog-view-toggle');
+                const gridContainerD = document.getElementById('catalog-grid-container');
+                if (toggleElD) { toggleElD.classList.add('hidden'); toggleElD.classList.remove('flex'); }
+                if (gridContainerD) gridContainerD.classList.add('hidden');
+
                 const discrepantItems = getDiscrepantItems();
                 const totalDiffQty = discrepantItems.reduce((sum, item) => sum + Math.abs(item.diff), 0);
                 document.getElementById('inventory-total-qty').textContent = totalDiffQty.toLocaleString('ar-EG');
                 document.getElementById('inventory-total-records').textContent = discrepantItems.length.toLocaleString('ar-EG');
-                
+
                 filterInventory();
             }
             else if (subTabId === 'map') {
@@ -4163,7 +4236,149 @@
 
             sortArray(filteredTableData, currentSort.field, currentSort.order);
             currentPage = 1;
-            renderInventoryTable();
+            if (activeInventorySubTab === 'catalog' && window.catalogViewMode === 'grid') {
+                window.catalogGridPage = 1;
+                renderCatalogGrid();
+            } else {
+                renderInventoryTable();
+            }
+        }
+
+        // ===== CATALOG VIEW TOGGLE =====
+        let catalogGridPage = 1;
+        const GRID_PAGE_SIZE = 20;
+
+        function setCatalogView(mode) {
+            window.catalogViewMode = mode;
+            const tableContainer = document.getElementById('inventory-table-container');
+            const gridContainer = document.getElementById('catalog-grid-container');
+            const btnGrid = document.getElementById('btn-grid-view');
+            const btnTable = document.getElementById('btn-table-view');
+
+            if (mode === 'grid') {
+                if (tableContainer) tableContainer.classList.add('hidden');
+                if (gridContainer) gridContainer.classList.remove('hidden');
+                if (btnGrid) { btnGrid.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep text-white text-xs font-bold transition-all'; }
+                if (btnTable) { btnTable.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-600 text-xs font-bold transition-all hover:bg-white'; }
+                window.catalogGridPage = 1;
+                // Refresh filtered data for catalog
+                const baseCatalog = getBranchFilteredCatalog();
+                const query = (document.getElementById('inventory-search')?.value || '').trim().toLowerCase();
+                filteredTableData = query
+                    ? baseCatalog.filter(item => (item.barcode || '').toLowerCase().includes(query) || (item.product_name || '').toLowerCase().includes(query))
+                    : [...baseCatalog];
+                renderCatalogGrid();
+            } else {
+                if (tableContainer) tableContainer.classList.remove('hidden');
+                if (gridContainer) gridContainer.classList.add('hidden');
+                if (btnGrid) { btnGrid.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-600 text-xs font-bold transition-all hover:bg-white'; }
+                if (btnTable) { btnTable.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep text-white text-xs font-bold transition-all'; }
+                filterInventory();
+            }
+        }
+
+        function renderCatalogGrid() {
+            const grid = document.getElementById('catalog-grid');
+            if (!grid) return;
+
+            const total = filteredTableData.length;
+            const page = window.catalogGridPage || 1;
+            const startIdx = (page - 1) * GRID_PAGE_SIZE;
+            const endIdx = Math.min(startIdx + GRID_PAGE_SIZE, total);
+            const items = filteredTableData.slice(startIdx, endIdx);
+
+            if (total === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+                        <i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i>
+                        <span class="font-semibold text-sm">\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0646\u062a\u062c\u0627\u062a \u0645\u0637\u0627\u0628\u0642\u0629</span>
+                    </div>`;
+                lucide.createIcons({ root: grid });
+                document.getElementById('grid-pagination-status').textContent = '\u064a\u0639\u0631\u0636 0 \u0645\u0646 \u0623\u0635\u0644 0 \u0645\u0646\u062a\u062c';
+                document.getElementById('btn-grid-prev').setAttribute('disabled', 'true');
+                document.getElementById('btn-grid-next').setAttribute('disabled', 'true');
+                return;
+            }
+
+            grid.innerHTML = items.map(item => {
+                const imgUrl = (item.image_url && item.image_url.trim()) ? item.image_url : getProductImage(item.barcode);
+                const hasImage = !!imgUrl;
+                const qty = Number(item.system_qty || 0);
+                const price = item.regular_price != null ? Number(item.regular_price) : null;
+                const offerPrice = item.offer_price != null ? Number(item.offer_price) : null;
+
+                const stockBadge = qty === 0
+                    ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200">\u0646\u0641\u062f \u0627\u0644\u0645\u062e\u0632\u0648\u0646</span>`
+                    : qty < 20
+                    ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-700 border border-amber-200">\u0645\u062e\u0632\u0648\u0646 \u0645\u0646\u062e\u0641\u0636</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-700 border border-emerald-200">\u0645\u062a\u0648\u0641\u0631</span>`;
+
+                const priceHtml = price != null
+                    ? offerPrice != null
+                        ? `<div class="flex items-baseline gap-1.5">
+                                <span class="text-brand-deep font-black text-base">${offerPrice.toLocaleString('ar-EG')} \u062c</span>
+                                <span class="line-through text-[10px] text-slate-400">${price.toLocaleString('ar-EG')}</span>
+                           </div>`
+                        : `<span class="text-brand-deep font-black text-base">${price.toLocaleString('ar-EG')} \u062c</span>`
+                    : `<span class="text-slate-400 text-xs">\u2014</span>`;
+
+                return `
+                <div class="product-card group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col cursor-pointer">
+                    <!-- Image area -->
+                    <div class="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100" style="height:200px;">
+                        ${hasImage
+                            ? `<img src="${imgUrl}" alt="${item.product_name || ''}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                               <div class="w-full h-full items-center justify-center text-slate-300 hidden absolute inset-0 flex-col gap-2">
+                                   <i data-lucide="shirt" class="w-10 h-10"></i>
+                                   <span class="text-xs text-slate-400">\u0644\u0627 \u062a\u0648\u062c\u062f \u0635\u0648\u0631\u0629</span>
+                               </div>`
+                            : `<div class="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+                                   <i data-lucide="shirt" class="w-10 h-10"></i>
+                                   <span class="text-xs text-slate-400">\u0644\u0627 \u062a\u0648\u062c\u062f \u0635\u0648\u0631\u0629</span>
+                               </div>`
+                        }
+                        <!-- Gradient overlay at bottom of image -->
+                        <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/90 to-transparent pointer-events-none"></div>
+                        <!-- Stock badge top-right -->
+                        <div class="absolute top-2.5 right-2.5">${stockBadge}</div>
+                        <!-- Qty pill top-left -->
+                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200 shadow-sm text-[10px] font-extrabold text-slate-700">
+                            <i data-lucide="package" class="w-2.5 h-2.5 text-brand-accent"></i>
+                            ${qty.toLocaleString('ar-EG')}
+                        </div>
+                    </div>
+                    <!-- Info area -->
+                    <div class="p-3 flex flex-col gap-1.5 flex-1">
+                        <p class="text-slate-800 font-bold text-xs leading-snug line-clamp-2 min-h-[2.4rem]">${item.product_name || '\u063a\u064a\u0631 \u0645\u0633\u062c\u0644'}</p>
+                        <p class="text-[10px] text-slate-400 font-mono tracking-wide truncate">${item.barcode}</p>
+                        <div class="flex items-center justify-between mt-auto pt-1.5 border-t border-slate-100">
+                            ${priceHtml}
+                            <button onclick="openEditQtyModal('${item.barcode}', '', ${qty})"
+                                class="p-1.5 rounded-lg text-slate-400 hover:text-brand-deep hover:bg-brand-tint transition-all"
+                                title="\u062a\u0639\u062f\u064a\u0644">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            lucide.createIcons({ root: grid });
+
+            // Pagination status
+            const statusEl = document.getElementById('grid-pagination-status');
+            if (statusEl) statusEl.textContent = `\u064a\u0639\u0631\u0636 ${(startIdx + 1).toLocaleString('ar-EG')} \u0625\u0644\u0649 ${endIdx.toLocaleString('ar-EG')} \u0645\u0646 \u0623\u0635\u0644 ${total.toLocaleString('ar-EG')} \u0645\u0646\u062a\u062c`;
+
+            const prevBtn = document.getElementById('btn-grid-prev');
+            const nextBtn = document.getElementById('btn-grid-next');
+            if (prevBtn) { if (page <= 1) prevBtn.setAttribute('disabled', 'true'); else prevBtn.removeAttribute('disabled'); }
+            if (nextBtn) { if (endIdx >= total) nextBtn.setAttribute('disabled', 'true'); else nextBtn.removeAttribute('disabled'); }
+        }
+
+        function changeGridPage(direction) {
+            window.catalogGridPage = (window.catalogGridPage || 1) + direction;
+            renderCatalogGrid();
+            document.getElementById('catalog-grid-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function sortInventoryData(field) {
