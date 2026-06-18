@@ -13,18 +13,18 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            200: '#bbf7d0',
-                            300: '#86efac',
-                            400: '#4ade80',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                            900: '#14532d',
-                            deep: '#064e3b',
-                            accent: '#10b981'
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c084fc',
+                            400: '#a855f7',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                            deep: '#080c14',     // Cyber deep obsidian
+                            accent: '#6366f1'   // Cyber electric indigo
                         }
                     },
                     fontFamily: {
@@ -175,6 +175,140 @@
                 border-top: 1px dashed #000;
                 width: 100%;
                 padding-top: 2px;
+            }
+        }
+
+        /* ================= CYBER NEON DARK THEME OVERRIDES ================= */
+        body, .bg-slate-50 {
+            background-color: #0b0f19 !important; /* Midnight Dark */
+            color: #f8fafc !important; /* Cool White */
+        }
+        
+        /* Glassmorphic Cards & Panels */
+        .bg-white, #section-analytics .bg-white, #section-dashboard .bg-white, #section-executive .bg-white, #section-inventory .bg-white, #section-returns .bg-white, #section-transfers .bg-white, #section-picker .bg-white, #section-logs .bg-white {
+            background-color: rgba(17, 24, 39, 0.65) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(99, 102, 241, 0.15) !important; /* Subtle indigo glowing border */
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* Card Hovers */
+        .bg-white:hover {
+            border-color: rgba(99, 102, 241, 0.3) !important;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.1) !important;
+        }
+
+        /* Top Header Bar */
+        header.bg-white {
+            background-color: #0e1322 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Headings & Texts */
+        h1, h2, h3, h4, h5, h6, 
+        .text-slate-800, .text-slate-700, .text-slate-600, .text-slate-900,
+        #current-section-title {
+            color: #f8fafc !important;
+        }
+        
+        .text-slate-500, .text-slate-400 {
+            color: #94a3b8 !important;
+        }
+
+        /* Table headers */
+        tr.bg-slate-50, thead tr {
+            background-color: rgba(31, 41, 55, 0.6) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        tr.border-b, tr.border-slate-100 {
+            border-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Table rows hover */
+        tbody tr:hover {
+            background-color: rgba(99, 102, 241, 0.08) !important;
+        }
+
+        /* Inputs, selectors and dropdowns */
+        input[type="text"], input[type="number"], input[type="password"], select, textarea, .bg-slate-100 {
+            background-color: rgba(17, 24, 39, 0.8) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: #6366f1 !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+        }
+
+        /* Dropdown options styling */
+        select option {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+        }
+
+        /* Sidebar overrides */
+        aside {
+            background-color: #080c14 !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+        
+        /* Mobile bottom nav */
+        nav.fixed.bottom-0 {
+            background-color: #080c14 !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Scrollbars in dark mode */
+        ::-webkit-scrollbar-track {
+            background: #0b0f19 !important;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151 !important;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563 !important;
+        }
+
+        /* Badges & Alerts */
+        .bg-emerald-50, .bg-emerald-100\/50, .bg-green-50 {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            color: #10b981 !important;
+        }
+        .bg-blue-50, .bg-blue-100\/50 {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            color: #60a5fa !important;
+        }
+        .bg-purple-50, .bg-purple-100\/50 {
+            background-color: rgba(139, 92, 246, 0.15) !important;
+            color: #a78bfa !important;
+        }
+        .bg-amber-50, .bg-amber-100\/50 {
+            background-color: rgba(245, 158, 11, 0.15) !important;
+            color: #fbbf24 !important;
+        }
+        .bg-rose-50, .bg-rose-100\/50, .bg-rose-100 {
+            background-color: rgba(244, 63, 94, 0.15) !important;
+            color: #f43f5e !important;
+            border-color: rgba(244, 63, 94, 0.25) !important;
+        }
+
+        /* Fixes for barcode print card on screen (do not affect print media) */
+        @media screen {
+            .barcode-print-card {
+                background-color: #1e293b !important;
+                border-color: rgba(255, 255, 255, 0.1) !important;
+            }
+            .barcode-print-card svg {
+                background: white !important;
+                padding: 5px !important;
+                border-radius: 8px !important;
+            }
+            .barcode-print-card .label-text {
+                color: #e2e8f0 !important;
             }
         }
     </style>
@@ -403,15 +537,15 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-3 flex-shrink-0">
-                        <button id="btn-dashboard-upload" onclick="switchTab('upload')" style="display:none;" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-upload" onclick="switchTab('upload')" class="bg-brand-accent hover:bg-emerald-400 text-brand-deep font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             مركز الرفع
                         </button>
-                        <button id="btn-dashboard-picker" onclick="switchTab('picker')" style="display:none;" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-picker" onclick="switchTab('picker')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="package-check" class="w-4 h-4"></i>
                             شاشة التحضير
                         </button>
-                        <button id="btn-dashboard-logs" onclick="switchTab('logs')" style="display:none;" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
+                        <button id="btn-dashboard-logs" onclick="switchTab('logs')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs md:text-sm px-4 md:px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2">
                             <i data-lucide="history" class="w-4 h-4"></i>
                             سجل العمليات
                         </button>
@@ -1479,21 +1613,6 @@
 
     <!-- UI JAVASCRIPT LOGIC -->
     <script>
-        // دالة آمنة لتحميل الأيقونات
-        function safeCreateIcons(options) {
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        try {
-            if (options) {
-                lucide.createIcons(options);
-            } else {
-                lucide.createIcons();
-            }
-        } catch (e) {
-            console.warn("Lucide icons error:", e);
-        }
-    }
-}
-
         // SUPABASE CONNECTION SETTINGS
         const supabaseUrl = "https://auwnaivrovqqmthmljvg.supabase.co";
         const supabaseKey = "sb_publishable_oHUfVrGohNstb9bUvNyS5A_YxsESG93";
@@ -1706,16 +1825,14 @@
 
         // ================= FAST INDEX MAPS (O(1) LOOKUP) =================
         // خرائط الفهرسة السريعة - تُبنى مرة واحدة عند تحميل البيانات بدلاً من البحث الخطي المتكرر
-        let catalogByBarcodeMap = new Map();      
-        let catalogByTokenKeyMap = new Map();     
-        let catalogByBaseMap = new Map();          
-        let imageByBaseMap = new Map();            
-        let inventoryQtyByBarcodeMap = new Map();  
-        let barcodeCategoryCacheMap = new Map();   
-        let inventoryLocationsByBarcodeMap = new Map(); 
-        let inventoryLocationsByBaseBarcodeMap = new Map(); 
-        let inventoryLocationsByTokenMap = new Map(); 
-        let inventoryQtyByBranchBarcodeMap = new Map();
+        let catalogByBarcodeMap = new Map();      // cleanBarcode -> catalog item
+        let catalogByTokenKeyMap = new Map();     // sorted-token-key -> catalog item
+        let catalogByBaseMap = new Map();          // base numeric barcode -> first catalog item
+        let imageByBaseMap = new Map();            // base numeric barcode -> first image_url found
+        let inventoryQtyByBarcodeMap = new Map();  // barcode -> total shelf qty
+        let barcodeCategoryCacheMap = new Map();   // cleanBarcode -> product category (A-E) cache
+        let inventoryLocationsByBarcodeMap = new Map(); // cleanBarcode -> array of {location_id, quantity}
+        let inventoryLocationsByBaseBarcodeMap = new Map(); // baseBarcode -> array of {location_id, quantity}
 
         // إعادة بناء فهارس الكتالوج بعد كل تحميل بيانات (عملية واحدة سريعة O(N))
         function rebuildCatalogIndexes() {
@@ -1982,14 +2099,22 @@
 
         // ================= RBAC CONFIG =================
         const USERS = [
-            { username: 'admin',  password: 'TREE123',   role: 'admin',  branch: null },
-            { username: 'online', password: 'ONLINE123', role: 'online', branch: null },
-            { username: 'branch', password: '21587',     role: 'branch', branch: null }
+            { username: 'admin',  passwordHash: '4396b797825595914948a43f43391d4e68e0d6ef1d743a60a77e13289060b296', role: 'admin',  branch: null },
+            { username: 'online', passwordHash: '844e137452d201e7e727503554e2b03698b68832c32cf97f6c382103f6f3458e', role: 'online', branch: null },
+            { username: 'branch', passwordHash: '439600a9436573c09195a6ec997a3a305541571d7c0746b19a1a896d85915d39', role: 'branch', branch: null }
         ];
 
         let currentUser = null;
 
-        function checkLogin() {
+        // دالة تشفير SHA-256 باستخدام Web Crypto API لزيادة الأمان ومنع التلاعب
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function checkLogin() {
             const usernameRaw = (document.getElementById('login-username').value || '').trim();
             const pinRaw      = (document.getElementById('login-pin').value || '').trim();
 
@@ -2002,12 +2127,13 @@
             }
 
             const username = usernameRaw.toLowerCase();
-            const pin      = normalize(pinRaw).toUpperCase();
+            const pin      = normalize(pinRaw);
+            const pinHash  = await sha256(pin.toUpperCase());
 
-            // بحث بدون حساسية حالة الأحرف بالاسم والرقم السري
+            // بحث بدون حساسية حالة الأحرف بالاسم والرقم السري المشفر
             let user = USERS.find(u =>
                 u.username.trim().toLowerCase() === username &&
-                u.password.trim().toUpperCase() === pin
+                u.passwordHash === pinHash
             );
 
             const errEl = document.getElementById('login-error');
@@ -2017,14 +2143,16 @@
                 setTimeout(() => { if (errEl) errEl.classList.add('hidden'); }, 3000);
                 return;
             }
-            completeLogin(user);
+            await completeLogin(user);
         }
 
-        function completeLogin(user) {
+        async function completeLogin(user) {
             currentUser = user;
             try {
+                // توقيع الجلسة لمنع التلاعب ببيانات الـ LocalStorage للحصول على صلاحيات أدمن
+                const sig = await sha256(user.username + user.role + (user.branch || '') + user.passwordHash);
                 localStorage.setItem('tree_session', JSON.stringify({
-                    username: user.username, role: user.role, branch: user.branch, ts: Date.now()
+                    username: user.username, role: user.role, branch: user.branch, ts: Date.now(), sig: sig
                 }));
             } catch (e) {
                 console.warn("localStorage set failed:", e);
@@ -2037,7 +2165,7 @@
             setTimeout(() => {
                 try {
                     applyRBACRules(user.role, user.branch);
-                    if (typeof lucide !== 'undefined') safeCreateIcons();
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
                     
                     let defaultTab = 'dashboard';
                     if (user.role === 'branch') {
@@ -2144,7 +2272,7 @@
                 const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
                 if (headerRight) { 
                     headerRight.appendChild(logoutBtn); 
-                    if (typeof lucide !== 'undefined') safeCreateIcons({ root: logoutBtn }); 
+                    if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); 
                 }
             }, 150);
         }
@@ -2162,12 +2290,18 @@
 
         // DOM Initializations - RBAC Aware
         document.addEventListener('DOMContentLoaded', () => {
-            safeCreateIcons();
+            lucide.createIcons();
             updateClock();
             setInterval(updateClock, 1000);
             window.addEventListener('resize', updateUploadCardsResponsiveState);
 
-            // تحقق من وجود جلسة محفوظة (صالحة 24 ساعة)
+            // ضبط إعدادات الرسوم البيانية الافتراضية للثيم الداكن
+            if (typeof Chart !== 'undefined') {
+                Chart.defaults.color = '#cbd5e1'; // slate-300
+                Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+            }
+
+            // تحقق من وجود جلسة محفوظة (صالحة 24 ساعة مع التحقق من توقيع الأمان)
             let saved = null;
             try {
                 saved = localStorage.getItem('tree_session');
@@ -2180,10 +2314,19 @@
                     const session = JSON.parse(saved);
                     const ageHours = (Date.now() - session.ts) / 3600000;
                     if (ageHours < 24 && session.role) {
-                        const user = USERS.find(u => u.username === session.username) ||
-                                     { username: session.username, role: session.role, branch: session.branch || null };
-                        completeLogin(user);
-                        return;
+                        const user = USERS.find(u => u.username === session.username);
+                        if (user) {
+                            const dataToSign = session.username + session.role + (session.branch || '') + user.passwordHash;
+                            sha256(dataToSign).then(expectedSig => {
+                                if (session.sig === expectedSig) {
+                                    completeLogin(user);
+                                } else {
+                                    try { localStorage.removeItem('tree_session'); } catch (_) {}
+                                    location.reload();
+                                }
+                            });
+                            return;
+                        }
                     }
                 } catch(e) { 
                     try { localStorage.removeItem('tree_session'); } catch (_) {}
@@ -2565,34 +2708,35 @@
         }
 
         function onBranchFilterChange(val) {
-            activeBranchFilter = val;
-            updateTopCounters();
-            
-            if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
-                filterInventory();
-            } else if (activeInventorySubTab === 'map') {
-                renderWarehouseMap();
-            }
-            updateDashboardCharts();
-            
-            if (activeTab === 'executive') {
-                renderExecutiveDashboard();
-            }
+    activeBranchFilter = val;
+    updateTopCounters();
+    
+    // أعِد رسم الجداول والخريطة بالفلتر الجديد
+    if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
+        filterInventory();
+    } else if (activeInventorySubTab === 'map') {
+        renderWarehouseMap();
+    }
+    updateDashboardCharts();
+    
+    if (activeTab === 'executive') {
+        renderExecutiveDashboard();
+    }
 
-            renderLowStockAlerts();
-            renderDeadStockAlerts();
-            
-            const returnsContainer = document.getElementById('returns-result-container');
-            const returnsInput = document.getElementById('returns-order-input');
-            if (returnsContainer) returnsContainer.classList.add('hidden');
-            if (returnsInput) returnsInput.value = '';
+    // تحديث تنبيهات النواقص والراكد فور تغيير الفرع
+    renderLowStockAlerts();
+    renderDeadStockAlerts();
 
-            const exportWrapper = document.getElementById('export-wrapper');
-            if (exportWrapper) {
-                exportWrapper.style.display = (val && val !== 'all') ? 'flex' : 'none';
-            }
+    // إظهار وإخفاء زر تصدير النواقص وفلتر الموسم بناءً على اختيار الفرع
+    const exportWrapper = document.getElementById('export-wrapper');
+    if (exportWrapper) {
+        if (val && val !== 'all') {
+            exportWrapper.style.display = 'flex';
+        } else {
+            exportWrapper.style.display = 'none';
         }
-
+    }
+}
         // ===== helper: apply branch filter to inventory array =====
         function getBranchFilteredInventory() {
             if (!activeBranchFilter || activeBranchFilter === 'all') return liveInventoryData;
@@ -2824,7 +2968,7 @@
                 });
             }
             container.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         async function addActivityLog(action, details) {
@@ -3545,7 +3689,7 @@
                         </td>
                     </tr>
                 `;
-                safeCreateIcons();
+                lucide.createIcons();
                 document.getElementById('pagination-status').textContent = 'يعرض 0 من أصل 0 سجل';
                 document.getElementById('btn-prev').setAttribute('disabled', 'true');
                 document.getElementById('btn-next').setAttribute('disabled', 'true');
@@ -3666,7 +3810,7 @@
 
             tbody.innerHTML = html;
             // Task 2: استدعاء Lucide محدود للعنصر فقط بدلاً من مسح المستند كاملاً
-            safeCreateIcons({ root: tbody });
+            lucide.createIcons({ root: tbody });
 
             document.getElementById('pagination-status').textContent = `يعرض ${(startIdx + 1).toLocaleString('ar-EG')} إلى ${endIdx.toLocaleString('ar-EG')} من أصل ${total.toLocaleString('ar-EG')} سجل`;
             
@@ -3703,7 +3847,7 @@
                         </div>
                     </div>
                 `;
-                safeCreateIcons();
+                lucide.createIcons();
                 return;
             }
 
@@ -3820,7 +3964,7 @@
             });
 
             container.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         async function markOrderCompleted(orderNumber) {
@@ -3964,7 +4108,7 @@
                             <p class="text-xs text-slate-400">القطعة غير مسجلة في كتالوج Supabase أو مسكنة بالرفوف.</p>
                         </div>
                     `;
-                    safeCreateIcons();
+                    lucide.createIcons();
                     return;
                 }
 
@@ -4093,7 +4237,7 @@
                         </div>
                     </div>
                 `;
-                safeCreateIcons();
+                lucide.createIcons();
             } catch (err) {
                 console.error("Direct query lookup error:", err);
                 resultContainer.innerHTML = `
@@ -4103,7 +4247,7 @@
                         <p class="text-xs text-slate-400 mt-1">${err.message || err.details || ''}</p>
                     </div>
                 `;
-                safeCreateIcons();
+                lucide.createIcons();
             }
 
             // Auto focus and clear input for next scan
@@ -4510,7 +4654,7 @@
                 });
             }
             listEl.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         function filterPrintItems() {
@@ -4669,7 +4813,7 @@
             } else {
                 imgContainer.innerHTML = '<i data-lucide="shirt" class="w-5 h-5"></i>';
             }
-            safeCreateIcons();
+            lucide.createIcons();
 
             document.getElementById('edit-qty-modal').classList.remove('hidden');
             document.getElementById('modal-quantity-input').focus();
@@ -4760,12 +4904,15 @@
             };
 
             for (const product of targetCatalog) {
-                if (lowStockItems.length >= maxAlerts) break; 
+                if (lowStockItems.length >= maxAlerts) break;
                 
                 const name = (product.product_name || '').toLowerCase();
                 
-                if (seasonFilter === 'winter' && !winterKeywords.some(kw => name.includes(kw))) continue;
-                if (seasonFilter === 'summer' && !summerKeywords.some(kw => name.includes(kw))) continue;
+                if (seasonFilter === 'winter') {
+                    if (!winterKeywords.some(kw => name.includes(kw))) continue;
+                } else if (seasonFilter === 'summer') {
+                    if (!summerKeywords.some(kw => name.includes(kw))) continue;
+                }
                 
                 if (categoryFilter !== 'all') {
                     const kws = categoryKeywords[categoryFilter] || [];
@@ -4845,6 +4992,13 @@
             });
             const branchesList = Array.from(branchSet);
 
+            // تحسين الأداء: توحيد أسماء الفروع مسبقاً بدلاً من الحساب داخل الحلقات
+            const branchNormMap = {};
+            branchesList.forEach(br => {
+                branchNormMap[br] = normalizeLocationId(br);
+            });
+            const activeBranchNorm = normalizeLocationId(activeBranchFilter);
+
             lowStockItems.forEach(item => {
                 const imgHtml = item.imageUrl 
                     ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
@@ -4870,7 +5024,7 @@
                 if (activeBranchFilter && activeBranchFilter !== 'all') {
                     const otherBranchesWithStock = [];
                     branchesList.forEach(br => {
-                        if (normalizeLocationId(br) === normalizeLocationId(activeBranchFilter)) return;
+                        if (branchNormMap[br] === activeBranchNorm) return;
                         const qtyInB = (barcodeBranchQty[item.barcode] && barcodeBranchQty[item.barcode][br]) || 0;
                         if (qtyInB > 0) {
                             otherBranchesWithStock.push({ branch: br, qty: qtyInB });
@@ -4945,7 +5099,7 @@
                 `;
             });
             grid.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         // 4. EXPORTING REPORTS
@@ -5235,7 +5389,7 @@
                 `;
             });
             tableBody.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
 
             if (pageInfo) {
                 pageInfo.textContent = `عرض ${(startIndex + 1).toLocaleString('ar-EG')} - ${endIndex.toLocaleString('ar-EG')} من أصل ${totalRecords.toLocaleString('ar-EG')} حركة`;
@@ -5281,7 +5435,7 @@
                 `;
 
                 paginationContainer.innerHTML = paginationHtml;
-                safeCreateIcons();
+                lucide.createIcons();
             }
         }
 
@@ -5551,7 +5705,7 @@
                 `;
             });
             listEl.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
@@ -5678,6 +5832,23 @@
             liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             const branchesList = Array.from(branchSet);
 
+            // تحسين الأداء: توحيد أسماء الفروع مسبقاً بدلاً من الحساب داخل الحلقات O(M)
+            const branchNormMap = {};
+            branchesList.forEach(br => {
+                branchNormMap[br] = normalizeLocationId(br);
+            });
+            const activeBranchNorm = normalizeLocationId(activeBranchFilter);
+
+            // تحسين الأداء: تحويل مصفوفات البضائع الراكدة لقواعد بيانات سريعة البحث O(1) باستخدام Set
+            const deadStockSnapshotSets = {};
+            for (const key in liveDeadStockSnapshot) {
+                if (Array.isArray(liveDeadStockSnapshot[key])) {
+                    deadStockSnapshotSets[key] = new Set(liveDeadStockSnapshot[key]);
+                } else {
+                    deadStockSnapshotSets[key] = new Set();
+                }
+            }
+
             const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
             const isOnline = !isAll && isOnlineBranch(activeBranchFilter);
 
@@ -5708,9 +5879,9 @@
                                     totalQty += qty;
                                 }
                             } else {
-                                const normBr = normalizeLocationId(br);
-                                const deadBarcodes = liveDeadStockSnapshot[normBr] || [];
-                                if (deadBarcodes.includes(cleanBC)) {
+                                const normBr = branchNormMap[br];
+                                const deadSet = deadStockSnapshotSets[normBr];
+                                if (deadSet && deadSet.has(cleanBC)) {
                                     isDead = true;
                                     totalQty += qty;
                                 }
@@ -5752,16 +5923,16 @@
                             let bestTarget = null;
                             let bestType = '';
                             for (const br of branchesList) {
-                                if (normalizeLocationId(br) === normalizeLocationId(activeBranchFilter)) continue;
+                                const normBr = branchNormMap[br];
+                                if (normBr === activeBranchNorm) continue;
                                 const qtyInB = (barcodeBranchQty[product.barcode] && barcodeBranchQty[product.barcode][br]) || 0;
                                 if (qtyInB < lowStockThreshold) {
                                     bestTarget = br;
                                     bestType = 'shortage';
                                     break;
                                 }
-                                const normBr = normalizeLocationId(br);
-                                const deadBarcodesInB = liveDeadStockSnapshot[normBr] || [];
-                                if (!deadBarcodesInB.includes(cleanBC) && qtyInB > 0) {
+                                const deadSet = deadStockSnapshotSets[normBr];
+                                if (deadSet && !deadSet.has(cleanBC) && qtyInB > 0) {
                                     bestTarget = br;
                                     bestType = 'active';
                                 }
@@ -5835,9 +6006,9 @@
                                         bestType = 'active';
                                     }
                                 } else {
-                                    const normBr = normalizeLocationId(br);
-                                    const deadBarcodesInB = liveDeadStockSnapshot[normBr] || [];
-                                    if (!deadBarcodesInB.includes(cleanBC) && qtyInB > 0) {
+                                    const normBr = branchNormMap[br];
+                                    const deadSet = deadStockSnapshotSets[normBr];
+                                    if (deadSet && !deadSet.has(cleanBC) && qtyInB > 0) {
                                         bestTarget = br;
                                         bestType = 'active';
                                     }
@@ -5902,7 +6073,7 @@
                             <p class="text-[10px] text-slate-400 font-medium">${msgDesc}</p>
                         </div>
                     `;
-                    safeCreateIcons();
+                    lucide.createIcons();
                 }
                 return;
             }
@@ -5933,7 +6104,7 @@
                 `;
             });
             grid.innerHTML = html;
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         let activeDeadStockItemsList = [];
@@ -5953,7 +6124,7 @@
             window.activeTransferData = { barcode, productName, sourceBranch, targetBranch, maxQty };
             
             document.getElementById('transfer-modal').classList.remove('hidden');
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         function closeTransferModal() {
@@ -6002,7 +6173,7 @@
             if (activeDeadStockItemsList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-400">لا توجد أصناف راكدة معروضة حالياً لتخطيط العروض.</td></tr>';
                 document.getElementById('liquidation-modal').classList.remove('hidden');
-                safeCreateIcons();
+                lucide.createIcons();
                 return;
             }
             
@@ -6032,7 +6203,7 @@
             
             tbody.innerHTML = html;
             document.getElementById('liquidation-modal').classList.remove('hidden');
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         function closeLiquidationModal() {
@@ -6337,7 +6508,7 @@
 
         function openScanner() {
             document.getElementById('scanner-modal').classList.remove('hidden');
-            safeCreateIcons();
+            lucide.createIcons();
             
             if (typeof Html5Qrcode === 'undefined') {
                 alert("جاري تحميل مكتبة الكاميرا، يرجى التأكد من الاتصال بالإنترنت.");
@@ -6722,7 +6893,7 @@
             
             itemsList.innerHTML = itemsHtml;
             container.classList.remove('hidden');
-            safeCreateIcons();
+            lucide.createIcons();
         }
 
         async function processItemReturn(orderId, sku, itemIndex, customerName) {
