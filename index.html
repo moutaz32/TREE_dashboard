@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="h-full bg-brand-tint">
+<html lang="ar" dir="rtl" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,32 +13,19 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#F5F6F3',
-                            100: '#E1DCD3',      // Soft cream (Logo text color)
-                            200: '#D5CEC0',
-                            300: '#C5BFA9',      // Accent cream
-                            400: '#A4A89C',
-                            500: '#757D71',
-                            600: '#525B50',
-                            700: '#3D473F',
-                            800: '#2B3A32',      // Deep olive green (Logo background color)
-                            900: '#212A24',
-                            deep: '#2B3A32',     // Brand deep olive green
-                            accent: '#C5BFA9',   // Brand earthy cream accent
-                            tint: '#F9F8F6',     // Brand very light tint
-                            highlight: '#D2C8A4' // Slight gold for highlights
-                        },
-                        emerald: {
-                            50: '#F5F6F3',
-                            100: '#E1DCD3',
-                            200: '#D5CEC0',
-                            300: '#C5BFA9',
-                            400: '#A4A89C',
-                            500: '#757D71',
-                            600: '#525B50',
-                            700: '#3D473F',
-                            800: '#2B3A32',
-                            900: '#212A24',
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            deep: '#064e3b',     // Brand deep emerald green
+                            accent: '#10b981',   // Brand bright mint green
+                            tint: '#ecfdf5'      // Brand very light tint
                         }
                     },
                     fontFamily: {
@@ -213,7 +200,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        body, .bg-brand-tint {
+        body, .bg-slate-50 {
             background: linear-gradient(-45deg, #f2faf6, #ecfdf5, #fffdf0, #f2faf6) !important;
             background-size: 400% 400% !important;
             animation: liquid-aurora 25s ease infinite !important;
@@ -343,24 +330,24 @@
             background-origin: border-box !important;
             background-clip: content-box, border-box !important;
         }
-        .bg-emerald-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #C5BFA9, #D2C8A4) !important; }
+        .bg-emerald-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #10b981, #34d399) !important; }
         .bg-blue-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #3b82f6, #60a5fa) !important; }
         .bg-purple-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #8b5cf6, #a78bfa) !important; }
         .bg-amber-50::after { background-image: linear-gradient(white, white), linear-gradient(135deg, #eab308, #fbbf24) !important; }
 
         /* Table headers */
         tr.bg-slate-50, thead tr {
-            background-color: #F9F8F6 !important;
-            border-bottom: 1px solid rgba(43, 58, 50, 0.08) !important;
+            background-color: #f8fafc !important;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.08) !important;
         }
 
         tr.border-b, tr.border-slate-100 {
-            border-color: rgba(43, 58, 50, 0.06) !important;
+            border-color: rgba(16, 185, 129, 0.06) !important;
         }
 
         /* Table rows hover */
         tbody tr:hover {
-            background-color: rgba(197, 191, 169, 0.15) !important;
+            background-color: rgba(16, 185, 129, 0.05) !important;
         }
 
         /* Inputs, selectors and dropdowns */
@@ -372,8 +359,8 @@
         }
         
         input:focus, select:focus, textarea:focus {
-            border-color: #C5BFA9 !important;
-            box-shadow: 0 0 0 3px rgba(197, 191, 169, 0.25) !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
         }
 
         /* Dropdown options styling */
@@ -384,16 +371,16 @@
 
         /* Mobile bottom nav */
         nav.fixed.bottom-0 {
-            background-color: rgba(249, 248, 246, 0.9) !important;
+            background-color: rgba(255, 255, 255, 0.82) !important;
             backdrop-filter: blur(15px) !important;
             -webkit-backdrop-filter: blur(15px) !important;
-            border-top: 1px solid rgba(43, 58, 50, 0.08) !important;
+            border-top: 1px solid rgba(6, 78, 59, 0.08) !important;
         }
         nav.fixed.bottom-0 button {
             color: #64748b !important;
         }
         nav.fixed.bottom-0 button.text-white {
-            color: #2B3A32 !important;
+            color: #064e3b !important;
             font-weight: bold !important;
         }
 
@@ -411,9 +398,9 @@
 
         /* Badges & Alerts */
         .bg-emerald-50, .bg-emerald-100\/50, .bg-green-50 {
-            background-color: #E1DCD3 !important;
-            color: #2B3A32 !important;
-            border: 1px solid #C5BFA9 !important;
+            background-color: #f0fdf4 !important;
+            color: #15803d !important;
+            border: 1px solid #bbf7d0 !important;
         }
         .bg-blue-50, .bg-blue-100\/50 {
             background-color: #eff6ff !important;
@@ -438,7 +425,7 @@
 
         /* Login screen premium glass overrides */
         #login-overlay {
-            background: #2B3A32 !important;
+            background: #064e3b !important;
         }
         #login-overlay .bg-white\/10 {
             background-color: rgba(255, 255, 255, 0.88) !important;
@@ -449,7 +436,7 @@
             border-radius: 30px !important;
         }
         #login-overlay h1, #login-overlay h2, #login-overlay label {
-            color: #2B3A32 !important;
+            color: #064e3b !important;
         }
         #login-overlay select, #login-overlay input {
             background-color: #ffffff !important;
@@ -502,7 +489,7 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col md:flex-row bg-brand-tint text-slate-800 antialiased overflow-hidden">
+<body class="h-full flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased overflow-hidden">
 
     <!-- ======= LOGIN SCREEN OVERLAY ======= -->
     <div id="login-overlay" class="fixed inset-0 z-[200] flex items-center justify-center bg-brand-deep">
