@@ -3234,7 +3234,6 @@
             }, 300);
 
             // إظهار أو إخفاء لوحة توزيع التوريدات أو النواقص بناء على الموقع والصلاحية
-            const isAbeesUser = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
             const showDistribution = (role === 'admin' || isAbeesUser);
             const lowStockPanel = document.getElementById('low-stock-alert-panel');
             const distPanel = document.getElementById('new-stock-distribution-panel');
