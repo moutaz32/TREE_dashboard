@@ -209,6 +209,12 @@
                 color: #1e293b !important;
             }
         }
+
+        /* login-overlay select options visibility */
+        #login-overlay select option {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+        }
     </style>
 </head>
 <body class="h-full flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased overflow-hidden">
@@ -233,10 +239,11 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم</label>
-                        <input id="login-username" type="text" placeholder="مثال: admin أو branch_loran"
-                            class="w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition"
-                            onkeydown="if(event.key==='Enter') checkLogin()">
+                        <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم / الفرع</label>
+                        <select id="login-username"
+                            class="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition cursor-pointer">
+                            <option value="" disabled selected>جاري تحميل الحسابات...</option>
+                        </select>
                     </div>
                     <div>
                         <label class="text-brand-200 text-xs font-bold block mb-1.5">كلمة المرور / رمز الدخول</label>
@@ -2202,6 +2209,47 @@
             return result;
         }
 
+        async function populateLoginUserDropdown() {
+            const select = document.getElementById('login-username');
+            if (!select) return;
+
+            select.innerHTML = `
+                <option value="" disabled selected>اختر اسم المستخدم / الفرع</option>
+                <option value="admin">👑 الإدارة (admin)</option>
+                <option value="online">💻 الأونلاين (online)</option>
+            `;
+
+            try {
+                if (!supabaseClient) {
+                    const { createClient } = supabase;
+                    supabaseClient = createClient(supabaseUrl, supabaseKey);
+                }
+
+                const { data, error } = await supabaseClient
+                    .from('store_users')
+                    .select('username')
+                    .eq('role', 'branch')
+                    .order('username');
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    data.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u.username;
+                        opt.textContent = `🏪 ${u.username}`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.warn("Failed to populate login username select dropdown:", err);
+                const opt = document.createElement('option');
+                opt.value = 'branch';
+                opt.textContent = `🏪 الفرع العام (branch)`;
+                select.appendChild(opt);
+            }
+        }
+
         async function checkLogin() {
             const usernameRaw = (document.getElementById('login-username').value || '').trim();
             const pinRaw      = (document.getElementById('login-pin').value || '').trim();
@@ -2320,6 +2368,7 @@
             if (branchDiv) {
                 if (role === 'branch') {
                     branchDiv.style.display = 'block';
+                    populateNewUserBranchDropdown();
                 } else {
                     branchDiv.style.display = 'none';
                 }
@@ -2505,11 +2554,11 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'transfers', 'logs'];
+                hiddenTabs = ['executive', 'upload', 'logs'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
-                hiddenTabs = ['executive', 'upload', 'picker', 'logs', 'returns', 'analytics'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'analytics'];
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else { // admin
@@ -2541,7 +2590,7 @@
             const dashLogs   = document.getElementById('btn-dashboard-logs');
 
             if (dashUpload) dashUpload.style.display = (role === 'admin') ? 'flex' : 'none';
-            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online') ? 'flex' : 'none';
+            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online' || role === 'branch') ? 'flex' : 'none';
             if (dashLogs)   dashLogs.style.display   = (role === 'admin') ? 'flex' : 'none';
 
             if (role === 'branch' && branch) {
@@ -2606,6 +2655,7 @@
             lucide.createIcons();
             updateClock();
             setInterval(updateClock, 1000);
+            populateLoginUserDropdown();
             window.addEventListener('resize', updateUploadCardsResponsiveState);
 
             // ضبط إعدادات الرسوم البيانية الافتراضية للثيم الفاتح الفاخر
@@ -3033,6 +3083,11 @@
             // أعِد تطبيق الفلتر المحفوظ إن وُجد
             if (current && current !== 'all' && branchSet.has(current)) {
                 select.value = current;
+            }
+
+            // تحديث قائمة الفروع في شاشة إدارة الحسابات
+            if (typeof populateNewUserBranchDropdown === 'function') {
+                populateNewUserBranchDropdown();
             }
         }
 
