@@ -4375,8 +4375,10 @@
         }
 
         function onBranchFilterChange(val) {
-    activeBranchFilter = val;
-    updateTopCounters();
+            activeBranchFilter = val;
+            const sel = document.getElementById('branch-filter-select');
+            if (sel) sel.value = val;
+            updateTopCounters();
     
     // أعِد رسم الجداول والخريطة بالفلتر الجديد
     if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
@@ -7596,6 +7598,17 @@
                 }
 
                 let selectorHtml = '';
+                const isQcOrAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'quality'));
+                const isAbees = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+                if (isQcOrAdmin || isAbees) {
+                    selectorHtml += `
+                        <button onclick="onBranchFilterChange('all')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition duration-200 flex items-center gap-1.5 ml-3">
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-rose-500"></i>
+                            الرجوع للفروع
+                        </button>
+                    `;
+                }
+
                 zones.forEach(zone => {
                     const activeClass = zone === selectedMapZone
                         ? 'bg-brand-deep text-white shadow-sm font-bold scale-105'
@@ -7607,6 +7620,7 @@
                     `;
                 });
                 selectorContainer.innerHTML = selectorHtml;
+                if (typeof lucide !== 'undefined') lucide.createIcons({ root: selectorContainer });
 
                 const branchInventory = getBranchFilteredInventory();
                 const zoneItems = branchInventory.filter(item => getProductCategory(item.barcode) === selectedMapZone);
