@@ -4124,7 +4124,7 @@
                 return `
                 <div class="product-card group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col cursor-pointer">
                     <!-- Image area -->
-                    <div class="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100" style="height:200px;">
+                    <div onclick="openProductBranchesModal('${item.barcode}')" class="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 cursor-zoom-in" style="height:200px;">
                         ${hasImage
                             ? `<img src="${imgUrl}" alt="${item.product_name || ''}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                                <div class="w-full h-full items-center justify-center text-slate-300 hidden absolute inset-0 flex-col gap-2">
@@ -4315,8 +4315,8 @@
                 paginatedItems.forEach((item, index) => {
                     const imgUrl = getProductImage(item.barcode);
                     const imgHtml = imgUrl 
-                        ? `<img src="${imgUrl}" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm" alt="صورة المنتج">`
-                        : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
+                        ? `<img src="${imgUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm cursor-zoom-in" alt="صورة المنتج">`
+                        : `<div onclick="openProductBranchesModal('${item.barcode}')" class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 cursor-zoom-in"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
                     
                     html += `
                         <tr class="hover:bg-slate-50 transition-colors block md:table-row bg-white md:bg-transparent border border-slate-200/80 md:border-none rounded-2xl mb-4 p-4 shadow-sm md:shadow-none">
@@ -4343,8 +4343,8 @@
             else if (activeInventorySubTab === 'discrepancy') {
                 paginatedItems.forEach((item, index) => {
                     const imgHtml = item.imageUrl 
-                        ? `<img src="${item.imageUrl}" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm" alt="صورة المنتج">`
-                        : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
+                        ? `<img src="${item.imageUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-10 h-10 object-cover rounded-lg bg-slate-100 shadow-sm cursor-zoom-in" alt="صورة المنتج">`
+                        : `<div onclick="openProductBranchesModal('${item.barcode}')" class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 cursor-zoom-in"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
                     
                     const diffClass = item.diff > 0 
                         ? 'bg-blue-50 text-blue-700 border-blue-100' 
@@ -5393,6 +5393,190 @@
             activeEditRecord = null;
         }
 
+        // ================= PRODUCT BRANCHES DISTRIBUTION MODAL =================
+        function getAllBranchesList() {
+            const branchSet = new Set();
+            if (window.liveInventoryData) {
+                liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            }
+            if (window.liveLocationsData) {
+                liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            }
+            return Array.from(branchSet).sort();
+        }
+
+        function populateTransferTargetDropdown(excludeBranch) {
+            const select = document.getElementById('transfer-target-branch');
+            if (!select) return;
+            
+            const branches = getAllBranchesList();
+            select.innerHTML = '<option value="">اختر الفرع المستهدف...</option>';
+            branches.forEach(b => {
+                if (normalizeLocationId(b) === normalizeLocationId(excludeBranch)) return;
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                select.appendChild(opt);
+            });
+        }
+
+        function openProductBranchesModal(barcode) {
+            const product = getProductCatalogItem(barcode);
+            const barcodeDisplay = document.getElementById('branch-modal-barcode');
+            const nameDisplay = document.getElementById('branch-modal-product-name');
+            const imgContainer = document.getElementById('branch-modal-img-container');
+            const totalDisplay = document.getElementById('branch-modal-total-qty');
+            const searchInput = document.getElementById('branch-modal-search-input');
+            
+            if (barcodeDisplay) barcodeDisplay.textContent = barcode;
+            if (nameDisplay) nameDisplay.textContent = product ? product.product_name : 'غير مسجل';
+            
+            if (imgContainer) {
+                const imgUrl = (product && product.image_url && product.image_url.trim()) ? product.image_url : getProductImage(barcode);
+                if (imgUrl) {
+                    imgContainer.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                              <div class="w-full h-full items-center justify-center text-slate-300 hidden"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
+                } else {
+                    imgContainer.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-5 h-5"></i></div>`;
+                }
+                lucide.createIcons({ root: imgContainer });
+            }
+            
+            const clean = cleanBarcode(barcode);
+            const base = extractBaseBarcode(clean);
+            const branchesList = getAllBranchesList();
+            
+            const branchQtyMap = {};
+            let totalQty = 0;
+            
+            if (window.liveInventoryData) {
+                liveInventoryData.forEach(invItem => {
+                    const invClean = cleanBarcode(invItem.barcode);
+                    if (invClean === clean) {
+                        const br = invItem.location_id;
+                        const qty = Number(invItem.quantity || 0);
+                        branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
+                        totalQty += qty;
+                    }
+                });
+                
+                if (totalQty === 0 && base) {
+                    liveInventoryData.forEach(invItem => {
+                        const invClean = cleanBarcode(invItem.barcode);
+                        const invBase = extractBaseBarcode(invClean);
+                        if (invBase === base) {
+                            const br = invItem.location_id;
+                            const qty = Number(invItem.quantity || 0);
+                            branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
+                            totalQty += qty;
+                        }
+                    });
+                }
+            }
+            
+            if (totalDisplay) {
+                totalDisplay.textContent = `${totalQty.toLocaleString('ar-EG')} قطعة`;
+            }
+            
+            window.currentBranchModalData = {
+                barcode: barcode,
+                productName: product ? product.product_name : 'غير مسجل',
+                branches: branchesList.map(br => ({
+                    name: br,
+                    qty: branchQtyMap[br] || 0
+                })).sort((a, b) => b.qty - a.qty),
+                totalQty: totalQty
+            };
+            
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            renderBranchModalList();
+            
+            const modal = document.getElementById('product-branches-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+        
+        function renderBranchModalList() {
+            const listEl = document.getElementById('branch-modal-list');
+            if (!listEl) return;
+            
+            const searchVal = (document.getElementById('branch-modal-search-input')?.value || '').toLowerCase().trim();
+            const data = window.currentBranchModalData;
+            if (!data) return;
+            
+            const filtered = data.branches.filter(item => {
+                if (!searchVal) return true;
+                return item.name.toLowerCase().includes(searchVal);
+            });
+            
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="py-8 text-center text-xs text-slate-400 font-semibold">لا توجد فروع مطابقة للبحث.</div>`;
+                return;
+            }
+            
+            const totalQty = data.totalQty || 1;
+            
+            listEl.innerHTML = filtered.map(item => {
+                const percentage = Math.min(100, Math.round((item.qty / totalQty) * 100));
+                const qtyStr = item.qty.toLocaleString('ar-EG');
+                const hasStock = item.qty > 0;
+                
+                const stockBadge = hasStock 
+                    ? `<span class="inline-flex px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">${qtyStr} قطعة</span>`
+                    : `<span class="inline-flex px-2.5 py-1 rounded-xl text-xs font-extrabold bg-slate-50 text-slate-400 border border-slate-100/50">صفر</span>`;
+                
+                const progressColor = hasStock ? 'bg-emerald-600' : 'bg-slate-200';
+                
+                let actionBtnHtml = '';
+                if (hasStock) {
+                    const isSpecificBranch = activeBranchFilter && activeBranchFilter !== 'all';
+                    const isDifferentBranch = isSpecificBranch && normalizeLocationId(activeBranchFilter) !== normalizeLocationId(item.name);
+                    
+                    if (isSpecificBranch) {
+                        if (isDifferentBranch) {
+                            actionBtnHtml = `
+                                <button onclick="closeProductBranchesModal(); openTransferModal('${data.barcode}', '${data.productName.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${item.name}', '${activeBranchFilter}', ${item.qty})" 
+                                        class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition shadow shadow-emerald-600/10 whitespace-nowrap">
+                                    تحويل لـ ${activeBranchFilter}
+                                </button>
+                            `;
+                        }
+                    } else {
+                        actionBtnHtml = `
+                            <button onclick="closeProductBranchesModal(); openTransferModal('${data.barcode}', '${data.productName.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${item.name}', '', ${item.qty})" 
+                                    class="bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition shadow whitespace-nowrap">
+                                طلب تحويل...
+                            </button>
+                        `;
+                    }
+                }
+                
+                return `
+                <div class="p-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-200/50 rounded-2xl transition flex items-center justify-between gap-4">
+                    <div class="flex-grow min-w-0">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-black text-slate-700 truncate">${item.name}</span>
+                            ${stockBadge}
+                        </div>
+                        <div class="w-full bg-slate-200/60 rounded-full h-1.5 overflow-hidden">
+                            <div class="h-full ${progressColor} transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                    ${actionBtnHtml ? `<div class="flex-shrink-0">${actionBtnHtml}</div>` : ''}
+                </div>
+                `;
+            }).join('');
+        }
+        
+        function closeProductBranchesModal() {
+            const modal = document.getElementById('product-branches-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         async function saveManualQtyAdjustment() {
             if (!supabaseClient || !activeEditRecord) return;
 
@@ -5570,8 +5754,8 @@
 
             lowStockItems.forEach(item => {
                 const imgHtml = item.imageUrl 
-                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
-                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                    ? `<img src="${item.imageUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200 cursor-zoom-in" alt="">`
+                    : `<div onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400 cursor-zoom-in"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
                 
                 // Forecast calculations
                 const totalSold = barcodeSales[item.barcode] || 0;
@@ -6257,8 +6441,8 @@
                 const name = catalogItem ? catalogItem.product_name : 'صنف غير مسجل في الكتالوج';
                 const imgUrl = getProductImage(item.barcode);
                 const imgHtml = imgUrl 
-                    ? `<img src="${imgUrl}" class="w-8 h-8 object-cover rounded bg-white shadow-sm border" alt="">`
-                    : `<div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                    ? `<img src="${imgUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 object-cover rounded bg-white shadow-sm border cursor-zoom-in" alt="">`
+                    : `<div onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border cursor-zoom-in"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
 
                 html += `
                     <div class="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-lg hover:shadow-sm transition">
@@ -6651,8 +6835,8 @@
             let html = '';
             deadStockItems.forEach(item => {
                 const imgHtml = item.imageUrl 
-                    ? `<img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200" alt="">`
-                    : `<div class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+                    ? `<img src="${item.imageUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 object-cover rounded bg-slate-100 border border-slate-200 cursor-zoom-in" alt="">`
+                    : `<div onclick="openProductBranchesModal('${item.barcode}')" class="w-8 h-8 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-400 cursor-zoom-in"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
                 
                 html += `
                     <div class="flex flex-col p-3 bg-amber-50/50 hover:bg-amber-50 border border-amber-100 rounded-xl transition">
@@ -6706,6 +6890,14 @@
             const qty = Number(qtyInput.value || 1);
             const data = window.activeTransferData;
             
+            const targetSelect = document.getElementById('transfer-target-branch');
+            const targetBranch = targetSelect ? targetSelect.value : data.targetBranch;
+            
+            if (!targetBranch) {
+                alert('يرجى اختيار الفرع المستهدف أولاً.');
+                return;
+            }
+            
             if (qty <= 0 || qty > data.maxQty) {
                 alert('يرجى إدخال كمية صحيحة لا تتعدى الرصيد المتوفر (' + data.maxQty + ' قطعة).');
                 return;
@@ -6717,7 +6909,7 @@
                     productName: data.productName,
                     qty: qty,
                     sourceBranch: data.sourceBranch,
-                    targetBranch: data.targetBranch,
+                    targetBranch: targetBranch,
                     status: 'PENDING',
                     created_at: new Date().toISOString()
                 };
@@ -8205,6 +8397,56 @@
         </div>
     </div>
 
+    <!-- Product Branch Stock Distribution Modal -->
+    <div id="product-branches-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative border border-slate-200 flex flex-col max-h-[85vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+                <h4 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="git-branch" class="w-4 h-4 text-brand-accent"></i>
+                    توزيع المخزون في الفروع
+                </h4>
+                <button onclick="closeProductBranchesModal()" class="text-slate-400 hover:text-slate-600 transition-all p-1 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Product Info card -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4 flex-shrink-0">
+                <div class="w-16 h-16 rounded-xl bg-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400 border border-slate-200" id="branch-modal-img-container">
+                    <i data-lucide="shirt" class="w-8 h-8"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p id="branch-modal-product-name" class="text-xs font-black text-slate-800 leading-snug">اسم المنتج</p>
+                    <p id="branch-modal-barcode" class="text-[10px] text-slate-400 font-mono tracking-wide mt-1">-</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="text-[9px] font-bold text-slate-400">إجمالي المخزون:</span>
+                        <span id="branch-modal-total-qty" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-tint text-brand-deep">0 قطعة</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search input -->
+            <div class="relative flex-shrink-0">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="branch-modal-search-input" oninput="renderBranchModalList()" placeholder="ابحث عن فرع معين..." 
+                       class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all">
+            </div>
+
+            <!-- Scrollable branches list -->
+            <div id="branch-modal-list" class="space-y-2 overflow-y-auto flex-1 pr-1 pl-1 min-h-[200px] max-h-[350px]">
+                <!-- Populated dynamically -->
+            </div>
+            
+            <!-- Footer -->
+            <div class="flex items-center justify-end border-t border-slate-100 pt-3 flex-shrink-0">
+                <button onclick="closeProductBranchesModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-5 py-2.5 rounded-xl transition duration-200">
+                    إغلاق النافذة
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scanner Modal for Camera scanning -->
     <div id="scanner-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-fadeIn relative">
@@ -8253,7 +8495,8 @@
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 mb-1">الفرع المستهدف (المستقبل)</label>
-                        <input type="text" id="transfer-target-branch" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-bold focus:outline-none" readonly>
+                        <select id="transfer-target-branch" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent">
+                        </select>
                     </div>
                 </div>
 
