@@ -4492,8 +4492,12 @@
             const sel = document.getElementById('branch-filter-select');
             if (sel) sel.value = val;
             updateTopCounters();
+
+            // إخفاء تفاصيل الرف فوراً عند تغيير الفرع
+            const panel = document.getElementById('map-shelf-details');
+            if (panel) panel.classList.add('hidden');
     
-    // أعِد رسم الجداول والخريطة بالفلتر الجديد
+            // أعِد رسم الجداول والخريطة بالفلتر الجديد
     if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy' || activeInventorySubTab === 'catalog') {
         filterInventory();
     } else if (activeInventorySubTab === 'map') {
@@ -7643,6 +7647,10 @@
             const gridContainer = document.getElementById('warehouse-grid-map');
             const selectorContainer = document.getElementById('map-zone-selectors');
             if (!gridContainer || !selectorContainer) return;
+
+            // إخفاء لوحة تفاصيل الرف تلقائياً عند إعادة رسم الخريطة (تغيير الفرع أو المنطقة)
+            const panel = document.getElementById('map-shelf-details');
+            if (panel) panel.classList.add('hidden');
 
             const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
 
