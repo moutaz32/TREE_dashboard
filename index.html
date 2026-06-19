@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="h-full bg-slate-50">
+<html lang="ar" dir="rtl" class="h-full bg-slate-50 overflow-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -225,7 +225,7 @@
             <!-- Logo & Brand -->
             <div class="flex flex-col items-center gap-3 mb-8">
                 <div class="bg-white p-3 rounded-2xl shadow-2xl shadow-emerald-500/30 w-20 h-20 flex items-center justify-center overflow-hidden">
-                    <img src="logo.png" onerror="this.onerror=null; this.outerHTML='<i data-lucide=\'sprout\' class=\'w-10 h-10 text-brand-deep\'></i>'" alt="Logo" class="max-w-full max-h-full object-contain">
+                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<i data-lucide=\'sprout\' class=\'w-10 h-10 text-brand-deep\'></i>'};" alt="Logo" class="max-w-full max-h-full object-contain">
                 </div>
                 <div class="text-center">
                     <h1 class="text-2xl font-black text-white tracking-tight">TREE Warehouse</h1>
@@ -287,7 +287,7 @@
             <!-- Header Brand -->
             <div class="px-6 py-5 flex items-center gap-3 border-b border-brand-900/55">
                 <div class="bg-white p-1.5 rounded-xl text-brand-deep flex items-center justify-center shadow-lg shadow-emerald-500/25 w-10 h-10 overflow-hidden">
-                    <img src="logo.png" onerror="this.onerror=null; this.outerHTML='<i data-lucide=\'sprout\' class=\'w-6 h-6 text-brand-deep\'></i>'" alt="Logo" class="max-w-full max-h-full object-contain">
+                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<i data-lucide=\'sprout\' class=\'w-6 h-6 text-brand-deep\'></i>'};" alt="Logo" class="max-w-full max-h-full object-contain">
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight uppercase leading-none">مستودع TREE</h1>
@@ -408,7 +408,7 @@
             <div class="flex items-center gap-3">
                 <h2 id="current-section-title" class="text-xl font-bold text-slate-800">نظرة عامة</h2>
             </div>
-            <div class="flex items-center gap-3 flex-wrap">
+            <div id="header-right-container" class="flex items-center gap-3 flex-wrap">
                 <!-- Branch Filter Dropdown -->
                 <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
                     <i data-lucide="git-branch" class="w-4 h-4 text-brand-accent flex-shrink-0"></i>
@@ -2336,6 +2336,11 @@
             const overlay = document.getElementById('login-overlay');
             if (overlay) overlay.style.display = 'none';
 
+            // Reset window scroll position to prevent browser scroll bug when login inputs are focused
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+
             // نستخدم setTimeout(0) لضمان أن كل الدوال مُعرَّفة قبل الاستدعاء
             setTimeout(() => {
                 try {
@@ -2618,7 +2623,7 @@
                 badge.id = 'rbac-role-badge';
                 badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border ' + roleClass;
                 badge.textContent = roleLabel;
-                const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+                const headerRight = document.getElementById('header-right-container');
                 if (headerRight) headerRight.prepend(badge);
             }, 300);
 
@@ -2631,7 +2636,7 @@
                 logoutBtn.className = 'flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-400 transition border border-rose-200 rounded-lg px-2 py-1';
                 logoutBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> خروج';
                 logoutBtn.onclick = logoutUser;
-                const headerRight = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+                const headerRight = document.getElementById('header-right-container');
                 if (headerRight) { 
                     headerRight.appendChild(logoutBtn); 
                     if (typeof lucide !== 'undefined') lucide.createIcons({ root: logoutBtn }); 
