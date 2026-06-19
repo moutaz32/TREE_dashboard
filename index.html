@@ -1147,6 +1147,9 @@
                     <button onclick="switchInventorySubTab('discrepancy')" id="subtab-discrepancy" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         كاشف فروقات الجرد
                     </button>
+                    <button onclick="switchInventorySubTab('wms')" id="subtab-wms" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap hidden">
+                        🚚 التخزين اللوجستي (WMS)
+                    </button>
                     <button onclick="switchInventorySubTab('map')" id="subtab-map" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
                         خريطة المستودع
                     </button>
@@ -1296,6 +1299,53 @@
                         </div>
                         <div id="map-shelf-items-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             <!-- Items on the selected shelf will list here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= WMS LOGISTICS STORAGE (AISLES & BINS) ================= -->
+                <div id="inventory-wms-container" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">🚚 إدارة التخزين اللوجستي بأبيس (WMS Bin Locations)</h4>
+                            <p class="text-xs text-slate-500">نظام إدارة ممرات ورفوف التخزين الفعلي في مخزن أبيس الرئيسي. اضغط على أي رف لتسجيل عمليات تسكين بضائع جديدة أو نقل البضائع داخلياً بين الرفوف.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <!-- Aisle Selector -->
+                            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
+                                <span class="text-xs text-slate-500 font-bold font-sans">الممر:</span>
+                                <select id="wms-aisle-select" onchange="renderWMSStorageGrid()" class="bg-transparent border-none text-xs font-bold focus:outline-none text-slate-700 cursor-pointer">
+                                    <option value="A">الممر A (القطع العلوية)</option>
+                                    <option value="B">الممر B (البنطلونات)</option>
+                                    <option value="C">الممر C (الفساتين والعبايات)</option>
+                                    <option value="D">الممر D (الأحذية)</option>
+                                    <option value="E">الممر E (الإكسسوارات)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WMS Legend and Stats Row -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
+                        <div class="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
+                            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-300"></span> فارغ</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-50/50 border border-emerald-200"></span> خفيف (1 - 100)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-200/60 border border-emerald-300"></span> متوسط (101 - 300)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-brand-deep/80 border border-brand-800"></span> ممتلئ (>300)</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs font-bold">
+                            <div class="bg-white px-3 py-1.5 rounded-lg border shadow-sm">إجمالي القطع بالممر: <span id="wms-aisle-total-qty" class="text-brand-deep font-black">0</span></div>
+                            <div class="bg-white px-3 py-1.5 rounded-lg border shadow-sm">الرفوف المشغولة: <span id="wms-aisle-occupied-bins" class="text-brand-deep font-black">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Grid -->
+                    <div class="overflow-x-auto pb-2">
+                        <div class="min-w-[700px] space-y-4">
+                            <!-- Levels representation: Level 5 down to 1 -->
+                            <div id="wms-grid-matrix" class="grid grid-cols-8 gap-4">
+                                <!-- Generated dynamically via JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2403,6 +2453,10 @@
         let branchReturnsSearchQuery = "";
         let branchReturnsStatusFilter = "all";
 
+        // Abees WMS storage state variables
+        let liveWMSStorageData = [];
+        let activeWMSBin = '';
+
         // Inbound QC and Analytics state variables
         let liveInboundQCData = [];
         let activeInboundQCBatch = null;
@@ -2417,7 +2471,8 @@
             shopify_orders: null,
             activityLogs: null,
             branchReturns: null,
-            inboundQCBatches: null
+            inboundQCBatches: null,
+            wmsStorage: null
         };
 
         // Branch Filter State
@@ -2967,6 +3022,18 @@
             // إعادة ضبط تبويب الجودة الفرعي النشط
             switchQCSubTab('returns');
 
+            // إظهار أو إخفاء زر تبويب التخزين اللوجستي (WMS) بناءً على الصلاحية والموقع
+            const wmsTabBtn = document.getElementById('subtab-wms');
+            const isAbeesLocation = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+            const isWmsAuthorized = (role === 'admin' || role === 'quality' || isAbeesLocation);
+            if (wmsTabBtn) {
+                if (isWmsAuthorized) {
+                    wmsTabBtn.classList.remove('hidden');
+                } else {
+                    wmsTabBtn.classList.add('hidden');
+                }
+            }
+
             // إظهار شارة الدور في الهيدر
             setTimeout(() => {
                 const existing = document.getElementById('rbac-role-badge');
@@ -3259,6 +3326,7 @@
             if (activeChannels.activityLogs) supabaseClient.removeChannel(activeChannels.activityLogs);
             if (activeChannels.branchReturns) supabaseClient.removeChannel(activeChannels.branchReturns);
             if (activeChannels.inboundQCBatches) supabaseClient.removeChannel(activeChannels.inboundQCBatches);
+            if (activeChannels.wmsStorage) supabaseClient.removeChannel(activeChannels.wmsStorage);
 
             // 1. Load Initial Data
             await loadCatalogData();
@@ -3269,6 +3337,7 @@
             await loadLatestDeadStockSnapshot();
             await loadBranchReturnsData();
             await loadInboundQCData();
+            await loadWMSStorageData();
 
             // 2. Set Up Realtime WebSockets - Smart Patch Mode (لا يعيد جلب الجداول بالكامل)
             // بدلاً من refetch كامل، نُعدّل المصفوفات المحلية مباشرةً من الـ payload
@@ -3431,6 +3500,36 @@
                     }
                 })
                 .subscribe();
+
+            // --- Abees WMS Storage: patch local array from payload ---
+            activeChannels.wmsStorage = supabaseClient.channel('realtime-wms-storage')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'abeese_wms_storage' }, payload => {
+                    liveWMSStorageData.push(payload.new);
+                    if (activeInventorySubTab === 'wms') {
+                        renderWMSStorageGrid();
+                    }
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'abeese_wms_storage' }, payload => {
+                    const idx = liveWMSStorageData.findIndex(r => r.id === payload.new.id);
+                    if (idx !== -1) liveWMSStorageData[idx] = payload.new;
+                    else liveWMSStorageData.push(payload.new);
+                    if (activeInventorySubTab === 'wms') {
+                        renderWMSStorageGrid();
+                        if (activeWMSBin && activeWMSBin === payload.new.bin_location) {
+                            openWMSBinModal(activeWMSBin);
+                        }
+                    }
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'abeese_wms_storage' }, payload => {
+                    liveWMSStorageData = liveWMSStorageData.filter(r => r.id !== payload.old.id);
+                    if (activeInventorySubTab === 'wms') {
+                        renderWMSStorageGrid();
+                        if (activeWMSBin && activeWMSBin === payload.old.bin_location) {
+                            openWMSBinModal(activeWMSBin);
+                        }
+                    }
+                })
+                .subscribe();
         }
 
         // Database loading helper functions
@@ -3486,6 +3585,20 @@
                 populateBranchFilterDropdown();
             } catch (err) {
                 console.error("Error loading locations data from Supabase:", err);
+            }
+        }
+
+        async function loadWMSStorageData() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient.from('abeese_wms_storage').select('*');
+                if (error) throw error;
+                liveWMSStorageData = data || [];
+                if (activeInventorySubTab === 'wms') {
+                    renderWMSStorageGrid();
+                }
+            } catch (err) {
+                console.error("Error loading WMS storage data from Supabase:", err);
             }
         }
 
@@ -5085,6 +5198,7 @@
             const subtabStock = document.getElementById('subtab-stock');
             const subtabCatalog = document.getElementById('subtab-catalog');
             const subtabDiscrepancy = document.getElementById('subtab-discrepancy');
+            const subtabWms = document.getElementById('subtab-wms');
             const subtabMap = document.getElementById('subtab-map');
             const subtabPrint = document.getElementById('subtab-print');
             
@@ -5093,9 +5207,10 @@
             const tableContainer = document.getElementById('inventory-table-container');
             const mapContainer = document.getElementById('inventory-map-container');
             const printContainer = document.getElementById('inventory-print-container');
+            const wmsContainer = document.getElementById('inventory-wms-container');
             
             // Toggle active classes on subtab buttons
-            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabMap, subtabPrint].forEach(tab => {
+            [subtabStock, subtabCatalog, subtabDiscrepancy, subtabWms, subtabMap, subtabPrint].forEach(tab => {
                 if (tab) {
                     tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
                 }
@@ -5105,6 +5220,7 @@
             if (tableContainer) tableContainer.classList.add('hidden');
             if (mapContainer) mapContainer.classList.add('hidden');
             if (printContainer) printContainer.classList.add('hidden');
+            if (wmsContainer) wmsContainer.classList.add('hidden');
 
             if (subTabId === 'stock') {
                 if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
@@ -5182,6 +5298,16 @@
                 document.getElementById('inventory-total-records').textContent = filteredCatalog.length.toLocaleString('ar-EG');
                 
                 renderPrintItemsList();
+            }
+            else if (subTabId === 'wms') {
+                if (subtabWms) subtabWms.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                subTitle.textContent = "إدارة التخزين اللوجستي بمخزن أبيس (WMS)";
+                if (wmsContainer) wmsContainer.classList.remove('hidden');
+                
+                document.getElementById('inventory-total-qty').textContent = "WMS";
+                document.getElementById('inventory-total-records').textContent = "40 رف";
+                
+                renderWMSStorageGrid();
             }
         }
 
@@ -7732,6 +7858,343 @@
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        // ================= WMS LOGISTICS STORAGE (AISLES & BINS) LOGIC =================
+        function renderWMSStorageGrid() {
+            const aisleSelect = document.getElementById('wms-aisle-select');
+            const gridMatrix = document.getElementById('wms-grid-matrix');
+            if (!aisleSelect || !gridMatrix) return;
+
+            const selectedAisle = aisleSelect.value;
+            gridMatrix.innerHTML = '';
+
+            // Calculate total quantities and occupied bins in the selected Aisle
+            let aisleTotalQty = 0;
+            let occupiedBinsCount = 0;
+            const aisleBins = liveWMSStorageData.filter(item => item.bin_location && item.bin_location.startsWith(selectedAisle));
+            
+            // Build a Map of bin_location -> sum of quantities
+            const binTotalsMap = {};
+            const binItemsMap = {};
+            aisleBins.forEach(item => {
+                const bin = item.bin_location;
+                const qty = Number(item.quantity || 0);
+                binTotalsMap[bin] = (binTotalsMap[bin] || 0) + qty;
+                if (!binItemsMap[bin]) binItemsMap[bin] = [];
+                binItemsMap[bin].push(item);
+            });
+
+            // Count occupied bins in this aisle
+            occupiedBinsCount = Object.keys(binTotalsMap).length;
+            aisleTotalQty = Object.values(binTotalsMap).reduce((sum, q) => sum + q, 0);
+
+            document.getElementById('wms-aisle-total-qty').textContent = aisleTotalQty.toLocaleString('ar-EG');
+            document.getElementById('wms-aisle-occupied-bins').textContent = `${occupiedBinsCount} رف`;
+
+            // Draw level by level: from Level 5 down to 1 (WMS shelves are high!)
+            // Inside the column: 1 to 8
+            let gridHtml = '';
+            for (let level = 5; level >= 1; level--) {
+                for (let col = 1; col <= 8; col++) {
+                    const binId = `${selectedAisle}-${String(col).padStart(2, '0')}-${String(level).padStart(2, '0')}`;
+                    const qty = binTotalsMap[binId] || 0;
+                    const items = binItemsMap[binId] || [];
+
+                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100';
+                    let badgeClass = 'bg-slate-200 text-slate-600';
+                    if (qty > 0) {
+                        if (qty <= 100) {
+                            colorClass = 'bg-emerald-50/50 border-emerald-200 text-emerald-800 hover:bg-emerald-100';
+                            badgeClass = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                        } else if (qty <= 300) {
+                            colorClass = 'bg-emerald-200/40 border-emerald-300 text-emerald-900 hover:bg-emerald-200/60';
+                            badgeClass = 'bg-emerald-200 text-emerald-900 border border-emerald-300';
+                        } else {
+                            colorClass = 'bg-brand-deep border-brand-800 text-white hover:bg-brand-700';
+                            badgeClass = 'bg-brand-accent text-brand-deep font-black';
+                        }
+                    }
+
+                    gridHtml += `
+                        <button onclick="openWMSBinModal('${binId}')" class="flex flex-col items-center justify-between p-3.5 rounded-xl border text-center transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03] min-h-[95px]">
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-[10px] font-bold opacity-75">${selectedAisle} - م ${col}</span>
+                                <span class="text-[9px] font-semibold opacity-70">مست ${level}</span>
+                            </div>
+                            <div class="my-1.5 font-mono text-[10px] font-black tracking-wider">${binId}</div>
+                            <div class="flex items-center justify-between w-full mt-1">
+                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">
+                                    ${qty.toLocaleString('ar-EG')} ق
+                                </span>
+                                <span class="text-[8px] font-medium opacity-70">
+                                    ${items.length} أصناف
+                                </span>
+                            </div>
+                        </button>
+                    `;
+                }
+            }
+
+            gridMatrix.innerHTML = gridHtml;
+        }
+
+        function openWMSBinModal(binLocation) {
+            activeWMSBin = binLocation;
+            document.getElementById('wms-modal-bin-id').textContent = binLocation;
+
+            // Load items stored in this bin
+            const items = liveWMSStorageData.filter(item => item.bin_location === binLocation);
+            const tbody = document.getElementById('wms-bin-items-tbody');
+            const relocateSelect = document.getElementById('wms-relocate-barcode-select');
+            
+            tbody.innerHTML = '';
+            relocateSelect.innerHTML = '<option value="" disabled selected>اختر صنفاً من الرف...</option>';
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 font-semibold text-xs">لا توجد بضائع مخزنة في هذا الرف حالياً.</td></tr>';
+            } else {
+                items.forEach(item => {
+                    const catalogItem = getProductCatalogItem(item.barcode);
+                    const name = catalogItem ? catalogItem.product_name : 'صنف غير مسجل في الكتالوج';
+                    const imgUrl = getProductImage(item.barcode);
+                    const imgHtml = imgUrl 
+                        ? `<img src="${imgUrl}" class="w-8 h-8 object-cover rounded bg-slate-100" alt="">`
+                        : `<div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-400 border"><i data-lucide="shirt" class="w-4 h-4"></i></div>`;
+
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                            <td class="p-2">${imgHtml}</td>
+                            <td class="p-2 flex flex-col items-start text-right">
+                                <div class="font-bold text-slate-800 text-[11px] truncate max-w-[200px]">${name}</div>
+                                <div class="font-mono text-slate-400 text-[9px] mt-0.5">${item.barcode}</div>
+                            </td>
+                            <td class="p-2 text-center font-mono font-black text-slate-800">${item.quantity}</td>
+                            <td class="p-2 text-center">
+                                <button onclick="deleteWMSBinItem('${item.barcode}')" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-all" title="إفراغ الصنف من الرف">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+
+                    // Populate relocation option
+                    relocateSelect.innerHTML += `<option value="${item.barcode}">${name} (${item.barcode}) - متوفر: ${item.quantity}</option>`;
+                });
+            }
+
+            // Reset inputs
+            document.getElementById('wms-putaway-barcode').value = '';
+            document.getElementById('wms-putaway-qty').value = '1';
+            document.getElementById('wms-putaway-prod-preview').classList.add('hidden');
+            document.getElementById('wms-relocate-target-bin').value = '';
+            document.getElementById('wms-relocate-qty').value = '1';
+
+            lucide.createIcons();
+            document.getElementById('wms-bin-modal').classList.remove('hidden');
+        }
+
+        function closeWMSBinModal() {
+            document.getElementById('wms-bin-modal').classList.add('hidden');
+            activeWMSBin = '';
+        }
+
+        function handleWMSPutawayBarcodeLookup(barcode) {
+            const previewDiv = document.getElementById('wms-putaway-prod-preview');
+            const imgEl = document.getElementById('wms-putaway-prod-img');
+            const nameEl = document.getElementById('wms-putaway-prod-name');
+            
+            if (!barcode || barcode.trim().length < 4) {
+                previewDiv.classList.add('hidden');
+                return;
+            }
+
+            const cleanBar = cleanBarcode(barcode);
+            const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBar);
+            
+            if (catalogItem) {
+                const imgUrl = getProductImage(catalogItem.barcode);
+                if (imgUrl) {
+                    imgEl.src = imgUrl;
+                    imgEl.classList.remove('hidden');
+                } else {
+                    imgEl.classList.add('hidden');
+                }
+                nameEl.textContent = catalogItem.product_name || 'منتج بدون اسم';
+                previewDiv.classList.remove('hidden');
+            } else {
+                previewDiv.classList.add('hidden');
+            }
+        }
+
+        async function submitWMSPutaway() {
+            const barcodeInput = document.getElementById('wms-putaway-barcode');
+            const qtyInput = document.getElementById('wms-putaway-qty');
+            if (!barcodeInput || !qtyInput || !activeWMSBin) return;
+
+            const barcode = barcodeInput.value.trim();
+            const qty = parseInt(qtyInput.value);
+
+            if (!barcode) {
+                alert('الرجاء إدخال أو مسح الباركود أولاً.');
+                return;
+            }
+            if (isNaN(qty) || qty <= 0) {
+                alert('الرجاء إدخال كمية صحيحة أكبر من صفر.');
+                return;
+            }
+
+            try {
+                // Find if the item already exists in this bin
+                const cleanBar = cleanBarcode(barcode);
+                const existingRecord = liveWMSStorageData.find(r => r.bin_location === activeWMSBin && cleanBarcode(r.barcode) === cleanBar);
+                
+                let newQty = qty;
+                if (existingRecord) {
+                    newQty += Number(existingRecord.quantity || 0);
+                }
+
+                // Get product name from catalog
+                const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBar);
+                const prodName = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+
+                const record = {
+                    bin_location: activeWMSBin,
+                    barcode: barcode,
+                    quantity: newQty,
+                    updated_at: new Date().toISOString()
+                };
+
+                if (existingRecord) {
+                    record.id = existingRecord.id;
+                }
+
+                const { data, error } = await supabaseClient.from('abeese_wms_storage').upsert(record);
+                if (error) throw error;
+
+                // Log activity
+                await addActivityLog("تخزين بضائع (WMS)", `تم تسكين عدد ${qty} قطعة من المنتج (${prodName}) في موقع التخزين ${activeWMSBin}.`);
+
+                alert(`تم تسكين المنتج بنجاح في الرف ${activeWMSBin}.`);
+                // UI will auto-update via realtime channel
+            } catch (err) {
+                console.error("WMS putaway error:", err);
+                alert("فشل تسكين البضاعة: " + err.message);
+            }
+        }
+
+        async function submitWMSRelocation() {
+            const barcodeSelect = document.getElementById('wms-relocate-barcode-select');
+            const targetBinInput = document.getElementById('wms-relocate-target-bin');
+            const qtyInput = document.getElementById('wms-relocate-qty');
+
+            if (!barcodeSelect || !targetBinInput || !qtyInput || !activeWMSBin) return;
+
+            const barcode = barcodeSelect.value;
+            const targetBin = targetBinInput.value.trim().toUpperCase();
+            const qty = parseInt(qtyInput.value);
+
+            if (!barcode) {
+                alert('الرجاء اختيار الصنف المراد نقله.');
+                return;
+            }
+            if (!targetBin) {
+                alert('الرجاء إدخال كود الرف المستهدف.');
+                return;
+            }
+
+            // Validate bin location format (e.g. A-02-04)
+            const binPattern = /^[A-E]-\d{2}-\d{2}$/;
+            if (!binPattern.test(targetBin)) {
+                alert('كود الرف غير صحيح. الصيغة المعتمدة هي: الممر - العمود - المستوى (مثال: B-02-04)');
+                return;
+            }
+
+            if (isNaN(qty) || qty <= 0) {
+                alert('الرجاء تحديد كمية صحيحة.');
+                return;
+            }
+
+            // Find current record in this bin
+            const cleanBar = cleanBarcode(barcode);
+            const sourceRecord = liveWMSStorageData.find(r => r.bin_location === activeWMSBin && cleanBarcode(r.barcode) === cleanBar);
+            if (!sourceRecord || Number(sourceRecord.quantity || 0) < qty) {
+                alert(`الكمية المطلوبة غير متوفرة في هذا الرف (المتوفر: ${sourceRecord ? sourceRecord.quantity : 0}).`);
+                return;
+            }
+
+            try {
+                // Find if target bin already has this item
+                const targetRecord = liveWMSStorageData.find(r => r.bin_location === targetBin && cleanBarcode(r.barcode) === cleanBar);
+
+                // 1. Deduct from source bin
+                const remainingQty = Number(sourceRecord.quantity) - qty;
+                if (remainingQty <= 0) {
+                    const { error } = await supabaseClient.from('abeese_wms_storage').delete().eq('id', sourceRecord.id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('abeese_wms_storage').update({ quantity: remainingQty }).eq('id', sourceRecord.id);
+                    if (error) throw error;
+                }
+
+                // 2. Add to target bin
+                let targetNewQty = qty;
+                if (targetRecord) {
+                    targetNewQty += Number(targetRecord.quantity);
+                }
+
+                const targetUpsert = {
+                    bin_location: targetBin,
+                    barcode: barcode,
+                    quantity: targetNewQty,
+                    updated_at: new Date().toISOString()
+                };
+                if (targetRecord) {
+                    targetUpsert.id = targetRecord.id;
+                }
+
+                const { error: targetErr } = await supabaseClient.from('abeese_wms_storage').upsert(targetUpsert);
+                if (targetErr) throw targetErr;
+
+                // Log activity
+                const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBar);
+                const prodName = catalogItem ? catalogItem.product_name : barcode;
+                await addActivityLog("نقل بضائع داخلي (WMS)", `تم نقل عدد ${qty} قطعة من (${prodName}) من الرف ${activeWMSBin} إلى الرف ${targetBin}.`);
+
+                alert(`تم نقل البضائع بنجاح إلى الرف ${targetBin}.`);
+                // UI will refresh automatically via WebSockets
+            } catch (err) {
+                console.error("Relocation error:", err);
+                alert("حدث خطأ أثناء نقل البضائع: " + err.message);
+            }
+        }
+
+        async function deleteWMSBinItem(barcode) {
+            if (!activeWMSBin || !barcode) return;
+            
+            const cleanBar = cleanBarcode(barcode);
+            const record = liveWMSStorageData.find(r => r.bin_location === activeWMSBin && cleanBarcode(r.barcode) === cleanBar);
+            if (!record) return;
+
+            const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBar);
+            const name = catalogItem ? catalogItem.product_name : barcode;
+
+            if (!confirm(`هل أنت متأكد من رغبتك في تفريغ هذا المنتج (${name}) بالكامل من الرف ${activeWMSBin}؟`)) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.from('abeese_wms_storage').delete().eq('id', record.id);
+                if (error) throw error;
+
+                // Log activity
+                await addActivityLog("تفريغ رف (WMS)", `تم إفراغ المنتج (${name}) بالكامل من الرف ${activeWMSBin}.`);
+
+                alert('تم إفراغ الرف من المنتج بنجاح.');
+            } catch (err) {
+                console.error("Error deleting WMS storage item:", err);
+                alert("حدث خطأ أثناء تفريغ الرف: " + err.message);
+            }
+        }
+
         // ================= طلبات شوبيفاي المزامنة لايف (LIVE SHOPIFY ORDERS) =================
         function renderDashboardOrders() {
             const tbody = document.getElementById('dashboard-orders-tbody');
@@ -9895,6 +10358,107 @@
                     نسخ خطة العروض
                 </button>
                 <button onclick="closeLiquidationModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition duration-200">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WMS Bin Details & Storage Actions Modal -->
+    <div id="wms-bin-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col space-y-4 max-h-[90vh]">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+                <div class="flex items-center gap-2.5 text-brand-deep">
+                    <i data-lucide="package-open" class="w-5 h-5"></i>
+                    <h3 class="font-black text-slate-800 text-base">تفاصيل موقع التخزين: <span id="wms-modal-bin-id" class="text-brand-accent font-mono font-black"></span></h3>
+                </div>
+                <button onclick="closeWMSBinModal()" class="text-slate-400 hover:text-slate-600 transition-all p-1 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body - Scrollable content -->
+            <div class="flex-1 overflow-y-auto space-y-5 pr-1 text-right" dir="rtl">
+                <!-- 1. Stored items in this bin list -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-xs text-slate-500">المنتجات المخزنة حالياً في هذا الرف:</h4>
+                    <div class="border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-600 font-bold">
+                                    <th class="p-2.5">الصورة</th>
+                                    <th class="p-2.5">المنتج / الباركود</th>
+                                    <th class="p-2.5 text-center">الكمية</th>
+                                    <th class="p-2.5 text-center">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wms-bin-items-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. Accordion Action Forms -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+                    <!-- Form A: Putaway (تسكين صنف جديد) -->
+                    <div class="bg-slate-50/70 border border-slate-200/60 p-4 rounded-2xl space-y-3">
+                        <h5 class="font-extrabold text-xs text-brand-deep flex items-center gap-1.5">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-brand-accent"></i>
+                            تسكين صنف جديد بالرف
+                        </h5>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">الباركود (Scan or Type):</label>
+                                <input type="text" id="wms-putaway-barcode" oninput="handleWMSPutawayBarcodeLookup(this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none" placeholder="امسح أو اكتب الباركود...">
+                            </div>
+                            <!-- Autocompleted product name preview -->
+                            <div id="wms-putaway-prod-preview" class="hidden p-2 bg-white rounded-lg border border-slate-100 flex items-center gap-2">
+                                <img id="wms-putaway-prod-img" src="" class="w-8 h-8 object-cover rounded bg-slate-100">
+                                <div class="text-[10px] text-slate-600 font-bold truncate flex-1" id="wms-putaway-prod-name"></div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">الكمية للتسكين:</label>
+                                <input type="number" id="wms-putaway-qty" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none" min="1" value="1">
+                            </div>
+                            <button onclick="submitWMSPutaway()" class="w-full bg-brand-deep hover:bg-brand-700 text-white font-bold text-xs py-2 rounded-xl shadow transition duration-200">
+                                إضافة وتخزين بالرف
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form B: Relocation (نقل البضاعة لرف آخر) -->
+                    <div class="bg-slate-50/70 border border-slate-200/60 p-4 rounded-2xl space-y-3">
+                        <h5 class="font-extrabold text-xs text-brand-deep flex items-center gap-1.5">
+                            <i data-lucide="move" class="w-4 h-4 text-brand-accent"></i>
+                            نقل كمية لرف آخر (Relocation)
+                        </h5>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">الصنف المراد نقله:</label>
+                                <select id="wms-relocate-barcode-select" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                    <option value="" disabled selected>اختر صنفاً من الرف...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">الموقع المستهدف:</label>
+                                <input type="text" id="wms-relocate-target-bin" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-700 outline-none" placeholder="مثال: B-02-04" uppercase>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1">الكمية المراد نقلها:</label>
+                                <input type="number" id="wms-relocate-qty" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none" min="1" value="1">
+                            </div>
+                            <button onclick="submitWMSRelocation()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl shadow transition duration-200">
+                                تأكيد ونقل البضاعة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button onclick="closeWMSBinModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-5 py-2.5 rounded-xl transition duration-200">
                     إغلاق
                 </button>
             </div>
