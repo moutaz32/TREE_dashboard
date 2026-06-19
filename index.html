@@ -789,11 +789,14 @@
                 <!-- Heatmap Section -->
                 <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
-                        <div>
-                            <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="layout-grid" class="w-5 h-5 text-amber-500"></i>
-                                الخريطة الحرارية للمستودع (Warehouse Heatmap)
-                            </h4>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3.5 flex-wrap">
+                                <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="layout-grid" class="w-5 h-5 text-amber-500"></i>
+                                    الخريطة الحرارية للمستودع (Warehouse Heatmap)
+                                </h4>
+                                <div id="heatmap-back-btn-container" class="inline-flex"></div>
+                            </div>
                             <p id="exec-heatmap-description" class="text-xs text-slate-500 mt-1">توزيع كثافة البضاعة على الرفوف (A-Z). الألوان الدافئة تدل على رفوف مزدحمة، والباردة تدل على مساحات فارغة.</p>
                         </div>
                         <div class="flex items-center gap-4 text-xs font-bold text-slate-500">
@@ -7305,21 +7308,109 @@
                     }
                 }
 
-                html += `
-                    <div class="flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition hover:scale-[1.02] cursor-pointer" 
-                         onclick="${isAll ? `onBranchFilterChange('${zone}')` : ''}" 
-                         title="${zone} - القطع: ${qty}">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-black tracking-tight">${zone}</span>
-                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                if (!isAll) {
+                    // Premium category card design
+                    let progressPercent = Math.round(densityRatio * 100);
+                    let progressColor = 'bg-emerald-500';
+                    let iconHtml = '';
+                    
+                    if (zone.includes('العلوية') || zone.includes('Tops')) {
+                        iconHtml = '<i data-lucide="shirt" class="w-5 h-5 text-emerald-600"></i>';
+                        progressColor = 'bg-emerald-500';
+                    } else if (zone.includes('السفلية') || zone.includes('Bottoms')) {
+                        iconHtml = '<i data-lucide="layers" class="w-5 h-5 text-blue-600"></i>';
+                        progressColor = 'bg-blue-500';
+                    } else if (zone.includes('الداخلية') || zone.includes('الملابس')) {
+                        iconHtml = '<i data-lucide="heart" class="w-5 h-5 text-indigo-600"></i>';
+                        progressColor = 'bg-indigo-500';
+                    } else if (zone.includes('الأحذية') || zone.includes('الإكسسوارات')) {
+                        iconHtml = '<i data-lucide="shopping-bag" class="w-5 h-5 text-amber-600"></i>';
+                        progressColor = 'bg-amber-500';
+                    } else {
+                        iconHtml = '<i data-lucide="box" class="w-5 h-5 text-slate-600"></i>';
+                        progressColor = 'bg-slate-500';
+                    }
+
+                    let cardBg = 'bg-white border-slate-200 hover:border-slate-300';
+                    if (qty > 0) {
+                        if (densityRatio > 0.7) {
+                            cardBg = 'bg-emerald-50/20 border-emerald-200 hover:bg-emerald-50/40';
+                        } else if (densityRatio > 0.3) {
+                            cardBg = 'bg-blue-50/20 border-blue-200 hover:bg-blue-50/40';
+                        }
+                    }
+
+                    html += `
+                        <div class="flex flex-col p-5 rounded-2xl border ${cardBg} shadow-sm transition hover:shadow-md cursor-default space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="p-2.5 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+                                    ${iconHtml}
+                                </div>
+                                <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <h5 class="text-sm font-black text-slate-800 leading-tight">${zone}</h5>
+                                <p class="text-[10px] text-slate-400 font-bold">إجمالي المخزون في هذا التصنيف</p>
+                            </div>
+                            
+                            <div class="space-y-1.5 pt-1">
+                                <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                                    <span>نسبة كثافة التصنيف</span>
+                                    <span>${progressPercent}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                    <div class="${progressColor} h-2 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="w-full bg-slate-200/40 rounded-full h-1.5 mt-1 overflow-hidden">
-                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${Math.round(densityRatio * 100)}%"></div>
+                    `;
+                } else {
+                    // Standard branch card design
+                    html += `
+                        <div class="flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition hover:scale-[1.02] cursor-pointer" 
+                             onclick="onBranchFilterChange('${zone}')" 
+                             title="${zone} - القطع: ${qty}">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-black tracking-tight">${zone}</span>
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                            </div>
+                            <div class="w-full bg-slate-200/40 rounded-full h-1.5 mt-1 overflow-hidden">
+                                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${Math.round(densityRatio * 100)}%"></div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
+            
+            // Adjust container column widths dynamically to prevent squeezing cards
+            if (isAll) {
+                container.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4";
+            } else {
+                container.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5";
+            }
+
             container.innerHTML = html;
+
+            // Render Back Button if filtered to a specific branch
+            const backContainer = document.getElementById('heatmap-back-btn-container');
+            if (backContainer) {
+                if (isAll) {
+                    backContainer.innerHTML = '';
+                } else {
+                    backContainer.innerHTML = `
+                        <button onclick="onBranchFilterChange('all')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200 shadow-sm">
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-500"></i>
+                            العودة لكافة الفروع
+                        </button>
+                    `;
+                }
+            }
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons({ root: container });
+                if (backContainer) lucide.createIcons({ root: backContainer });
+            }
         }
 
         // ================= DISCREPANCY REPORTING LOGIC =================
