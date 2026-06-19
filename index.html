@@ -344,6 +344,11 @@
                     مرتجعات الفروع
                 </button>
 
+                <button onclick="switchTab('branch-orders')" id="tab-branch-orders" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="inbox" class="w-5 h-5 text-amber-300"></i>
+                    طلبات الفروع 📥
+                </button>
+
                 <button onclick="switchTab('query')" id="tab-query" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="scan-line" class="w-5 h-5"></i>
                     استعلام الباركود الفوري
@@ -406,6 +411,10 @@
         <button onclick="switchTab('branch-returns')" id="mobile-tab-branch-returns" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="corner-down-left" class="w-5 h-5"></i>
             <span>مرتجع فرع</span>
+        </button>
+        <button onclick="switchTab('branch-orders')" id="mobile-tab-branch-orders" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="inbox" class="w-5 h-5"></i>
+            <span>طلبات الفروع</span>
         </button>
         <button onclick="switchTab('analytics')" id="mobile-tab-analytics" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
@@ -549,9 +558,13 @@
                 <option value="tshirt">تي شيرت</option>
             </select>
             <div id="export-wrapper" style="display: none;" class="flex items-center gap-2">
-                <button onclick="exportShortagesOrder()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
-                    <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                <button onclick="exportShortagesOrder()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-sm transition duration-200 flex items-center gap-1.5">
+                    <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-slate-500"></i>
                     تصدير طلبية النواقص
+                </button>
+                <button onclick="sendOrderToAbees()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition duration-200 flex items-center gap-1.5">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    إرسال الطلب لمخزن أبيس 🚀
                 </button>
             </div>
             <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
@@ -1861,6 +1874,47 @@
                 </div>
             </section>
 
+            <!-- ================= BRANCH ORDERS SECTION ================= -->
+            <section id="section-branch-orders" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Welcome Banner -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">طلبات تحضير الفروع (Branch Prep Orders)</h3>
+                        <p class="text-sm text-slate-500">متابعة طلبات البضائع الواردة من فروع التجزئة، فرزها، وتحضيرها من مخزن أبيس.</p>
+                    </div>
+                    <div class="bg-amber-50 text-amber-800 border border-amber-100 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <i data-lucide="inbox" class="w-4 h-4 animate-pulse"></i>
+                        تحضير طلبيات الفروع
+                    </div>
+                </div>
+
+                <!-- Orders Filter Toolbar -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <select id="branch-order-status-filter" onchange="fetchAndRenderBranchOrders()" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl outline-none cursor-pointer">
+                            <option value="all">كل الطلبات</option>
+                            <option value="pending">قيد الانتظار (جديدة)</option>
+                            <option value="processing">جاري التحضير</option>
+                            <option value="completed">تم الشحن</option>
+                            <option value="cancelled">ملغاة</option>
+                        </select>
+                        <select id="branch-order-branch-filter" onchange="fetchAndRenderBranchOrders()" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl outline-none cursor-pointer">
+                            <option value="all">كل الفروع</option>
+                            <!-- Dynamic branches list will go here -->
+                        </select>
+                    </div>
+                    <button onclick="fetchAndRenderBranchOrders()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 font-bold text-xs px-4 py-2 rounded-xl transition duration-200 flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                        تحديث القائمة
+                    </button>
+                </div>
+
+                <!-- Incoming Orders List -->
+                <div id="branch-orders-list-container" class="space-y-4">
+                    <!-- Dynamic orders list will go here -->
+                </div>
+            </section>
+
             <!-- ================= WMS & PERFORMANCE ANALYTICS SECTION ================= -->
             <section id="section-analytics" class="hidden space-y-6">
                 <!-- Welcome Banner -->
@@ -2960,7 +3014,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -2974,15 +3028,15 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns', 'branch-orders'];
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else if (role === 'quality') {
-                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs'];
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders'];
                 roleLabel = '🔍 إدارة الجودة';
                 roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
             } else { // admin
@@ -3037,12 +3091,22 @@
 
             const exportWrapper = document.getElementById('export-wrapper');
             if (exportWrapper) {
-                if (activeBranchFilter && activeBranchFilter !== 'all') {
+                const isAbeesFilter = (activeBranchFilter && activeBranchFilter.includes('ابيس'));
+                if (activeBranchFilter && activeBranchFilter !== 'all' && !isAbeesFilter) {
                     exportWrapper.style.display = 'flex';
                 } else {
                     exportWrapper.style.display = 'none';
                 }
             }
+
+            // إظهار أو إخفاء تبويب طلبات الفروع بناء على صلاحية مخزن أبيس أو الأدمن
+            const tabBranchOrders = document.getElementById('tab-branch-orders');
+            const mobTabBranchOrders = document.getElementById('mobile-tab-branch-orders');
+            const isAbeesUser = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+            const showOrders = (role === 'admin' || isAbeesUser);
+            
+            if (tabBranchOrders) tabBranchOrders.style.display = showOrders ? 'flex' : 'none';
+            if (mobTabBranchOrders) mobTabBranchOrders.style.display = showOrders ? 'flex' : 'none';
 
             // إظهار أو إخفاء أزرار تبويبات الجودة الفرعية بناءً على الصلاحية
             const qcTabs = document.getElementById('qc-sub-tabs-container');
@@ -3247,7 +3311,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -3288,7 +3352,8 @@
                 transfers: 'إدارة طلبات التحويل بين الفروع',
                 returns: 'إدارة مرتجعات شوبيفاي (Reverse Logistics)',
                 analytics: 'تحليلات الأداء ودقة المستودعات (WMS)',
-                'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)'
+                'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)',
+                'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)'
             };
             const titleEl = document.getElementById('current-section-title');
             if (titleEl) titleEl.textContent = titles[tabId];
@@ -3316,6 +3381,8 @@
                 renderWMSAnalytics();
             } else if (tabId === 'branch-returns') {
                 switchQCSubTab(activeQCSubTab);
+            } else if (tabId === 'branch-orders') {
+                fetchAndRenderBranchOrders();
             }
         }
 
@@ -7680,6 +7747,334 @@
     
     logToConsole("success", "تم تصدير طلبية النواقص للفرع بنجاح مع تأكيد التوافر في مخزن أبيس: " + filename);
 }
+    async function sendOrderToAbees() {
+        if (!supabaseClient) {
+            alert("لم يتم الاتصال بقاعدة البيانات بعد.");
+            return;
+        }
+        if (!activeBranchFilter || activeBranchFilter === "all") {
+            alert("يرجى اختيار فرع محدد أولاً لإرسال طلبيته.");
+            return;
+        }
+        
+        const branchName = activeBranchFilter;
+        const branchInventory = getBranchFilteredInventory();
+        let branchQtyMap = new Map();
+        branchInventory.forEach(item => {
+            branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+        });
+
+        let abeesQtyMap = new Map();
+        liveInventoryData.forEach(item => {
+            if (item.location_id && item.location_id.includes('ابيس')) {
+                abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+            }
+        });
+
+        const seasonFilter = document.getElementById('export-season-filter').value;
+        const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+
+        const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
+        const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+        
+        const categoryKeywords = {
+            hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
+            pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
+            shirt: ['قمصان', 'قميص', 'shirt'],
+            jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
+            tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
+        };
+
+        const shortages = [];
+        
+        for (const product of liveCatalogData) {
+            const name = (product.product_name || "").toLowerCase();
+            
+            if (seasonFilter === 'winter') {
+                if (!winterKeywords.some(kw => name.includes(kw))) continue;
+            } else if (seasonFilter === 'summer') {
+                if (!summerKeywords.some(kw => name.includes(kw))) continue;
+            }
+            
+            if (categoryFilter !== 'all') {
+                const kws = categoryKeywords[categoryFilter] || [];
+                if (!kws.some(kw => name.includes(kw))) continue;
+            }
+            
+            const physicalQty = branchQtyMap.get(product.barcode) || 0;
+            
+            if (physicalQty < lowStockThreshold) {
+                const reqQty = lowStockThreshold - physicalQty;
+                const abeesAvailableQty = abeesQtyMap.get(product.barcode) || 0;
+                
+                if (abeesAvailableQty > 0) {
+                    const approvedQty = Math.min(reqQty, abeesAvailableQty);
+                    shortages.push({
+                        barcode: product.barcode,
+                        product_name: product.product_name || "غير مسجل",
+                         branch_qty: physicalQty,
+                         required_qty: reqQty,
+                         abees_qty: abeesAvailableQty,
+                         approved_qty: approvedQty
+                    });
+                }
+            }
+        }
+
+        if (shortages.length === 0) {
+            alert("لا توجد نواقص متوفرة حالياً في مخزن أبيس لتغطية عجز فرع " + branchName + "!");
+            return;
+        }
+
+        const confirmSend = confirm(`هل أنت متأكد من إرسال طلبية النواقص (${shortages.length} صنف) إلى مخزن أبيس؟`);
+        if (!confirmSend) return;
+
+        try {
+            const orderData = {
+                branch_name: branchName,
+                created_by: currentUser ? (currentUser.username || currentUser.role) : 'موظف الفرع',
+                items: shortages,
+                status: 'pending'
+            };
+
+            const { data, error } = await supabaseClient
+                .from('branch_prep_orders')
+                .insert([orderData]);
+
+            if (error) throw error;
+
+            alert("تم إرسال طلبية النواقص بنجاح إلى مخزن أبيس! 🚀");
+            logToConsole("success", `تم إرسال طلبية نواقص جديدة لفرع ${branchName} بنجاح.`);
+        } catch (err) {
+            console.error("Failed to send order:", err);
+            alert("فشل إرسال الطلبية: " + err.message);
+        }
+    }
+
+    let branchOrdersCache = [];
+    async function fetchAndRenderBranchOrders() {
+        if (!supabaseClient) return;
+        
+        const tbody = document.getElementById('branch-orders-tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="py-8 text-center text-slate-400">
+                    <div class="flex flex-col items-center gap-2 justify-center">
+                        <span class="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin"></span>
+                        <span>جاري تحميل طلبات الفروع...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('branch_prep_orders')
+                .select('*')
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+            
+            branchOrdersCache = data || [];
+            renderBranchOrdersTable(branchOrdersCache);
+        } catch (err) {
+            console.error("Error fetching branch orders:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-rose-500 font-bold">
+                        فشل تحميل البيانات: ${err.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    function renderBranchOrdersTable(orders) {
+        const tbody = document.getElementById('branch-orders-tbody');
+        if (!tbody) return;
+        
+        if (orders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-400 font-medium">
+                        لا توجد طلبات تحضير حالياً.
+                     </td>
+                 </tr>
+             `;
+             return;
+         }
+         
+         tbody.innerHTML = orders.map(order => {
+             const date = new Date(order.created_at).toLocaleString('ar-EG');
+             const itemsCount = (order.items || []).length;
+             
+             let statusBadge = '';
+             let actionButtons = '';
+             
+             if (order.status === 'pending') {
+                 statusBadge = `<span class="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                     <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                     قيد الانتظار
+                 </span>`;
+                 actionButtons = `
+                     <button onclick="updateBranchOrderStatus('${order.id}', 'completed')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
+                         اعتماد وتحضير الكلي ✓
+                     </button>
+                     <button onclick="updateBranchOrderStatus('${order.id}', 'cancelled')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
+                         إلغاء ✗
+                     </button>
+                 `;
+             } else if (order.status === 'completed') {
+                 statusBadge = `<span class="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                     <i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i>
+                     تم التحضير والاعتماد
+                 </span>`;
+             } else {
+                 statusBadge = `<span class="inline-flex items-center gap-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                     <i data-lucide="x-circle" class="w-3 h-3 text-rose-400"></i>
+                     ملغي
+                 </span>`;
+             }
+             
+             return `
+                 <tr class="hover:bg-slate-900/10 border-b border-slate-100 transition-colors">
+                     <td class="px-4 py-3.5 text-xs text-slate-800 font-bold">${order.branch_name}</td>
+                     <td class="px-4 py-3.5 text-xs text-slate-500">${date}</td>
+                     <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">${itemsCount} أصناف</td>
+                     <td class="px-4 py-3.5 text-xs">${statusBadge}</td>
+                     <td class="px-4 py-3.5 text-xs flex gap-2">
+                         <button onclick="showBranchOrderDetails('${order.id}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
+                             تفاصيل 🔍
+                         </button>
+                         ${actionButtons}
+                     </td>
+                 </tr>
+             `;
+         }).join('');
+         
+         if (window.lucide) lucide.createIcons();
+     }
+     
+     async function updateBranchOrderStatus(orderId, status) {
+         if (!supabaseClient) return;
+         
+         const order = branchOrdersCache.find(o => o.id === orderId);
+         if (!order) return;
+         
+         const confirmAction = confirm(status === 'completed' ? 'هل أنت متأكد من اعتماد وتحضير هذه الطلبية بالكامل وتحديث أرصدة الكتالوج؟' : 'هل أنت متأكد من إلغاء هذه الطلبية؟');
+         if (!confirmAction) return;
+         
+         try {
+             if (status === 'completed') {
+                 for (const item of order.items) {
+                     const barcode = item.barcode;
+                     const decrQty = Number(item.approved_qty || 0);
+                     if (decrQty <= 0) continue;
+                     
+                     const { data: invItems, error: findError } = await supabaseClient
+                         .from('warehouse_inventory')
+                         .select('id, quantity')
+                         .eq('barcode', barcode)
+                         .like('location_id', '%ابيس%');
+                         
+                     if (findError) throw findError;
+                     
+                     if (invItems && invItems.length > 0) {
+                         const invItem = invItems[0];
+                         const newQty = Math.max(0, Number(invItem.quantity || 0) - decrQty);
+                         
+                         const { error: updateError } = await supabaseClient
+                             .from('warehouse_inventory')
+                             .update({ quantity: newQty })
+                             .eq('id', invItem.id);
+                             
+                         if (updateError) throw updateError;
+                     }
+                 }
+                 logToConsole('success', `تم خصم كميات الطلبية رقم ${orderId} من رصيد مخزن أبيس.`);
+             }
+             
+             const { error } = await supabaseClient
+                 .from('branch_prep_orders')
+                 .update({ status: status })
+                 .eq('id', orderId);
+                 
+             if (error) throw error;
+             
+             alert(status === 'completed' ? "تم اعتماد وتحضير الطلبية بنجاح وتحديث المخزون! ✓" : "تم إلغاء الطلبية بنجاح. ✗");
+             fetchAndRenderBranchOrders();
+             
+             if (typeof fetchInventoryData === 'function') {
+                 fetchInventoryData();
+             }
+         } catch (err) {
+             console.error("Failed to update status:", err);
+             alert("حدث خطأ أثناء التحديث: " + err.message);
+         }
+     }
+     
+     function showBranchOrderDetails(orderId) {
+         const order = branchOrdersCache.find(o => o.id === orderId);
+         if (!order) return;
+         
+         const modal = document.getElementById('branch-order-modal');
+         const modalTitle = document.getElementById('branch-order-modal-title');
+         const modalBody = document.getElementById('branch-order-modal-body');
+         
+         if (!modal || !modalTitle || !modalBody) return;
+         
+         modalTitle.textContent = `تفاصيل طلبية فرع: ${order.branch_name}`;
+         
+         let itemsHtml = `
+             <div class="overflow-x-auto">
+                 <table class="w-full text-right border-collapse">
+                     <thead>
+                         <tr class="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200">
+                             <th class="p-2">الباركود</th>
+                             <th class="p-2">اسم المنتج</th>
+                             <th class="p-2">رصيد الفرع</th>
+                             <th class="p-2 text-amber-600">العجز</th>
+                             <th class="p-2">متاح بأبيس</th>
+                             <th class="p-2 text-rose-600">المعتمد</th>
+                         </tr>
+                     </thead>
+                     <tbody class="divide-y divide-slate-100 text-xs text-slate-800">
+         `;
+         
+         order.items.forEach(item => {
+             itemsHtml += `
+                 <tr class="hover:bg-slate-50">
+                     <td class="p-2 font-mono">${item.barcode}</td>
+                     <td class="p-2 font-bold">${item.product_name}</td>
+                     <td class="p-2">${item.branch_qty}</td>
+                     <td class="p-2 text-amber-600 font-bold">${item.required_qty}</td>
+                     <td class="p-2">${item.abees_qty}</td>
+                     <td class="p-2 text-rose-600 font-bold">${item.approved_qty}</td>
+                 </tr>
+             `;
+         });
+         
+         itemsHtml += `
+                     </tbody>
+                 </table>
+             </div>
+         `;
+         
+         modalBody.innerHTML = itemsHtml;
+         modal.classList.remove('hidden');
+         modal.classList.add('flex');
+     }
+     
+     function closeBranchOrderModal() {
+         const modal = document.getElementById('branch-order-modal');
+         if (modal) {
+             modal.classList.remove('flex');
+             modal.classList.add('hidden');
+         }
+     }
+
         function printInventoryTable() {
             window.print();
         }
