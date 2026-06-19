@@ -9376,56 +9376,106 @@
             let html = '';
             for (const [zone, qty] of Object.entries(branchDensity)) {
                 let densityRatio = qty / maxDensity;
-                let bgColor = 'bg-slate-50 text-slate-500 border-slate-200';
+                let bgColor = 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100/50';
                 let badgeColor = 'bg-slate-200/60 text-slate-700';
-                
-                if (qty > 0) {
-                    if (densityRatio > 0.7) {
-                        bgColor = 'bg-emerald-50 text-emerald-950 border-emerald-200 hover:bg-emerald-100/60';
-                        badgeColor = 'bg-emerald-500 text-white';
-                    } else if (densityRatio > 0.3) {
-                        bgColor = 'bg-emerald-50/50 text-emerald-900 border-emerald-100 hover:bg-emerald-50';
-                        badgeColor = 'bg-emerald-400 text-white';
+                let progressColor = 'bg-slate-300';
+                let dotColor = 'bg-slate-300';
+                let displayPercent = Math.round(densityRatio * 100);
+
+                if (isAll) {
+                    const isAbees = (zone === 'مخزن ابيس');
+                    
+                    if (qty === 0) {
+                        bgColor = 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100';
+                        badgeColor = 'bg-slate-100 text-slate-500 border border-slate-200/50';
+                        progressColor = 'bg-slate-300';
+                        dotColor = 'bg-slate-300';
+                        displayPercent = 0;
+                    } else if ((isAbees && qty <= 50000) || (!isAbees && qty <= 5000)) {
+                        // خفيف - أخضر
+                        bgColor = 'bg-emerald-50/30 text-emerald-800 border-emerald-100 hover:bg-emerald-50';
+                        badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                        progressColor = 'bg-emerald-500';
+                        dotColor = 'bg-emerald-500';
+                        // For display, scale normal branch to look nice in progress bar
+                        displayPercent = isAbees ? Math.round((qty / 50000) * 100) : Math.round((qty / 5000) * 100);
+                    } else if ((isAbees && qty <= 150000) || (!isAbees && qty <= 10000)) {
+                        // متوسط - أصفر/برتقالي
+                        bgColor = 'bg-amber-50/30 text-amber-800 border-amber-200 hover:bg-amber-50';
+                        badgeColor = 'bg-amber-100 text-amber-800 border border-amber-200';
+                        progressColor = 'bg-amber-500';
+                        dotColor = 'bg-amber-500';
+                        displayPercent = isAbees ? Math.round((qty / 150000) * 100) : Math.round((qty / 10000) * 100);
                     } else {
-                        bgColor = 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
-                        badgeColor = 'bg-slate-300 text-slate-800';
+                        // مزدحم - أحمر
+                        bgColor = 'bg-rose-50/30 text-rose-800 border-rose-200 hover:bg-rose-50';
+                        badgeColor = 'bg-rose-500 text-white';
+                        progressColor = 'bg-rose-500';
+                        dotColor = 'bg-rose-500';
+                        displayPercent = 100;
+                    }
+                } else {
+                    // Category view within a branch
+                    if (qty === 0) {
+                        bgColor = 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100';
+                        badgeColor = 'bg-slate-100 text-slate-500 border border-slate-200/50';
+                        progressColor = 'bg-slate-300';
+                        dotColor = 'bg-slate-300';
+                        displayPercent = 0;
+                    } else if (densityRatio <= 0.3) {
+                        bgColor = 'bg-emerald-50/30 text-emerald-800 border-emerald-100 hover:bg-emerald-50';
+                        badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                        progressColor = 'bg-emerald-500';
+                        dotColor = 'bg-emerald-500';
+                    } else if (densityRatio <= 0.7) {
+                        bgColor = 'bg-amber-50/30 text-amber-800 border-amber-200 hover:bg-amber-50';
+                        badgeColor = 'bg-amber-100 text-amber-800 border border-amber-200';
+                        progressColor = 'bg-amber-500';
+                        dotColor = 'bg-amber-500';
+                    } else {
+                        bgColor = 'bg-rose-50/30 text-rose-800 border-rose-200 hover:bg-rose-50';
+                        badgeColor = 'bg-rose-500 text-white';
+                        progressColor = 'bg-rose-500';
+                        dotColor = 'bg-rose-500';
                     }
                 }
 
+                // Ensure displayPercent bounds
+                displayPercent = Math.max(0, Math.min(100, displayPercent));
+
                 if (!isAll) {
                     // Premium category card design
-                    let progressPercent = Math.round(densityRatio * 100);
-                    let progressColor = 'bg-emerald-500';
                     let iconHtml = '';
+                    let categoryProgressColor = 'bg-emerald-500';
+                    let categoryCardBg = 'bg-white border-slate-200 hover:border-slate-300';
+                    
+                    if (qty > 0) {
+                        if (densityRatio > 0.7) {
+                            categoryCardBg = 'bg-rose-50/20 border-rose-200 hover:bg-rose-50/40';
+                            categoryProgressColor = 'bg-rose-500';
+                        } else if (densityRatio > 0.3) {
+                            categoryCardBg = 'bg-amber-50/20 border-amber-200 hover:bg-amber-50/40';
+                            categoryProgressColor = 'bg-amber-500';
+                        } else {
+                            categoryCardBg = 'bg-emerald-50/20 border-emerald-200 hover:bg-emerald-50/40';
+                            categoryProgressColor = 'bg-emerald-500';
+                        }
+                    }
                     
                     if (zone.includes('العلوية') || zone.includes('Tops')) {
                         iconHtml = '<i data-lucide="shirt" class="w-5 h-5 text-emerald-600"></i>';
-                        progressColor = 'bg-emerald-500';
                     } else if (zone.includes('السفلية') || zone.includes('Bottoms')) {
                         iconHtml = '<i data-lucide="layers" class="w-5 h-5 text-blue-600"></i>';
-                        progressColor = 'bg-blue-500';
                     } else if (zone.includes('الداخلية') || zone.includes('الملابس')) {
                         iconHtml = '<i data-lucide="heart" class="w-5 h-5 text-indigo-600"></i>';
-                        progressColor = 'bg-indigo-500';
                     } else if (zone.includes('الأحذية') || zone.includes('الإكسسوارات')) {
                         iconHtml = '<i data-lucide="shopping-bag" class="w-5 h-5 text-amber-600"></i>';
-                        progressColor = 'bg-amber-500';
                     } else {
                         iconHtml = '<i data-lucide="box" class="w-5 h-5 text-slate-600"></i>';
-                        progressColor = 'bg-slate-500';
-                    }
-
-                    let cardBg = 'bg-white border-slate-200 hover:border-slate-300';
-                    if (qty > 0) {
-                        if (densityRatio > 0.7) {
-                            cardBg = 'bg-emerald-50/20 border-emerald-200 hover:bg-emerald-50/40';
-                        } else if (densityRatio > 0.3) {
-                            cardBg = 'bg-blue-50/20 border-blue-200 hover:bg-blue-50/40';
-                        }
                     }
 
                     html += `
-                        <div class="flex flex-col p-5 rounded-2xl border ${cardBg} shadow-sm transition hover:shadow-md cursor-default space-y-4">
+                        <div class="flex flex-col p-5 rounded-2xl border ${categoryCardBg} shadow-sm transition hover:shadow-md cursor-default space-y-4">
                             <div class="flex items-center justify-between">
                                 <div class="p-2.5 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
                                     ${iconHtml}
@@ -9441,10 +9491,10 @@
                             <div class="space-y-1.5 pt-1">
                                 <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
                                     <span>نسبة كثافة التصنيف</span>
-                                    <span>${progressPercent}%</span>
+                                    <span>${displayPercent}%</span>
                                 </div>
                                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                    <div class="${progressColor} h-2 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                                    <div class="${categoryProgressColor} h-2 rounded-full transition-all duration-500" style="width: ${displayPercent}%"></div>
                                 </div>
                             </div>
                         </div>
@@ -9452,15 +9502,18 @@
                 } else {
                     // Standard branch card design
                     html += `
-                        <div class="flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition hover:scale-[1.02] cursor-pointer" 
+                        <div class="group flex flex-col p-4 rounded-2xl border ${bgColor} shadow-sm transition-all duration-200 hover:scale-[1.02] cursor-pointer hover:shadow-md" 
                              onclick="onBranchFilterChange('${zone}')" 
                              title="${zone} - القطع: ${qty}">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-black tracking-tight">${zone}</span>
-                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${badgeColor}">${qty.toLocaleString('ar-EG')} قطعة</span>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-black tracking-tight text-slate-800 group-hover:text-brand-deep transition-colors">${zone}</span>
+                                <span class="text-[9.5px] font-black px-2 py-0.5 rounded-lg ${badgeColor} transition-all">${qty.toLocaleString('ar-EG')} قطعة</span>
                             </div>
-                            <div class="w-full bg-slate-200/40 rounded-full h-1.5 mt-1 overflow-hidden">
-                                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${Math.round(densityRatio * 100)}%"></div>
+                            <div class="flex items-center gap-2 mt-auto">
+                                <div class="flex-1 bg-slate-200/40 rounded-full h-1.5 overflow-hidden">
+                                    <div class="${progressColor} h-1.5 rounded-full" style="width: ${displayPercent}%"></div>
+                                </div>
+                                <span class="w-2 h-2 rounded-full ${dotColor} ${qty > 0 && displayPercent > 70 ? 'animate-pulse' : ''} flex-shrink-0"></span>
                             </div>
                         </div>
                     `;
