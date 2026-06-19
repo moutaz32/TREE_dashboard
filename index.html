@@ -575,6 +575,15 @@
             </div>
         </div>
     </div>
+    <!-- Selection Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5 text-xs text-slate-500 gap-2">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleAllLowStockCheckboxes(true)" class="text-rose-600 hover:text-rose-500 font-bold transition">تحديد الكل ✓</button>
+            <span class="text-slate-300">|</span>
+            <button onclick="toggleAllLowStockCheckboxes(false)" class="text-slate-500 hover:text-slate-700 font-bold transition">إلغاء التحديد ✗</button>
+        </div>
+        <span class="text-[10px] text-slate-400 font-medium">يمكن للفرع تحديد الموديلات وتعديل الكميات المطلوبة بدقة لمنع تكدس البضائع.</span>
+    </div>
     <!-- Low Stock Alert Grid -->
     <div id="low-stock-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[220px] overflow-y-auto pr-1">
         <!-- Dynamic low stock alerts will go here -->
@@ -7435,6 +7444,13 @@
 
             panel.classList.remove('hidden');
             
+            let abeesQtyMap = new Map();
+            liveInventoryData.forEach(item => {
+                if (item.location_id && item.location_id.includes('ابيس')) {
+                    abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                }
+            });
+            
             // Auto-Replenishment / Run Rate calculations
             let daysDiff = 30; // fallback
             if (liveOrdersData && liveOrdersData.length > 0) {
@@ -7560,6 +7576,7 @@
                 html += `
                     <div class="flex flex-col p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
                         <div class="flex items-center gap-3 w-full">
+                            <input type="checkbox" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" checked class="low-stock-checkbox w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer">
                             ${imgHtml}
                             <div class="flex-1 min-w-0">
                                 <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
@@ -7584,9 +7601,17 @@
                                     ${daysOfStock === Infinity ? 'سحب معدوم' : Math.ceil(daysOfStock) + ' يوم (' + stockOutDateStr + ')'}
                                 </span>
                             </div>
-                            <div class="col-span-2 border-t border-slate-100 pt-1 mt-1 flex justify-between items-center">
-                                <span class="text-slate-400">المقترح لإعادة الطلب:</span>
-                                <span class="font-bold text-emerald-600 font-mono">${suggestedReorder} قطعة</span>
+                            <div class="col-span-2 border-t border-slate-100 pt-1 mt-1 flex justify-between items-center text-[9px]">
+                                <span class="text-slate-400 font-medium">متاح بمخزن أبيس:</span>
+                                <span class="font-bold text-slate-700 font-mono">${abeesQtyMap.get(item.barcode) || 0} قطعة</span>
+                            </div>
+                            <div class="col-span-2 border-t border-slate-100 pt-1 mt-1 flex justify-between items-center gap-2">
+                                <span class="text-rose-600 font-bold">الكمية المطلوبة:</span>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="low-stock-qty-${item.barcode}" value="${suggestedReorder}" min="1" max="${abeesQtyMap.get(item.barcode) || 9999}" 
+                                           class="w-16 text-center border border-rose-200 rounded px-1.5 py-0.5 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+                                    <span class="text-[9px] text-slate-400">قطعة</span>
+                                </div>
                             </div>
                         </div>
 
@@ -7646,210 +7671,176 @@
             logToConsole('success', `تم تصدير ملف الإكسيل بنجاح: ${filename}`);
         }
 
+        function toggleAllLowStockCheckboxes(checked) {
+            const checkboxes = document.querySelectorAll('.low-stock-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checked;
+            });
+        }
+
         function exportShortagesOrder() {
-    if (typeof XLSX === 'undefined') {
-        alert("مكتبة SheetJS غير متوفرة.");
-        return;
-    }
-
-    if (!activeBranchFilter || activeBranchFilter === "all") {
-        alert("يرجى اختيار فرع محدد أولاً لتصدير طلبيته.");
-        return;
-    }
-
-    var branchName = activeBranchFilter;
-
-    // 1. حساب رصيد الفرع الحالي
-    const branchInventory = getBranchFilteredInventory();
-    let branchQtyMap = new Map();
-    branchInventory.forEach(item => {
-        branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
-    });
-
-    // 2. حساب رصيد "مخزن ابيس" (المخزن الرئيسي)
-    let abeesQtyMap = new Map();
-    liveInventoryData.forEach(item => {
-        if (item.location_id && item.location_id.includes('ابيس')) {
-            abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
-        }
-    });
-
-    // 3. فلتر المواسم والفئات
-    const seasonFilter = document.getElementById('export-season-filter').value;
-    const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
-
-    const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
-    const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
-    
-    const categoryKeywords = {
-        hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
-        pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
-        shirt: ['قمصان', 'قميص', 'shirt'],
-        jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
-        tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
-    };
-
-    const shortages = [];
-    
-    // نمر على كل الكتالوج لاكتشاف النواقص حتى لو رصيدها صفر في الفرع
-    for (const product of liveCatalogData) {
-        const name = (product.product_name || "").toLowerCase();
-        
-        // تطبيق فلتر الموسم
-        if (seasonFilter === 'winter') {
-            if (!winterKeywords.some(kw => name.includes(kw))) continue;
-        } else if (seasonFilter === 'summer') {
-            if (!summerKeywords.some(kw => name.includes(kw))) continue;
-        }
-        
-        // تطبيق فلتر الفئة
-        if (categoryFilter !== 'all') {
-            const kws = categoryKeywords[categoryFilter] || [];
-            if (!kws.some(kw => name.includes(kw))) continue;
-        }
-        
-        const physicalQty = branchQtyMap.get(product.barcode) || 0;
-        
-        if (physicalQty < lowStockThreshold) {
-            const reqQty = lowStockThreshold - physicalQty;
-            const abeesAvailableQty = abeesQtyMap.get(product.barcode) || 0;
-            
-            // يتم الاعتماد في الطلبية على توافر المنتج في مخزن أبيس
-            if (abeesAvailableQty > 0) {
-                const approvedQty = Math.min(reqQty, abeesAvailableQty);
-                shortages.push({
-                    "الباركود": product.barcode,
-                    "اسم المنتج": product.product_name || "غير مسجل",
-                    "الرصيد الحالي بالفرع": physicalQty,
-                    "الكمية المطلوبة (عجز)": reqQty,
-                    "المتاح في مخزن أبيس": abeesAvailableQty,
-                    "الكمية المعتمدة للطلب": approvedQty
-                });
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة SheetJS غير متوفرة.");
+                return;
             }
-        }
-    }
 
-    if (shortages.length === 0) {
-        alert("لا توجد نواقص متوفرة حالياً في مخزن أبيس لتغطية عجز فرع " + branchName + "!");
-        return;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(shortages);
-    worksheet["!dir"] = "rtl";
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "طلبية بضاعة");
-    
-    const cleanBranchName = branchName.replace(/\s+/g, "_");
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = "طلبية_نواقص_" + cleanBranchName + "_" + dateStr + ".xlsx";
-    XLSX.writeFile(workbook, filename);
-    
-    logToConsole("success", "تم تصدير طلبية النواقص للفرع بنجاح مع تأكيد التوافر في مخزن أبيس: " + filename);
-}
-    async function sendOrderToAbees() {
-        if (!supabaseClient) {
-            alert("لم يتم الاتصال بقاعدة البيانات بعد.");
-            return;
-        }
-        if (!activeBranchFilter || activeBranchFilter === "all") {
-            alert("يرجى اختيار فرع محدد أولاً لإرسال طلبيته.");
-            return;
-        }
-        
-        const branchName = activeBranchFilter;
-        const branchInventory = getBranchFilteredInventory();
-        let branchQtyMap = new Map();
-        branchInventory.forEach(item => {
-            branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
-        });
-
-        let abeesQtyMap = new Map();
-        liveInventoryData.forEach(item => {
-            if (item.location_id && item.location_id.includes('ابيس')) {
-                abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+            if (!activeBranchFilter || activeBranchFilter === "all") {
+                alert("يرجى اختيار فرع محدد أولاً لتصدير طلبيته.");
+                return;
             }
-        });
 
-        const seasonFilter = document.getElementById('export-season-filter').value;
-        const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+            const branchName = activeBranchFilter;
 
-        const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
-        const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
-        
-        const categoryKeywords = {
-            hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
-            pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
-            shirt: ['قمصان', 'قميص', 'shirt'],
-            jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
-            tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
-        };
-
-        const shortages = [];
-        
-        for (const product of liveCatalogData) {
-            const name = (product.product_name || "").toLowerCase();
-            
-            if (seasonFilter === 'winter') {
-                if (!winterKeywords.some(kw => name.includes(kw))) continue;
-            } else if (seasonFilter === 'summer') {
-                if (!summerKeywords.some(kw => name.includes(kw))) continue;
+            const checkedCheckboxes = document.querySelectorAll('.low-stock-checkbox:checked');
+            if (checkedCheckboxes.length === 0) {
+                alert("يرجى تحديد موديل واحد على الأقل لتصدير الطلبية.");
+                return;
             }
-            
-            if (categoryFilter !== 'all') {
-                const kws = categoryKeywords[categoryFilter] || [];
-                if (!kws.some(kw => name.includes(kw))) continue;
-            }
-            
-            const physicalQty = branchQtyMap.get(product.barcode) || 0;
-            
-            if (physicalQty < lowStockThreshold) {
-                const reqQty = lowStockThreshold - physicalQty;
-                const abeesAvailableQty = abeesQtyMap.get(product.barcode) || 0;
+
+            // 1. حساب رصيد الفرع الحالي
+            const branchInventory = getBranchFilteredInventory();
+            let branchQtyMap = new Map();
+            branchInventory.forEach(item => {
+                branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+            });
+
+            // 2. حساب رصيد "مخزن ابيس" (المخزن الرئيسي)
+            let abeesQtyMap = new Map();
+            liveInventoryData.forEach(item => {
+                if (item.location_id && item.location_id.includes('ابيس')) {
+                    abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                }
+            });
+
+            const shortages = [];
+
+            for (const checkbox of checkedCheckboxes) {
+                const barcode = checkbox.getAttribute('data-barcode');
+                const productName = checkbox.getAttribute('data-name') || "غير مسجل";
+                
+                const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
+                const requestedQty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+                
+                const physicalQty = branchQtyMap.get(barcode) || 0;
+                const abeesAvailableQty = abeesQtyMap.get(barcode) || 0;
                 
                 if (abeesAvailableQty > 0) {
-                    const approvedQty = Math.min(reqQty, abeesAvailableQty);
+                    const approvedQty = Math.min(requestedQty, abeesAvailableQty);
                     shortages.push({
-                        barcode: product.barcode,
-                        product_name: product.product_name || "غير مسجل",
-                         branch_qty: physicalQty,
-                         required_qty: reqQty,
-                         abees_qty: abeesAvailableQty,
-                         approved_qty: approvedQty
+                        "الباركود": barcode,
+                        "اسم المنتج": productName,
+                        "الرصيد الحالي بالفرع": physicalQty,
+                        "الكمية المطلوبة (عجز)": requestedQty,
+                        "المتاح في مخزن أبيس": abeesAvailableQty,
+                        "الكمية المعتمدة للطلب": approvedQty
                     });
                 }
             }
+
+            if (shortages.length === 0) {
+                alert("لم يتم العثور على كميات متوفرة في مخزن أبيس للأصناف المحددة!");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(shortages);
+            worksheet["!dir"] = "rtl";
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "طلبية بضاعة");
+            
+            const cleanBranchName = branchName.replace(/\s+/g, "_");
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const filename = "طلبية_نواقص_" + cleanBranchName + "_" + dateStr + ".xlsx";
+            XLSX.writeFile(workbook, filename);
+            
+            logToConsole("success", "تم تصدير طلبية النواقص للفرع بنجاح للأصناف المحددة: " + filename);
         }
 
-        if (shortages.length === 0) {
-            alert("لا توجد نواقص متوفرة حالياً في مخزن أبيس لتغطية عجز فرع " + branchName + "!");
-            return;
+        async function sendOrderToAbees() {
+            if (!supabaseClient) {
+                alert("لم يتم الاتصال بقاعدة البيانات بعد.");
+                return;
+            }
+            if (!activeBranchFilter || activeBranchFilter === "all") {
+                alert("يرجى اختيار فرع محدد أولاً لإرسال طلبيته.");
+                return;
+            }
+            
+            const branchName = activeBranchFilter;
+
+            const checkedCheckboxes = document.querySelectorAll('.low-stock-checkbox:checked');
+            if (checkedCheckboxes.length === 0) {
+                alert("يرجى تحديد موديل واحد على الأقل لإرسال الطلبية.");
+                return;
+            }
+
+            const branchInventory = getBranchFilteredInventory();
+            let branchQtyMap = new Map();
+            branchInventory.forEach(item => {
+                branchQtyMap.set(item.barcode, (branchQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+            });
+
+            let abeesQtyMap = new Map();
+            liveInventoryData.forEach(item => {
+                if (item.location_id && item.location_id.includes('ابيس')) {
+                    abeesQtyMap.set(item.barcode, (abeesQtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
+                }
+            });
+
+            const shortages = [];
+            
+            for (const checkbox of checkedCheckboxes) {
+                const barcode = checkbox.getAttribute('data-barcode');
+                const productName = checkbox.getAttribute('data-name') || "غير مسجل";
+                
+                const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
+                const requestedQty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+                
+                const physicalQty = branchQtyMap.get(barcode) || 0;
+                const abeesAvailableQty = abeesQtyMap.get(barcode) || 0;
+                
+                if (abeesAvailableQty > 0) {
+                    const approvedQty = Math.min(requestedQty, abeesAvailableQty);
+                    shortages.push({
+                        barcode: barcode,
+                        product_name: productName,
+                        branch_qty: physicalQty,
+                        required_qty: requestedQty,
+                        abees_qty: abeesAvailableQty,
+                        approved_qty: approvedQty
+                    });
+                }
+            }
+
+            if (shortages.length === 0) {
+                alert("لم يتم العثور على كميات متوفرة في مخزن أبيس للأصناف المحددة!");
+                return;
+            }
+
+            const confirmSend = confirm(`هل أنت متأكد من إرسال طلبية النواقص المحددة (${shortages.length} صنف) إلى مخزن أبيس؟`);
+            if (!confirmSend) return;
+
+            try {
+                const orderData = {
+                    branch_name: branchName,
+                    created_by: currentUser ? (currentUser.username || currentUser.role) : 'موظف الفرع',
+                    items: shortages,
+                    status: 'pending'
+                };
+
+                const { data, error } = await supabaseClient
+                    .from('branch_prep_orders')
+                    .insert([orderData]);
+
+                if (error) throw error;
+
+                alert("تم إرسال طلبية النواقص المحددة بنجاح إلى مخزن أبيس! 🚀");
+                logToConsole("success", `تم إرسال طلبية نواقص جديدة لفرع ${branchName} بنجاح.`);
+            } catch (err) {
+                console.error("Failed to send order:", err);
+                alert("فشل إرسال الطلبية: " + err.message);
+            }
         }
-
-        const confirmSend = confirm(`هل أنت متأكد من إرسال طلبية النواقص (${shortages.length} صنف) إلى مخزن أبيس؟`);
-        if (!confirmSend) return;
-
-        try {
-            const orderData = {
-                branch_name: branchName,
-                created_by: currentUser ? (currentUser.username || currentUser.role) : 'موظف الفرع',
-                items: shortages,
-                status: 'pending'
-            };
-
-            const { data, error } = await supabaseClient
-                .from('branch_prep_orders')
-                .insert([orderData]);
-
-            if (error) throw error;
-
-            alert("تم إرسال طلبية النواقص بنجاح إلى مخزن أبيس! 🚀");
-            logToConsole("success", `تم إرسال طلبية نواقص جديدة لفرع ${branchName} بنجاح.`);
-        } catch (err) {
-            console.error("Failed to send order:", err);
-            alert("فشل إرسال الطلبية: " + err.message);
-        }
-    }
 
     let branchOrdersCache = [];
     async function fetchAndRenderBranchOrders() {
