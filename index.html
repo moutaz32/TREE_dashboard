@@ -2663,6 +2663,13 @@
             populateLoginUserDropdown();
             window.addEventListener('resize', updateUploadCardsResponsiveState);
 
+            // منع أي تمرير عشوائي خارجي لضمان ثبات الهيدر واللوجو ومنع اختفائهما عند تركيز حقول الإدخال
+            window.addEventListener('scroll', () => {
+                if (window.scrollY !== 0 || window.scrollX !== 0) {
+                    window.scrollTo(0, 0);
+                }
+            });
+
             // ضبط إعدادات الرسوم البيانية الافتراضية للثيم الفاتح الفاخر
             if (typeof Chart !== 'undefined') {
                 Chart.defaults.color = '#475569'; // slate-600
@@ -2761,6 +2768,11 @@
 
         // ================= TAB ROUTING LOGIC =================
         function switchTab(tabId) {
+            // إعادة ضبط التمرير الخارجي لقمة الصفحة لضمان بقاء الهيدر واللوجو ظاهرين وثابتين دائماً
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+
             if (isAnyCardUploading()) {
                 alert("هناك عملية رفع جارية حالياً إلى قاعدة البيانات. يرجى الانتظار حتى الانتهاء.");
                 return;
