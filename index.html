@@ -332,6 +332,11 @@
                     المرتجعات شوبيفاي
                 </button>
 
+                <button onclick="switchTab('branch-returns')" id="tab-branch-returns" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="corner-down-left" class="w-5 h-5"></i>
+                    مرتجعات الفروع
+                </button>
+
                 <button onclick="switchTab('query')" id="tab-query" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="scan-line" class="w-5 h-5"></i>
                     استعلام الباركود الفوري
@@ -389,6 +394,11 @@
         <button onclick="switchTab('returns')" id="mobile-tab-returns" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="undo-2" class="w-5 h-5"></i>
             <span>المرتجعات</span>
+        </button>
+
+        <button onclick="switchTab('branch-returns')" id="mobile-tab-branch-returns" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="corner-down-left" class="w-5 h-5"></i>
+            <span>مرتجع فرع</span>
         </button>
         <button onclick="switchTab('analytics')" id="mobile-tab-analytics" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
@@ -650,7 +660,7 @@
                 </div>
 
                 <!-- Split Dashboard Panel: Action templates & Activity logs -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div id="dashboard-templates-and-logs-row" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Setup templates helper (Left cols) -->
                     <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
                         <div>
@@ -810,6 +820,7 @@
                     <div id="exec-heatmap-container" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-13 gap-3">
                         <!-- Heatmap blocks will be generated here -->
                     </div>
+</div>
                 </div>
 
                 <!-- User & Branch Account Management Section -->
@@ -848,6 +859,7 @@
                                     class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
                                     <option value="branch">🏪 موظف فرع (Branch)</option>
                                     <option value="online">💻 قسم الأونلاين (Online)</option>
+                                    <option value="quality">🔍 قسم إدارة الجودة (Quality)</option>
                                     <option value="admin">👑 مدير النظام (Admin)</option>
                                 </select>
                             </div>
@@ -1477,6 +1489,120 @@
                 </div>
             </section>
 
+            <!-- ================= BRANCH RETURNS MANAGEMENT TAB ================= -->
+            <section id="section-branch-returns" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Welcome Banner -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">إدارة مرتجعات الفروع (Branch Returns)</h3>
+                        <p class="text-sm text-slate-500">تسجيل ومتابعة المنتجات المرتجعة من الفروع لإدارة الجودة وفحص العيوب.</p>
+                    </div>
+                    <div class="bg-purple-50 text-purple-800 border border-purple-100 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <i data-lucide="shield-alert" class="w-4 h-4 animate-pulse"></i>
+                        فحص الجودة
+                    </div>
+                </div>
+
+                <!-- Main Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Return Form (Right/Top Col - hidden for quality role) -->
+                    <div id="branch-return-form-card" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 h-fit">
+                        <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="pen-tool" class="w-4 h-4 text-brand-accent"></i>
+                            تسجيل مرتجع جديد لفرعك
+                        </h4>
+                        
+                        <form id="branch-return-submit-form" onsubmit="handleBranchReturnSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">الباركود (Barcode)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="br-barcode" required placeholder="امسح أو اكتب الباركود..."
+                                           class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-sm font-mono">
+                                    <button type="button" onclick="autoFillProductFromBarcode()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs transition border border-slate-300 whitespace-nowrap">
+                                        جلب الاسم
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">اسم المنتج</label>
+                                <input type="text" id="br-product-name" required placeholder="مثال: فستان سهرة أسود L"
+                                       class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-sm">
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">بيانات العميل (الاسم ورقم الهاتف)</label>
+                                <textarea id="br-customer-info" required rows="2" placeholder="الاسم: محمد أحمد&#10;هاتف: 01000000000"
+                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-sm"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">عيب المنتج بالتفصيل</label>
+                                <textarea id="br-defect-reason" required rows="3" placeholder="اكتب عيب المنتج بالتفصيل (مثال: قطع في الكم الأيسر)"
+                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-sm"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="w-full bg-brand-deep hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg shadow transition text-sm flex items-center justify-center gap-2">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                تسجيل المرتجع
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Returns List (Left/Bottom Col - 2 cols span) -->
+                    <div id="branch-returns-list-card" class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[500px]">
+                        <div class="space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i data-lucide="list-todo" class="w-4 h-4 text-brand-accent"></i>
+                                    سجل المرتجعات المسجلة
+                                </h4>
+                                
+                                <!-- Search & Filter inputs -->
+                                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="br-search-input" onkeyup="filterBranchReturnsList()" placeholder="بحث بالباركود أو اسم المنتج..."
+                                           class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-500 transition w-full sm:w-48">
+                                    
+                                    <select id="br-status-filter" onchange="filterBranchReturnsList()" class="px-2 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-500 cursor-pointer">
+                                        <option value="all">كل الحالات</option>
+                                        <option value="pending">⏳ قيد الفحص</option>
+                                        <option value="inspected">✅ مقبول ومطابق</option>
+                                        <option value="needs_repair">🛠️ يحتاج تعديل / صيانة</option>
+                                        <option value="damaged">❌ تالف نهائي</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Table Container -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-right border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                            <th class="py-3 px-3">التاريخ</th>
+                                            <th class="py-3 px-3">الفرع</th>
+                                            <th class="py-3 px-3">المنتج والباركود</th>
+                                            <th class="py-3 px-3">بيانات العميل</th>
+                                            <th class="py-3 px-3">عيب المنتج</th>
+                                            <th class="py-3 px-3">القرار والحالة</th>
+                                            <th class="py-3 px-3 text-center">الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="branch-returns-table-body">
+                                        <!-- Rows will be injected here -->
+                                        <tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">جاري تحميل المرتجعات...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Pagination or Status message -->
+                        <div id="br-pagination-container" class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-slate-500 text-[10px]">
+                            <!-- Info text -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ================= WMS & PERFORMANCE ANALYTICS SECTION ================= -->
             <section id="section-analytics" class="hidden space-y-6">
                 <!-- Welcome Banner -->
@@ -2099,12 +2225,19 @@
         };
 
         // Real-time channels listeners
+        // Branch returns state variables
+        let liveBranchReturnsData = [];
+        let filteredBranchReturnsData = [];
+        let branchReturnsSearchQuery = "";
+        let branchReturnsStatusFilter = "all";
+
         let activeChannels = {
             inventory: null,
             catalog: null,
             locations: null,
             shopify_orders: null,
-            activityLogs: null
+            activityLogs: null,
+            branchReturns: null
         };
 
         // Branch Filter State
@@ -2125,7 +2258,8 @@
         const USERS = [
             { username: 'admin',  passwordHash: '5fa57ac11e7e39bf2bf84aa917a9bc01f4386fcd77357397269aa6e783076d02', role: 'admin',  branch: null },
             { username: 'online', passwordHash: 'd6aedd0cd0425da42620e10ff8709850df09bf1d7e349a873db5adc3757f1e24', role: 'online', branch: null },
-            { username: 'branch', passwordHash: '0bfefda5d962724d1bfefa5c5ff995f5e66f834298dd7a2ab6e20aad81ab526e', role: 'branch', branch: null }
+            { username: 'branch', passwordHash: '0bfefda5d962724d1bfefa5c5ff995f5e66f834298dd7a2ab6e20aad81ab526e', role: 'branch', branch: null },
+            { username: 'quality', passwordHash: '272776a0df04c4c5e20f12bfd4b6d2bca6d00cc852263f607351eee0b7d09eea', role: 'quality', branch: null }
         ];
 
         let currentUser = null;
@@ -2355,6 +2489,8 @@
                         defaultTab = 'dashboard';
                     } else if (user.role === 'online') {
                         defaultTab = 'dashboard';
+                    } else if (user.role === 'quality') {
+                        defaultTab = 'branch-returns';
                     } else { // admin
                         defaultTab = 'executive';
                         loadActiveUsersList();
@@ -2428,7 +2564,7 @@
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
 
-                    const roleText = user.role === 'admin' ? '👑 مدير النظام' : (user.role === 'online' ? '💻 قسم الأونلاين' : '🏪 موظف فرع');
+                    const roleText = user.role === 'admin' ? '👑 مدير النظام' : (user.role === 'online' ? '💻 قسم الأونلاين' : (user.role === 'quality' ? '🔍 إدارة الجودة' : '🏪 موظف فرع'));
                     const branchText = user.branch || '-';
                     const isProtected = user.username === 'admin' || user.username === 'online' || (currentUser && currentUser.username === user.username);
 
@@ -2548,7 +2684,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -2562,13 +2698,17 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'logs'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'analytics'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns'];
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
+            } else if (role === 'quality') {
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs'];
+                roleLabel = '🔍 إدارة الجودة';
+                roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
             } else { // admin
                 roleLabel = '👑 مدير النظام';
                 roleClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -2582,10 +2722,20 @@
                 if (mobBtn) mobBtn.style.display = 'none';
             });
 
+            // إخفاء أو إظهار كرت قوالب الإكسيل وسجل الحركات بناء على الدور
+            const templatesAndLogsRow = document.getElementById('dashboard-templates-and-logs-row');
+            if (templatesAndLogsRow) {
+                if (role === 'branch' || role === 'quality') {
+                    templatesAndLogsRow.style.display = 'none';
+                } else {
+                    templatesAndLogsRow.style.display = 'grid';
+                }
+            }
+
             // إظهار أو إخفاء جدول طلبات شوبيفاي المباشرة في لوحة التحكم بناءً على الدور
             const shopifyPanel = document.getElementById('dashboard-orders-panel');
             if (shopifyPanel) {
-                if (role === 'branch') {
+                if (role === 'branch' || role === 'quality') {
                     shopifyPanel.style.display = 'none';
                 } else {
                     shopifyPanel.style.display = 'block';
@@ -2598,7 +2748,7 @@
             const dashLogs   = document.getElementById('btn-dashboard-logs');
 
             if (dashUpload) dashUpload.style.display = (role === 'admin') ? 'flex' : 'none';
-            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online' || role === 'branch') ? 'flex' : 'none';
+            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online') ? 'flex' : 'none';
             if (dashLogs)   dashLogs.style.display   = (role === 'admin') ? 'flex' : 'none';
 
             if (role === 'branch' && branch) {
@@ -2798,7 +2948,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -2838,7 +2988,8 @@
                 logs: 'سجل حركات المخزن التفصيلي (Audit Logs)',
                 transfers: 'إدارة طلبات التحويل بين الفروع',
                 returns: 'إدارة مرتجعات شوبيفاي (Reverse Logistics)',
-                analytics: 'تحليلات الأداء ودقة المستودعات (WMS)'
+                analytics: 'تحليلات الأداء ودقة المستودعات (WMS)',
+                'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)'
             };
             const titleEl = document.getElementById('current-section-title');
             if (titleEl) titleEl.textContent = titles[tabId];
@@ -2864,6 +3015,8 @@
                 }, 100);
             } else if (tabId === 'analytics') {
                 renderWMSAnalytics();
+            } else if (tabId === 'branch-returns') {
+                loadBranchReturnsData();
             }
         }
 
@@ -2909,6 +3062,7 @@
             if (activeChannels.locations) supabaseClient.removeChannel(activeChannels.locations);
             if (activeChannels.shopify_orders) supabaseClient.removeChannel(activeChannels.shopify_orders);
             if (activeChannels.activityLogs) supabaseClient.removeChannel(activeChannels.activityLogs);
+            if (activeChannels.branchReturns) supabaseClient.removeChannel(activeChannels.branchReturns);
 
             // 1. Load Initial Data
             await loadCatalogData();
@@ -2917,6 +3071,7 @@
             await loadOrdersData();
             await loadActivityLogs();
             await loadLatestDeadStockSnapshot();
+            await loadBranchReturnsData();
 
             // 2. Set Up Realtime WebSockets - Smart Patch Mode (لا يعيد جلب الجداول بالكامل)
             // بدلاً من refetch كامل، نُعدّل المصفوفات المحلية مباشرةً من الـ payload
@@ -2945,6 +3100,10 @@
                 loadActivityLogs();
                 if (activeTab === 'logs') fetchAuditLogs();
             }, 3000);
+
+            const debouncedUIRefreshBranchReturns = debounce(() => {
+                renderBranchReturns();
+            }, 1000);
 
             // --- Inventory: patch local array from payload ---
             activeChannels.inventory = supabaseClient.channel('realtime-inventory')
@@ -3026,6 +3185,24 @@
                     debouncedLoadActivityLogs();
                 })
                 .subscribe();
+
+            // --- Branch Returns: patch local array from payload ---
+            activeChannels.branchReturns = supabaseClient.channel('realtime-branch-returns')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'branch_returns' }, payload => {
+                    liveBranchReturnsData.push(payload.new);
+                    debouncedUIRefreshBranchReturns();
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'branch_returns' }, payload => {
+                    const idx = liveBranchReturnsData.findIndex(r => r.id === payload.new.id);
+                    if (idx !== -1) liveBranchReturnsData[idx] = payload.new;
+                    else liveBranchReturnsData.push(payload.new);
+                    debouncedUIRefreshBranchReturns();
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'branch_returns' }, payload => {
+                    liveBranchReturnsData = liveBranchReturnsData.filter(r => r.id !== payload.old.id);
+                    debouncedUIRefreshBranchReturns();
+                })
+                .subscribe();
         }
 
         // Database loading helper functions
@@ -3081,6 +3258,308 @@
                 populateBranchFilterDropdown();
             } catch (err) {
                 console.error("Error loading locations data from Supabase:", err);
+            }
+        }
+
+        // ================= BRANCH RETURNS MANAGEMENT LOGIC =================
+        async function loadBranchReturnsData() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('branch_returns')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                liveBranchReturnsData = data || [];
+                renderBranchReturns();
+            } catch (err) {
+                console.error("Error loading branch returns:", err);
+                const tbody = document.getElementById('branch-returns-table-body');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-semibold">حدث خطأ أثناء تحميل المرتجعات. تأكد من إنشاء جدول branch_returns في قاعدة البيانات أولاً.</td></tr>`;
+                }
+            }
+        }
+
+        function filterBranchReturnsList() {
+            const searchInput = document.getElementById('br-search-input');
+            const statusFilter = document.getElementById('br-status-filter');
+            if (!searchInput || !statusFilter) return;
+
+            branchReturnsSearchQuery = searchInput.value.trim().toLowerCase();
+            branchReturnsStatusFilter = statusFilter.value;
+
+            renderBranchReturns();
+        }
+
+        function autoFillProductFromBarcode() {
+            const barcodeInput = document.getElementById('br-barcode');
+            const nameInput = document.getElementById('br-product-name');
+            if (!barcodeInput || !nameInput) return;
+
+            const barcode = barcodeInput.value.trim();
+            if (!barcode) {
+                alert("يرجى إدخال الباركود أولاً!");
+                return;
+            }
+
+            const clean = cleanBarcode(barcode);
+            let product = null;
+            if (typeof catalogByBarcodeMap !== 'undefined' && catalogByBarcodeMap) {
+                product = catalogByBarcodeMap.get(clean);
+                if (!product) {
+                    const base = extractBaseBarcode(clean);
+                    if (base && typeof catalogByBaseMap !== 'undefined') {
+                        product = catalogByBaseMap.get(base);
+                    }
+                }
+            }
+
+            if (product && product.product_name) {
+                nameInput.value = product.product_name;
+                logToConsole('success', `تم العثور على المنتج تلقائياً: ${product.product_name}`);
+            } else {
+                alert("لم يتم العثور على الباركود في الكتالوج. يرجى إدخال اسم المنتج يدوياً.");
+            }
+        }
+
+        async function handleBranchReturnSubmit(event) {
+            event.preventDefault();
+            if (!supabaseClient) return;
+
+            const barcodeInput = document.getElementById('br-barcode');
+            const nameInput = document.getElementById('br-product-name');
+            const customerInput = document.getElementById('br-customer-info');
+            const defectInput = document.getElementById('br-defect-reason');
+
+            if (!barcodeInput || !nameInput || !customerInput || !defectInput) return;
+
+            const barcode = barcodeInput.value.trim();
+            const productName = nameInput.value.trim();
+            const customerInfo = customerInput.value.trim();
+            const defectReason = defectInput.value.trim();
+
+            if (!barcode || !productName || !customerInfo || !defectReason) {
+                alert("يرجى ملء جميع الحقول المطلوبة!");
+                return;
+            }
+
+            const branchName = (currentUser && currentUser.branch) ? currentUser.branch : 'مخزن رئيسي';
+            const createdBy = (currentUser && currentUser.username) ? currentUser.username : 'غير معروف';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('branch_returns')
+                    .insert([{
+                        product_name: productName,
+                        barcode: cleanBarcode(barcode),
+                        customer_info: customerInfo,
+                        defect_reason: defectReason,
+                        branch_name: branchName,
+                        created_by: createdBy,
+                        status: 'pending'
+                    }]);
+
+                if (error) throw error;
+
+                alert("تم تسجيل المرتجع بنجاح وهو قيد فحص الجودة الآن.");
+                
+                // Clear form
+                barcodeInput.value = '';
+                nameInput.value = '';
+                customerInput.value = '';
+                defectInput.value = '';
+
+                // Log activity
+                await addActivityLog("مرتجع فرع", `تم تسجيل مرتجع جديد للباركود ${barcode} من الفرع ${branchName}`);
+
+                // Reload data
+                await loadBranchReturnsData();
+            } catch (err) {
+                console.error("Failed to submit branch return:", err);
+                alert("حدث خطأ أثناء حفظ المرتجع: " + (err.message || err.details));
+            }
+        }
+
+        function renderBranchReturns() {
+            const tbody = document.getElementById('branch-returns-table-body');
+            const pagContainer = document.getElementById('br-pagination-container');
+            if (!tbody) return;
+
+            // Apply visibility logic
+            // Regular branch sees only their own returns
+            // Quality role, Admin, and "مخزن ابيس" branch see all returns
+            let returns = [...liveBranchReturnsData];
+            
+            const isQcOrAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'quality'));
+            const isAbees = (currentUser && currentUser.branch === 'مخزن ابيس');
+
+            if (!isQcOrAdmin && !isAbees) {
+                const branchName = (currentUser && currentUser.branch) ? currentUser.branch : '';
+                returns = returns.filter(r => r.branch_name === branchName);
+            }
+
+            // Apply Filters (Search and Status)
+            if (branchReturnsSearchQuery) {
+                returns = returns.filter(r => 
+                    r.product_name.toLowerCase().includes(branchReturnsSearchQuery) || 
+                    r.barcode.toLowerCase().includes(branchReturnsSearchQuery) ||
+                    r.customer_info.toLowerCase().includes(branchReturnsSearchQuery) ||
+                    r.branch_name.toLowerCase().includes(branchReturnsSearchQuery)
+                );
+            }
+
+            if (branchReturnsStatusFilter && branchReturnsStatusFilter !== 'all') {
+                returns = returns.filter(r => r.status === branchReturnsStatusFilter);
+            }
+
+            // If quality role, hide the left return form card and make the returns list take 3 columns
+            const formCard = document.getElementById('branch-return-form-card');
+            const listCard = document.getElementById('branch-returns-list-card');
+            if (currentUser && currentUser.role === 'quality') {
+                if (formCard) formCard.style.display = 'none';
+                if (listCard) {
+                    listCard.classList.remove('lg:col-span-2');
+                    listCard.classList.add('lg:col-span-3');
+                }
+            } else {
+                if (formCard) formCard.style.display = 'block';
+                if (listCard) {
+                    listCard.classList.remove('lg:col-span-3');
+                    listCard.classList.add('lg:col-span-2');
+                }
+            }
+
+            if (returns.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">لا توجد مرتجعات مطابقة للفلاتر الحالية.</td></tr>`;
+                if (pagContainer) pagContainer.innerHTML = '<span>إجمالي: 0 مرتجعات</span>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            returns.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
+
+                const dateStr = new Date(r.created_at).toLocaleString('ar-EG', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                });
+
+                // Status Badge styling
+                let statusBadge = '';
+                if (r.status === 'pending') {
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold text-[10px] whitespace-nowrap">⏳ قيد الفحص</span>`;
+                } else if (r.status === 'inspected') {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold text-[10px] whitespace-nowrap" title="ملاحظات: ${r.qc_notes || ''}">✅ مقبول ومطابق</span>`;
+                } else if (r.status === 'needs_repair') {
+                    statusBadge = `<span class="bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full font-bold text-[10px] whitespace-nowrap" title="تقرير الصيانة: ${r.qc_notes || ''}">🛠️ يحتاج تعديل</span>`;
+                } else if (r.status === 'damaged') {
+                    statusBadge = `<span class="bg-rose-100 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full font-bold text-[10px] whitespace-nowrap" title="تقرير التلف: ${r.qc_notes || ''}">❌ تالف نهائي</span>`;
+                }
+
+                // Action buttons based on role
+                let actionsBtn = '-';
+                if (isQcOrAdmin || isAbees) {
+                    actionsBtn = `
+                        <button onclick="openBranchQCModal('${r.id}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-2 py-1 rounded-lg border border-purple-200 transition flex items-center gap-1 mx-auto text-[10px]">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> فحص المنتج
+                        </button>
+                    `;
+                }
+
+                // Add inspector info to defect reason or status if inspected
+                let defectCol = `<div class="font-medium text-slate-700 max-w-[150px] truncate" title="${r.defect_reason}">${r.defect_reason}</div>`;
+                if (r.qc_notes) {
+                    defectCol += `<div class="text-[9px] text-purple-600 mt-0.5 max-w-[150px] truncate" title="تقرير الفحص: ${r.qc_notes}">🔍 تقرير: ${r.qc_notes}</div>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3 text-slate-400 font-mono">${dateStr}</td>
+                    <td class="py-3 px-3 font-semibold text-slate-600">${r.branch_name}</td>
+                    <td class="py-3 px-3">
+                        <div class="font-bold text-slate-800">${r.product_name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${r.barcode}</div>
+                    </td>
+                    <td class="py-3 px-3 text-slate-600 whitespace-pre-line">${r.customer_info}</td>
+                    <td class="py-3 px-3">${defectCol}</td>
+                    <td class="py-3 px-3">${statusBadge}</td>
+                    <td class="py-3 px-3 text-center">${actionsBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
+            if (pagContainer) pagContainer.innerHTML = `<span>إجمالي: ${returns.length} مرتجع(اً) معروضاً</span>`;
+        }
+
+        function openBranchQCModal(id) {
+            const item = liveBranchReturnsData.find(r => r.id === id);
+            if (!item) return;
+
+            document.getElementById('qc-modal-return-id').value = item.id;
+            document.getElementById('qc-modal-branch-name').textContent = item.branch_name;
+            document.getElementById('qc-modal-product-name').textContent = item.product_name;
+            document.getElementById('qc-modal-barcode').textContent = item.barcode;
+            document.getElementById('qc-modal-defect-reason').textContent = item.defect_reason;
+
+            // Pre-fill inputs if already inspected
+            document.getElementById('qc-modal-status-input').value = item.status === 'pending' ? 'inspected' : item.status;
+            document.getElementById('qc-modal-notes-input').value = item.qc_notes || '';
+
+            const modal = document.getElementById('branch-qc-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (typeof lucide !== 'undefined') lucide.createIcons({ root: modal });
+            }
+        }
+
+        function closeBranchQCModal() {
+            const modal = document.getElementById('branch-qc-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function submitBranchQCInspection() {
+            if (!supabaseClient) return;
+
+            const id = document.getElementById('qc-modal-return-id').value;
+            const status = document.getElementById('qc-modal-status-input').value;
+            const notes = document.getElementById('qc-modal-notes-input').value.trim();
+
+            if (!id || !status) return;
+
+            const inspector = (currentUser && currentUser.username) ? currentUser.username : 'إدارة الجودة';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('branch_returns')
+                    .update({
+                        status: status,
+                        qc_notes: notes,
+                        inspected_by: inspector,
+                        inspected_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert("تم تسجيل قرار فحص الجودة وتحديث حالة المرتجع.");
+                closeBranchQCModal();
+
+                // Log activity
+                const item = liveBranchReturnsData.find(r => r.id === id);
+                const pName = item ? item.product_name : 'منتج';
+                await addActivityLog("فحص جودة", `تم فحص المرتجع ${pName} للفرع ${item ? item.branch_name : ''} - الحالة: ${status}`);
+
+                // Reload data
+                await loadBranchReturnsData();
+            } catch (err) {
+                console.error("Failed to save QC inspection:", err);
+                alert("حدث خطأ أثناء حفظ القرار: " + (err.message || err.details));
             }
         }
 
@@ -8402,6 +8881,55 @@
                 </button>
                 <button onclick="closeShippingModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2.5 rounded-xl transition duration-200">
                     إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= BRANCH QC RETURN INSPECTION MODAL ================= -->
+    <div id="branch-qc-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative border border-slate-200 text-right" dir="rtl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-purple-600"></i>
+                    فحص مرتجع فرع: <span id="qc-modal-branch-name" class="text-purple-600 font-bold"></span>
+                </h4>
+                <button onclick="closeBranchQCModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1">
+                    <p class="text-slate-700"><strong>اسم المنتج:</strong> <span id="qc-modal-product-name">-</span></p>
+                    <p class="text-slate-700"><strong>الباركود:</strong> <span id="qc-modal-barcode" class="font-mono">-</span></p>
+                    <p class="text-slate-700"><strong>عيب المنتج:</strong> <span id="qc-modal-defect-reason">-</span></p>
+                </div>
+                
+                <input type="hidden" id="qc-modal-return-id">
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">قرار الفحص وحالة المنتج</label>
+                    <select id="qc-modal-status-input" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-purple-500 transition cursor-pointer">
+                        <option value="inspected">✅ مقبول ومطابق (تم الفحص)</option>
+                        <option value="needs_repair">🛠️ يحتاج تعديل / صيانة</option>
+                        <option value="damaged">❌ تالف نهائي (غير قابل للبيع)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">ملاحظات وتقرير الفحص</label>
+                    <textarea id="qc-modal-notes-input" rows="3" placeholder="اكتب تقرير فحص الجودة هنا بالتفصيل..."
+                              class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-purple-500 transition text-xs"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 justify-end pt-2">
+                <button onclick="closeBranchQCModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition border border-slate-200">
+                    إلغاء
+                </button>
+                <button onclick="submitBranchQCInspection()" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition shadow-md shadow-purple-700/10">
+                    حفظ قرار الفحص
                 </button>
             </div>
         </div>
