@@ -5420,10 +5420,10 @@
         // ================= PRODUCT BRANCHES DISTRIBUTION MODAL =================
         function getAllBranchesList() {
             const branchSet = new Set();
-            if (window.liveInventoryData) {
+            if (typeof liveInventoryData !== 'undefined' && liveInventoryData) {
                 liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             }
-            if (window.liveLocationsData) {
+            if (typeof liveLocationsData !== 'undefined' && liveLocationsData) {
                 liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             }
             return Array.from(branchSet).sort();
@@ -5437,7 +5437,7 @@
             
             // Calculate current stock of this product in each branch
             const branchQtyMap = {};
-            if (barcode && window.liveInventoryData) {
+            if (barcode && typeof liveInventoryData !== 'undefined' && liveInventoryData) {
                 liveInventoryData.forEach(invItem => {
                     if (matchBarcodesExact(invItem.barcode, barcode)) {
                         const br = invItem.location_id;
@@ -5499,7 +5499,7 @@
             const branchQtyMap = {};
             let totalQty = 0;
             
-            if (window.liveInventoryData) {
+            if (typeof liveInventoryData !== 'undefined' && liveInventoryData) {
                 liveInventoryData.forEach(invItem => {
                     if (matchBarcodesExact(invItem.barcode, barcode)) {
                         const br = invItem.location_id;
