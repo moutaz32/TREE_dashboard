@@ -1311,6 +1311,12 @@
                             <p class="text-xs text-slate-500">نظام إدارة ممرات ورفوف التخزين الفعلي في مخزن أبيس الرئيسي. اضغط على أي رف لتسجيل عمليات تسكين بضائع جديدة أو نقل البضائع داخلياً بين الرفوف.</p>
                         </div>
                         <div class="flex items-center gap-3">
+                            <!-- Demo Distribution Button -->
+                            <button id="btn-wms-demo-distribute" onclick="distributeAbeesStockToWMS()" class="bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 border border-amber-200 hover:border-amber-600 px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition duration-200 flex items-center gap-1.5 shadow-sm">
+                                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                                <span>توزيع المخزون مؤقتاً للعرض 🪄</span>
+                            </button>
+
                             <!-- Aisle Selector -->
                             <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
                                 <span class="text-xs text-slate-500 font-bold font-sans">الممر:</span>
@@ -8236,6 +8242,100 @@
             } catch (err) {
                 console.error("Error deleting WMS storage item:", err);
                 alert("حدث خطأ أثناء تفريغ الرف: " + err.message);
+            }
+        }
+
+        async function distributeAbeesStockToWMS() {
+            const btn = document.getElementById('btn-wms-demo-distribute');
+            if (!btn) return;
+            const originalText = btn.innerHTML;
+
+            // 1. Get Abees inventory
+            const abeesInventory = liveInventoryData.filter(item => 
+                normalizeLocationId(item.location_id) === 'مخزن ابيس' && Number(item.quantity || 0) > 0
+            );
+
+            if (abeesInventory.length === 0) {
+                alert('لا يوجد رصيد مخزون عام مسجل لمخزن أبيس حالياً في قاعدة البيانات لتوزيعه.');
+                return;
+            }
+
+            const confirmClear = confirm(
+                "سيقوم هذا بتفريغ الرفوف اللوجستية الحالية، وتوزيع الرصيد العام لمخزن أبيس بالتساوي على الرفوف الـ 200 (A to E) بغرض المحاكاة للعرض أمام مجلس الإدارة.\n\nهل تريد البدء بالتوزيع؟"
+            );
+            if (!confirmClear) return;
+
+            try {
+                // Set button state to loading
+                btn.disabled = true;
+                btn.innerHTML = `<span class="flex items-center gap-1.5 justify-center"><svg class="animate-spin h-3.5 w-3.5 text-current" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> جاري التوزيع...</span>`;
+
+                // 2. Clear existing WMS storage
+                const { error: deleteErr } = await supabaseClient.from('abeese_wms_storage').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                if (deleteErr) throw deleteErr;
+
+                // 3. Generate all available 200 bins
+                const aisles = ['A', 'B', 'C', 'D', 'E'];
+                const cols = 8;
+                const levels = 5;
+                const binsList = [];
+                aisles.forEach(a => {
+                    for (let c = 1; c <= cols; c++) {
+                        for (let l = 1; l <= levels; l++) {
+                            binsList.push(`${a}-${String(c).padStart(2, '0')}-${String(l).padStart(2, '0')}`);
+                        }
+                    }
+                });
+
+                // Helper to shuffle bins list to make the heatmap look natural and beautiful!
+                for (let i = binsList.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [binsList[i], binsList[j]] = [binsList[j], binsList[i]];
+                }
+
+                // 4. Distribute stock
+                const wmsRows = [];
+                let binIndex = 0;
+
+                abeesInventory.forEach(item => {
+                    let qty = Number(item.quantity);
+                    // Split large quantities to avoid overloading single bins
+                    while (qty > 0) {
+                        const batchQty = Math.min(qty, Math.floor(Math.random() * 40) + 10); // 10 to 50 items per bin
+                        const bin = binsList[binIndex % binsList.length];
+                        
+                        wmsRows.push({
+                            barcode: item.barcode,
+                            bin_location: bin,
+                            quantity: batchQty,
+                            updated_at: new Date().toISOString()
+                        });
+
+                        qty -= batchQty;
+                        binIndex++;
+                    }
+                });
+
+                // 5. Upload rows in batches of 50 to Supabase
+                const batchSize = 50;
+                for (let i = 0; i < wmsRows.length; i += batchSize) {
+                    const batch = wmsRows.slice(i, i + batchSize);
+                    const { error: insertErr } = await supabaseClient.from('abeese_wms_storage').insert(batch);
+                    if (insertErr) throw insertErr;
+                }
+
+                // Log activity
+                await addActivityLog("توزيع محاكاة (WMS)", `تم توزيع المخزون العام لمخزن أبيس تلقائياً على الرفوف بغرض العرض التوضيحي.`);
+
+                alert('تم تفريغ الرفوف بنجاح وتوزيع المخزون العام لمخزن أبيس بالتساوي وبتنسيق طبيعي على كافة الرفوف. جاهز للعرض الآن! 🎉');
+            } catch (err) {
+                console.error("Demo distribution error:", err);
+                alert("فشل توزيع المخزون: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                // Reload local data
+                await loadWMSStorageData();
             }
         }
 
