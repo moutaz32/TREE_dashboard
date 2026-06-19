@@ -1509,8 +1509,21 @@
                     </div>
                 </div>
 
+                <!-- Sub Navigation Tabs -->
+                <div id="qc-sub-tabs-container" class="flex border-b border-slate-200 gap-4 mb-4">
+                    <button onclick="switchQCSubTab('returns')" id="qc-subtab-returns" class="px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap">
+                        📋 مرتجعات الفروع
+                    </button>
+                    <button onclick="switchQCSubTab('inbound')" id="qc-subtab-inbound" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        🚚 فحص الشحنات الواردة
+                    </button>
+                    <button onclick="switchQCSubTab('analytics')" id="qc-subtab-analytics" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        📊 تحليلات الجودة
+                    </button>
+                </div>
+
                 <!-- Main Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div id="qc-subpage-returns" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Return Form (Right/Top Col - hidden for quality role) -->
                     <div id="branch-return-form-card" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 h-fit">
                         <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
@@ -1532,7 +1545,7 @@
 
                             <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">اسم المنتج</label>
-                                <input type="text" id="br-product-name" required placeholder="مثال: بنطلون جينز "
+                                <input type="text" id="br-product-name" required placeholder="مثال: فستان سهرة أسود L"
                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-sm">
                             </div>
                             
@@ -1604,6 +1617,159 @@
                         <!-- Pagination or Status message -->
                         <div id="br-pagination-container" class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-slate-500 text-[10px]">
                             <!-- Info text -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inbound QC Subpage -->
+                <div id="qc-subpage-inbound" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Inbound Batches List (Left/Bottom Col - 2 cols span) -->
+                        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[500px]">
+                            <div class="space-y-4">
+                                <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                                    <i data-lucide="package-search" class="w-4 h-4 text-brand-accent"></i>
+                                    شحنات المخازن الواردة بانتظار الفحص
+                                </h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-right border-collapse text-xs">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                                <th class="py-3 px-3">التاريخ</th>
+                                                <th class="py-3 px-3">اسم الملف</th>
+                                                <th class="py-3 px-3">الموظف</th>
+                                                <th class="py-3 px-3 text-center">إجمالي القطع</th>
+                                                <th class="py-3 px-3 text-center">حجم العينة (5%)</th>
+                                                <th class="py-3 px-3 text-center">الحالة</th>
+                                                <th class="py-3 px-3 text-center">الإجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inbound-batches-table-body">
+                                            <tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">لا توجد شحنات معلقة للفحص حالياً.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inbound QC Action Panel (Right/Top Col - 1 col span) -->
+                        <div id="inbound-qc-action-card" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 h-fit hidden">
+                            <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500 animate-pulse"></i>
+                                معاينة وفحص عينات الشحنة
+                            </h4>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between"><span class="text-slate-500">اسم الملف:</span> <span id="qc-active-file-name" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">عدد القطع بالشحنة:</span> <span id="qc-active-total-items" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">العينة المطلوبة:</span> <span id="qc-active-sample-size" class="font-bold text-purple-700"></span></div>
+                            </div>
+                            
+                            <!-- Scanner Input to verify sample items -->
+                            <div class="border-t border-slate-100 pt-3 space-y-3">
+                                <label class="text-xs font-bold text-slate-700 block">مسح باركود العينة للتأكيد:</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="inbound-qc-scan-input" placeholder="امسح الباركود هنا للتحقق..." onkeydown="handleInboundQCBarcodeScan(event)"
+                                           class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition text-xs font-mono">
+                                </div>
+                                <p class="text-[10px] text-slate-400">امسح باركود القطع المطلوبة واحدة تلو الأخرى لتأكيد سلامتها.</p>
+                            </div>
+
+                            <!-- Required Sample Checklist -->
+                            <div class="border-t border-slate-100 pt-3 space-y-2">
+                                <span class="text-xs font-bold text-slate-700 block">قائمة العينات المطلوبة:</span>
+                                <div id="inbound-qc-sample-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                                    <!-- Sample items populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Approval Action buttons -->
+                            <div class="border-t border-slate-100 pt-4 flex gap-2">
+                                <button onclick="approveInboundBatch()" id="btn-approve-inbound-batch" disabled class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-2 rounded-lg text-xs shadow transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i> اعتماد الشحنة
+                                </button>
+                                <button onclick="rejectInboundBatch()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i> رفض
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QC Analytics Subpage -->
+                <div id="qc-subpage-analytics" class="hidden space-y-6">
+                    <!-- KPI Cards Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">خسائر المرتجعات التالفة</span>
+                                <h4 id="qc-kpi-loss" class="text-2xl font-black text-rose-600">0 ج.م</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">تكلفة البضائع المصنفة تالفة</p>
+                            </div>
+                            <div class="bg-rose-50 p-3 rounded-xl text-rose-600 border border-rose-100">
+                                <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">إجمالي المرتجعات المفحوصة</span>
+                                <h4 id="qc-kpi-total-returns" class="text-2xl font-black text-slate-800">0</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">مرتجع تم فحصه واتخاذ قرار فيه</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl text-slate-700 border border-slate-100">
+                                <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">شحنات معلقة للفحص</span>
+                                <h4 id="qc-kpi-pending-inbound" class="text-2xl font-black text-amber-600">0</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">بانتظار سحب العينة واعتمادها</p>
+                            </div>
+                            <div class="bg-amber-50 p-3 rounded-xl text-amber-600 border border-amber-100">
+                                <i data-lucide="clock" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">نسبة قبول الشحنات الواردة</span>
+                                <h4 id="qc-kpi-acceptance-rate" class="text-2xl font-black text-emerald-600">100%</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">الشحنات التي نجحت في فحص الجودة</p>
+                            </div>
+                            <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600 border border-emerald-100">
+                                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                            <div class="border-b border-slate-100 pb-3 mb-4">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="pie-chart" class="w-4 h-4 text-purple-600"></i>
+                                    توزيع أنواع العيوب المرصودة (Defect Types)
+                                </h4>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">العيوب الأكثر تكراراً التي حددتها الفروع في المرتجعات</p>
+                            </div>
+                            <div class="relative h-64 w-full flex items-center justify-center">
+                                <canvas id="qcDefectDistributionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                            <div class="border-b border-slate-100 pb-3 mb-4">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-rose-500"></i>
+                                    أكثر 5 منتجات تحتوي على عيوب تالفة نهائياً
+                                </h4>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">القطع الأكثر تكراراً في الفحص التالف</p>
+                            </div>
+                            <div class="relative h-64 w-full flex items-center justify-center">
+                                <canvas id="qcTopDefectiveProductsChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2237,13 +2403,21 @@
         let branchReturnsSearchQuery = "";
         let branchReturnsStatusFilter = "all";
 
+        // Inbound QC and Analytics state variables
+        let liveInboundQCData = [];
+        let activeInboundQCBatch = null;
+        let activeQCSubTab = 'returns';
+        let qcDefectChartInstance = null;
+        let qcProductChartInstance = null;
+
         let activeChannels = {
             inventory: null,
             catalog: null,
             locations: null,
             shopify_orders: null,
             activityLogs: null,
-            branchReturns: null
+            branchReturns: null,
+            inboundQCBatches: null
         };
 
         // Branch Filter State
@@ -2774,6 +2948,21 @@
                 }
             }
 
+            // إظهار أو إخفاء أزرار تبويبات الجودة الفرعية بناءً على الصلاحية
+            const qcTabs = document.getElementById('qc-sub-tabs-container');
+            const isQcOrAdmin = (role === 'admin' || role === 'quality');
+            const isAbees = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+            if (qcTabs) {
+                if (isQcOrAdmin || isAbees) {
+                    qcTabs.style.display = 'flex';
+                } else {
+                    qcTabs.style.display = 'none';
+                }
+            }
+            
+            // إعادة ضبط تبويب الجودة الفرعي النشط
+            switchQCSubTab('returns');
+
             // إظهار شارة الدور في الهيدر
             setTimeout(() => {
                 const existing = document.getElementById('rbac-role-badge');
@@ -3018,7 +3207,7 @@
             } else if (tabId === 'analytics') {
                 renderWMSAnalytics();
             } else if (tabId === 'branch-returns') {
-                loadBranchReturnsData();
+                switchQCSubTab(activeQCSubTab);
             }
         }
 
@@ -3065,6 +3254,7 @@
             if (activeChannels.shopify_orders) supabaseClient.removeChannel(activeChannels.shopify_orders);
             if (activeChannels.activityLogs) supabaseClient.removeChannel(activeChannels.activityLogs);
             if (activeChannels.branchReturns) supabaseClient.removeChannel(activeChannels.branchReturns);
+            if (activeChannels.inboundQCBatches) supabaseClient.removeChannel(activeChannels.inboundQCBatches);
 
             // 1. Load Initial Data
             await loadCatalogData();
@@ -3074,6 +3264,7 @@
             await loadActivityLogs();
             await loadLatestDeadStockSnapshot();
             await loadBranchReturnsData();
+            await loadInboundQCData();
 
             // 2. Set Up Realtime WebSockets - Smart Patch Mode (لا يعيد جلب الجداول بالكامل)
             // بدلاً من refetch كامل، نُعدّل المصفوفات المحلية مباشرةً من الـ payload
@@ -3205,6 +3396,37 @@
                     debouncedUIRefreshBranchReturns();
                 })
                 .subscribe();
+
+            // --- Inbound QC: patch local array from payload ---
+            activeChannels.inboundQCBatches = supabaseClient.channel('realtime-inbound-qc-batches')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inbound_qc_batches' }, payload => {
+                    liveInboundQCData.push(payload.new);
+                    renderInboundQCList();
+                    updateQCAnalyticsKPIs();
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'inbound_qc_batches' }, payload => {
+                    const idx = liveInboundQCData.findIndex(r => r.id === payload.new.id);
+                    if (idx !== -1) liveInboundQCData[idx] = payload.new;
+                    else liveInboundQCData.push(payload.new);
+                    renderInboundQCList();
+                    updateQCAnalyticsKPIs();
+                    // Update active batch if it matches
+                    if (activeInboundQCBatch && activeInboundQCBatch.id === payload.new.id) {
+                        activeInboundQCBatch = payload.new;
+                        renderQCSampleChecklist();
+                    }
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'inbound_qc_batches' }, payload => {
+                    liveInboundQCData = liveInboundQCData.filter(r => r.id !== payload.old.id);
+                    renderInboundQCList();
+                    updateQCAnalyticsKPIs();
+                    if (activeInboundQCBatch && activeInboundQCBatch.id === payload.old.id) {
+                        activeInboundQCBatch = null;
+                        const actionCard = document.getElementById('inbound-qc-action-card');
+                        if (actionCard) actionCard.classList.add('hidden');
+                    }
+                })
+                .subscribe();
         }
 
         // Database loading helper functions
@@ -3260,6 +3482,523 @@
                 populateBranchFilterDropdown();
             } catch (err) {
                 console.error("Error loading locations data from Supabase:", err);
+            }
+        }
+
+        // ================= QUALITY CONTROL SUB-TABS, INBOUND & ANALYTICS LOGIC =================
+        async function switchQCSubTab(subTabId) {
+            activeQCSubTab = subTabId;
+            const subTabs = ['returns', 'inbound', 'analytics'];
+            
+            subTabs.forEach(s => {
+                const subpage = document.getElementById(`qc-subpage-${s}`);
+                const tabBtn = document.getElementById(`qc-subtab-${s}`);
+                
+                if (s === subTabId) {
+                    if (subpage) subpage.classList.remove('hidden');
+                    if (tabBtn) {
+                        tabBtn.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                    }
+                } else {
+                    if (subpage) subpage.classList.add('hidden');
+                    if (tabBtn) {
+                        tabBtn.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
+                    }
+                }
+            });
+
+            if (subTabId === 'returns') {
+                await loadBranchReturnsData();
+            } else if (subTabId === 'inbound') {
+                await loadInboundQCData();
+            } else if (subTabId === 'analytics') {
+                await loadBranchReturnsData(); // load returns data for analytics charts
+                await loadInboundQCData();     // load inbound data for stats cards
+                renderQCCharts();
+                updateQCAnalyticsKPIs();
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function loadInboundQCData() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('inbound_qc_batches')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    if (error.code === 'PGRST205' || error.message.includes('Could not find the table')) {
+                        const tbody = document.getElementById('inbound-batches-table-body');
+                        if (tbody) {
+                            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-semibold">يرجى تشغيل كود الـ SQL الموضح في خطة العمل في SQL Editor الخاص بـ Supabase أولاً لإنشاء جدول شحنات الجودة وتفعيل هذه الميزة.</td></tr>`;
+                        }
+                        return;
+                    }
+                    throw error;
+                }
+                
+                liveInboundQCData = data || [];
+                renderInboundQCList();
+            } catch (err) {
+                console.error("Error loading inbound QC data:", err);
+                const tbody = document.getElementById('inbound-batches-table-body');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-semibold">حدث خطأ أثناء تحميل شحنات الجودة: ${err.message}</td></tr>`;
+                }
+            }
+        }
+
+        function renderInboundQCList() {
+            const tbody = document.getElementById('inbound-batches-table-body');
+            if (!tbody) return;
+
+            if (liveInboundQCData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">لا توجد شحنات معلقة للفحص حالياً.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            liveInboundQCData.forEach(batch => {
+                const date = new Date(batch.created_at).toLocaleString('ar-EG');
+                
+                let statusLabel = '';
+                if (batch.status === 'pending') {
+                    statusLabel = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600">⏳ قيد الفحص</span>`;
+                } else if (batch.status === 'approved') {
+                    statusLabel = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-600">✅ تم الاعتماد</span>`;
+                } else if (batch.status === 'rejected') {
+                    statusLabel = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-600">❌ مرفوضة</span>`;
+                }
+
+                const sampleCount = Array.isArray(batch.sample_items) ? batch.sample_items.length : 0;
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-3">${date}</td>
+                    <td class="py-3 px-3 font-medium text-slate-700">${batch.file_name}</td>
+                    <td class="py-3 px-3">${batch.created_by}</td>
+                    <td class="py-3 px-3 text-center font-bold">${batch.total_items}</td>
+                    <td class="py-3 px-3 text-center font-bold text-purple-600">${sampleCount}</td>
+                    <td class="py-3 px-3 text-center">${statusLabel}</td>
+                    <td class="py-3 px-3 text-center">
+                        ${batch.status === 'pending' ? `
+                            <button onclick="selectInboundBatch('${batch.id}')" class="bg-brand-deep hover:bg-brand-700 text-white font-bold px-3 py-1 rounded-lg text-[10px] shadow transition">
+                                فحص العينة &larr;
+                            </button>
+                        ` : `
+                            <span class="text-slate-400 text-[10px]">مكتمل</span>
+                        `}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectInboundBatch(batchId) {
+            const batch = liveInboundQCData.find(b => b.id === batchId);
+            if (!batch) return;
+
+            activeInboundQCBatch = batch;
+
+            document.getElementById('qc-active-file-name').textContent = batch.file_name;
+            document.getElementById('qc-active-total-items').textContent = batch.total_items + " قطعة";
+            
+            const sampleCount = Array.isArray(batch.sample_items) ? batch.sample_items.length : 0;
+            document.getElementById('qc-active-sample-size').textContent = sampleCount + " قطع";
+
+            const actionCard = document.getElementById('inbound-qc-action-card');
+            if (actionCard) actionCard.classList.remove('hidden');
+
+            renderQCSampleChecklist();
+            
+            const scanInput = document.getElementById('inbound-qc-scan-input');
+            if (scanInput) {
+                scanInput.value = '';
+                scanInput.focus();
+            }
+        }
+
+        function renderQCSampleChecklist() {
+            const listContainer = document.getElementById('inbound-qc-sample-list');
+            if (!listContainer || !activeInboundQCBatch) return;
+
+            listContainer.innerHTML = '';
+            
+            let allPassed = true;
+
+            activeInboundQCBatch.sample_items.forEach((item, idx) => {
+                const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === item.barcode);
+                const pName = prod ? prod.product_name : 'منتج غير معروف';
+
+                let statusBadge = '';
+                if (item.status === 'pending') {
+                    statusBadge = `<span class="text-amber-500 font-bold">⏳ قيد الانتظار</span>`;
+                    allPassed = false;
+                } else if (item.status === 'passed') {
+                    statusBadge = `<span class="text-emerald-500 font-bold">✅ سليم</span>`;
+                } else if (item.status === 'failed') {
+                    statusBadge = `<span class="text-rose-500 font-bold">❌ تالف</span>`;
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `p-3 rounded-xl border text-xs flex flex-col gap-1 ${item.status === 'passed' ? 'bg-emerald-50/30 border-emerald-200' : 'bg-slate-50 border-slate-200'}`;
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between font-bold text-slate-800">
+                        <span>الرف: ${item.location_id}</span>
+                        <span>${statusBadge}</span>
+                    </div>
+                    <div class="text-slate-600">${pName}</div>
+                    <div class="text-[10px] text-slate-400 font-mono">الباركود: ${item.barcode}</div>
+                `;
+                listContainer.appendChild(itemDiv);
+            });
+
+            // Enable or disable approve button
+            const approveBtn = document.getElementById('btn-approve-inbound-batch');
+            if (approveBtn) approveBtn.disabled = !allPassed;
+        }
+
+        function handleInboundQCBarcodeScan(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const barcode = cleanBarcode(e.target.value);
+                if (!barcode || !activeInboundQCBatch) return;
+
+                // Find if this barcode exists in the sample checklist and is still pending
+                const sampleItem = activeInboundQCBatch.sample_items.find(item => item.barcode === barcode && item.status === 'pending');
+                
+                if (sampleItem) {
+                    sampleItem.status = 'passed';
+                    logToConsole('success', `تم التحقق بنجاح من باركود العينة: ${barcode}`);
+                    
+                    // Refresh checklist UI
+                    renderQCSampleChecklist();
+                    
+                    e.target.value = '';
+                    
+                    // Check if all are passed
+                    const pendingCount = activeInboundQCBatch.sample_items.filter(item => item.status === 'pending').length;
+                    if (pendingCount === 0) {
+                        alert("اكتمل فحص جميع عينات الشحنة بنجاح! يمكنك الآن الضغط على زر الاعتماد لإدخال الشحنة للمستودع.");
+                    }
+                } else {
+                    // Check if it exists but already passed
+                    const alreadyPassed = activeInboundQCBatch.sample_items.find(item => item.barcode === barcode && item.status === 'passed');
+                    if (alreadyPassed) {
+                        alert(`تم فحص هذا الباركود سابقاً: ${barcode}`);
+                    } else {
+                        alert(`الباركود الممسوح (${barcode}) ليس جزءاً من العينة المطلوبة لهذه الشحنة أو ليس قيد الانتظار.`);
+                    }
+                    e.target.value = '';
+                }
+            }
+        }
+
+        async function approveInboundBatch() {
+            if (!activeInboundQCBatch || !supabaseClient) return;
+
+            const confirmApprove = confirm("هل أنت متأكد من اعتماد الشحنة بالكامل وإدخال بضاعتها إلى المستودع الفعلي؟");
+            if (!confirmApprove) return;
+
+            const btn = document.getElementById('btn-approve-inbound-batch');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "جاري الاعتماد...";
+            }
+
+            try {
+                const rawData = activeInboundQCBatch.raw_data;
+                const totalRecords = rawData.length;
+                const batchLimit = 400;
+
+                logToConsole('system', `بدء إيداع ${totalRecords} سجل في مخزون المستودع...`);
+
+                // 1. Check discrepancy reports before upserting (same logic as old direct upload)
+                const oldQtyMap = new Map();
+                liveInventoryData.forEach(item => {
+                    const key = cleanBarcode(item.barcode) + '_' + normalizeLocationId(item.location_id);
+                    oldQtyMap.set(key, Number(item.quantity || 0));
+                });
+
+                const deadStockBarcodesByBranch = {};
+                let shortageCount = 0;
+                let shortageItems = 0;
+                let surplusCount = 0;
+                let surplusItems = 0;
+                const diffDetails = [];
+
+                rawData.forEach(item => {
+                    const cleanBC = cleanBarcode(item.barcode);
+                    const locIdClean = normalizeLocationId(item.location_id);
+                    const newQty = Number(item.quantity || 0);
+                    
+                    const key = cleanBC + '_' + locIdClean;
+                    const oldQty = oldQtyMap.get(key) || 0;
+                    const diff = newQty - oldQty;
+                    
+                    if (oldQty > 0 && newQty > 0 && oldQty === newQty) {
+                        if (!deadStockBarcodesByBranch[locIdClean]) {
+                            deadStockBarcodesByBranch[locIdClean] = [];
+                        }
+                        deadStockBarcodesByBranch[locIdClean].push(cleanBC);
+                    }
+
+                    if (diff < 0) {
+                        shortageCount += Math.abs(diff);
+                        shortageItems++;
+                        if (diffDetails.length < 10) {
+                            const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
+                            const name = prod ? prod.product_name : 'صنف غير معروف';
+                            diffDetails.push('عجز: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + Math.abs(diff) + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
+                        }
+                    } else if (diff > 0) {
+                        surplusCount += diff;
+                        surplusItems++;
+                        if (diffDetails.length < 10) {
+                            const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
+                            const name = prod ? prod.product_name : 'صنف غير معروف';
+                            diffDetails.push('زيادة: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + diff + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
+                        }
+                    }
+                });
+
+                let detailsStr = 'تقرير الفروقات الإجمالي للشحنة المعتمدة: عجز إجمالي قدره ' + shortageCount + ' قطعة في ' + shortageItems + ' صنف، وزيادة إجمالية قدره ' + surplusCount + ' قطعة في ' + surplusItems + ' صنف.\n\n';
+                if (diffDetails.length > 0) {
+                    detailsStr += 'بعض الفروقات المرصودة:\n' + diffDetails.join('\n');
+                } else {
+                    detailsStr += 'لا توجد أي فروقات جرد، الأرصدة مطابقة تماماً!';
+                }
+
+                // 2. Write discrepancy logs
+                try {
+                    await supabaseClient.from('activity_logs').insert([
+                        { action: 'dead_stock_snapshot', details: JSON.stringify(deadStockBarcodesByBranch) }
+                    ]);
+                    await supabaseClient.from('activity_logs').insert([
+                        { action: 'تقرير فروقات جرد المخزون', details: detailsStr }
+                    ]);
+                } catch (e) {
+                    console.error('Error saving weekly snapshots and reports:', e);
+                }
+
+                // 3. Upsert inventory chunks in loop
+                for (let i = 0; i < totalRecords; i += batchLimit) {
+                    const chunk = rawData.slice(i, i + batchLimit).map(item => ({
+                        barcode: cleanBarcode(item.barcode),
+                        location_id: normalizeLocationId(item.location_id),
+                        quantity: Number(item.quantity || 0)
+                    }));
+
+                    const { error } = await supabaseClient.from('warehouse_inventory').upsert(chunk, { onConflict: 'barcode,location_id' });
+                    if (error) throw error;
+                }
+
+                // 4. Update Inbound QC Batch status to approved
+                const userName = (currentUser && currentUser.username) ? currentUser.username : 'غير معروف';
+                const { error: updateError } = await supabaseClient
+                    .from('inbound_qc_batches')
+                    .update({
+                        status: 'approved',
+                        inspected_by: userName,
+                        inspected_at: new Date().toISOString(),
+                        sample_items: activeInboundQCBatch.sample_items
+                    })
+                    .eq('id', activeInboundQCBatch.id);
+
+                if (updateError) throw updateError;
+
+                logToConsole('success', `تم اعتماد الشحنة ${activeInboundQCBatch.file_name} بنجاح وإيداع بضاعتها في المخازن.`);
+                alert("تم اعتماد الشحنة بنجاح وإيداع كميات البضائع في المستودع الفعلي!");
+                
+                // Hide action card, reload data
+                document.getElementById('inbound-qc-action-card').classList.add('hidden');
+                activeInboundQCBatch = null;
+                
+                await loadInboundQCData();
+                await loadLocationsData(); // Reload inventory counts for top counters
+                
+            } catch (err) {
+                console.error("Error approving inbound batch:", err);
+                alert("حدث خطأ أثناء اعتماد الشحنة: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "اعتماد الشحنة";
+                }
+            }
+        }
+
+        async function rejectInboundBatch() {
+            if (!activeInboundQCBatch || !supabaseClient) return;
+
+            const notes = prompt("الرجاء إدخال سبب رفض الشحنة وملاحظات الجودة للمصنع:");
+            if (notes === null) return; // Prompt cancelled
+
+            try {
+                const userName = (currentUser && currentUser.username) ? currentUser.username : 'غير معروف';
+                const { error: updateError } = await supabaseClient
+                    .from('inbound_qc_batches')
+                    .update({
+                        status: 'rejected',
+                        notes: notes,
+                        inspected_by: userName,
+                        inspected_at: new Date().toISOString(),
+                        sample_items: activeInboundQCBatch.sample_items
+                    })
+                    .eq('id', activeInboundQCBatch.id);
+
+                if (updateError) throw updateError;
+
+                logToConsole('success', `تم رفض الشحنة ${activeInboundQCBatch.file_name} بسبب: ${notes}`);
+                alert("تم تسجيل رفض الشحنة بنجاح وحفظ ملاحظات فحص الجودة.");
+                
+                document.getElementById('inbound-qc-action-card').classList.add('hidden');
+                activeInboundQCBatch = null;
+                
+                await loadInboundQCData();
+                
+            } catch (err) {
+                console.error("Error rejecting inbound batch:", err);
+                alert("حدث خطأ أثناء تسجيل رفض الشحنة: " + err.message);
+            }
+        }
+
+        function updateQCAnalyticsKPIs() {
+            const kpiLoss = document.getElementById('qc-kpi-loss');
+            const kpiTotalReturns = document.getElementById('qc-kpi-total-returns');
+            const kpiPendingInbound = document.getElementById('qc-kpi-pending-inbound');
+            const kpiAcceptanceRate = document.getElementById('qc-kpi-acceptance-rate');
+
+            // 1. Calculate return losses (Damaged Returns x Cost)
+            let totalLoss = 0;
+            let inspectedCount = 0;
+            liveBranchReturnsData.forEach(item => {
+                if (item.status !== 'pending') inspectedCount++;
+                if (item.status === 'damaged') {
+                    // Match barcode price from catalog
+                    const catalogItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBarcode(item.barcode));
+                    const cost = catalogItem ? Number(catalogItem.regular_price || 0) : 0;
+                    totalLoss += cost;
+                }
+            });
+
+            if (kpiLoss) kpiLoss.textContent = `${totalLoss.toLocaleString('ar-EG')} ج.م`;
+            if (kpiTotalReturns) kpiTotalReturns.textContent = inspectedCount;
+
+            // 2. Inbound stats
+            const pendingBatches = liveInboundQCData.filter(b => b.status === 'pending').length;
+            if (kpiPendingInbound) kpiPendingInbound.textContent = pendingBatches;
+
+            const approvedBatches = liveInboundQCData.filter(b => b.status === 'approved').length;
+            const rejectedBatches = liveInboundQCData.filter(b => b.status === 'rejected').length;
+            const totalInspectedBatches = approvedBatches + rejectedBatches;
+            
+            const rate = totalInspectedBatches > 0 ? Math.round((approvedBatches / totalInspectedBatches) * 100) : 100;
+            if (kpiAcceptanceRate) kpiAcceptanceRate.textContent = `${rate}%`;
+        }
+
+        function renderQCCharts() {
+            if (typeof Chart === 'undefined') return;
+
+            // 1. Defect Types Distribution
+            const defectCounts = {};
+            liveBranchReturnsData.forEach(item => {
+                if (item.status === 'damaged' || item.status === 'needs_repair') {
+                    // Simple text defect parsing
+                    let reason = item.defect_reason || 'غير محدد';
+                    reason = reason.trim().substring(0, 15); // limit length
+                    defectCounts[reason] = (defectCounts[reason] || 0) + 1;
+                }
+            });
+
+            const defectLabels = Object.keys(defectCounts);
+            const defectValues = Object.values(defectCounts);
+
+            const defectCtx = document.getElementById('qcDefectDistributionChart');
+            if (defectCtx) {
+                if (qcDefectChartInstance) qcDefectChartInstance.destroy();
+                qcDefectChartInstance = new Chart(defectCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: defectLabels.length > 0 ? defectLabels : ['لا توجد عيوب حالياً'],
+                        datasets: [{
+                            data: defectValues.length > 0 ? defectValues : [1],
+                            backgroundColor: [
+                                '#ef4444', // red-500
+                                '#f59e0b', // amber-500
+                                '#3b82f6', // blue-500
+                                '#8b5cf6', // purple-500
+                                '#ec4899', // pink-500
+                                '#cbd5e1'  // slate-300
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { font: { family: 'Tajawal', size: 10 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Top Defective Products (damaged status)
+            const productCounts = {};
+            liveBranchReturnsData.forEach(item => {
+                if (item.status === 'damaged') {
+                    const key = item.product_name || item.barcode;
+                    productCounts[key] = (productCounts[key] || 0) + 1;
+                }
+            });
+
+            // Sort products by count
+            const sortedProducts = Object.entries(productCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const productLabels = sortedProducts.map(e => e[0].substring(0, 20));
+            const productValues = sortedProducts.map(e => e[1]);
+
+            const productCtx = document.getElementById('qcTopDefectiveProductsChart');
+            if (productCtx) {
+                if (qcProductChartInstance) qcProductChartInstance.destroy();
+                qcProductChartInstance = new Chart(productCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: productLabels.length > 0 ? productLabels : ['لا توجد منتجات تالفة'],
+                        datasets: [{
+                            label: 'عدد القطع التالفة',
+                            data: productValues.length > 0 ? productValues : [0],
+                            backgroundColor: '#ef4444',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { stepSize: 1 },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: { font: { family: 'Tajawal', size: 9 } }
+                            }
+                        }
+                    }
+                });
             }
         }
 
@@ -4177,71 +4916,56 @@
 
             try {
                 if (type === 'inventory') {
-                    const oldQtyMap = new Map();
-                    liveInventoryData.forEach(item => {
-                        const key = cleanBarcode(item.barcode) + '_' + normalizeLocationId(item.location_id);
-                        oldQtyMap.set(key, Number(item.quantity || 0));
-                    });
-
-                    const deadStockBarcodesByBranch = {};
-                    let shortageCount = 0;
-                    let shortageItems = 0;
-                    let surplusCount = 0;
-                    let surplusItems = 0;
-                    const diffDetails = [];
-
-                    data.forEach(item => {
-                        const cleanBC = item.barcode;
-                        const locIdClean = item.location_id;
-                        const newQty = Number(item.quantity || 0);
-                        
-                        const key = cleanBC + '_' + locIdClean;
-                        const oldQty = oldQtyMap.get(key) || 0;
-                        const diff = newQty - oldQty;
-                        
-                        if (oldQty > 0 && newQty > 0 && oldQty === newQty) {
-                            if (!deadStockBarcodesByBranch[locIdClean]) {
-                                deadStockBarcodesByBranch[locIdClean] = [];
-                            }
-                            deadStockBarcodesByBranch[locIdClean].push(cleanBC);
-                        }
-
-                        if (diff < 0) {
-                            shortageCount += Math.abs(diff);
-                            shortageItems++;
-                            if (diffDetails.length < 10) {
-                                const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
-                                const name = prod ? prod.product_name : 'صنف غير معروف';
-                                diffDetails.push('عجز: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + Math.abs(diff) + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
-                            }
-                        } else if (diff > 0) {
-                            surplusCount += diff;
-                            surplusItems++;
-                            if (diffDetails.length < 10) {
-                                const prod = liveCatalogData.find(c => cleanBarcode(c.barcode) === cleanBC);
-                                const name = prod ? prod.product_name : 'صنف غير معروف';
-                                diffDetails.push('زيادة: ' + name + ' (' + cleanBC + ') بموقع ' + locIdClean + ' بمقدار ' + diff + ' قطع (السابق: ' + oldQty + ' -> الجديد: ' + newQty + ')');
-                            }
-                        }
-                    });
-
-                    let detailsStr = 'تقرير الفروقات الإجمالي: عجز إجمالي قدره ' + shortageCount + ' قطعة في ' + shortageItems + ' صنف، وزيادة إجمالية قدره ' + surplusCount + ' قطعة في ' + surplusItems + ' صنف.\n\n';
-                    if (diffDetails.length > 0) {
-                        detailsStr += 'بعض الفروقات المرصودة:\n' + diffDetails.join('\n');
-                    } else {
-                        detailsStr += 'لا توجد أي فروقات جرد، الأرصدة مطابقة تماماً!';
-                    }
+                    const cleanData = data.map(item => ({
+                        barcode: cleanBarcode(item.barcode),
+                        location_id: normalizeLocationId(item.location_id),
+                        quantity: Number(item.quantity || 0)
+                    }));
                     
-                    try {
-                        await supabaseClient.from('activity_logs').insert([
-                            { action: 'dead_stock_snapshot', details: JSON.stringify(deadStockBarcodesByBranch) }
-                        ]);
-                        await supabaseClient.from('activity_logs').insert([
-                            { action: 'تقرير فروقات جرد المخزون', details: detailsStr }
-                        ]);
-                    } catch (e) {
-                        console.error('Error saving weekly snapshots and reports:', e);
+                    const totalItems = cleanData.length;
+                    const sampleCount = Math.max(1, Math.round(totalItems * 0.05));
+                    
+                    // Select random sample items
+                    const shuffled = [...cleanData].sort(() => 0.5 - Math.random());
+                    const sampleItems = shuffled.slice(0, sampleCount).map(item => ({
+                        ...item,
+                        status: 'pending',
+                        scanned_qty: null
+                    }));
+
+                    const fName = document.getElementById(`filename-${type}`).textContent || 'inventory_batch.xlsx';
+                    const userName = (currentUser && currentUser.username) ? currentUser.username : 'غير معروف';
+
+                    const { error: insertError } = await supabaseClient
+                        .from('inbound_qc_batches')
+                        .insert([{
+                            file_name: fName,
+                            status: 'pending',
+                            total_items: totalItems,
+                            sample_items: sampleItems,
+                            raw_data: cleanData,
+                            created_by: userName
+                        }]);
+
+                    if (insertError) {
+                        if (insertError.code === 'PGRST205' || insertError.message.includes('Could not find the table')) {
+                            throw new Error("لم يتم العثور على جدول inbound_qc_batches في قاعدة البيانات. يرجى تشغيل كود الـ SQL الموضح في خطة العمل في SQL Editor الخاص بـ Supabase أولاً لتفعيل هذه الميزة.");
+                        }
+                        throw insertError;
                     }
+
+                    // Success handling for Inbound QC routing
+                    progressBar.style.width = "100%";
+                    progressPercent.textContent = "100%";
+                    progressStatus.textContent = "مكتمل - بانتظار الفحص";
+                    
+                    await addActivityLog("رفع مخزون للفحص", `تم رفع ملف مخزون ${fName} (عدد السجلات: ${totalItems}) وتوجيهه للفحص العشوائي بنسبة 5% (عدد العينات: ${sampleCount}).`);
+                    
+                    logToConsole('success', `تمت المزامنة بنجاح وتوجيه الشحنة للفحص العشوائي في قسم الجودة.`);
+                    alert(`تم رفع كشف المخزون بنجاح! الشحنة الآن معلقة وبانتظار فحص الجودة العشوائي (نسبة 5% - عدد العينات: ${sampleCount}) في تبويب الجودة.`);
+                    
+                    resetUploadCard(type);
+                    return; // End execution early to avoid writing to warehouse_inventory directly!
                 }
 
                 for (let i = 0; i < totalRecords; i += batchLimit) {
