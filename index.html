@@ -3286,7 +3286,7 @@
             const grid = document.getElementById('dist-branches-inputs-grid');
             if (!grid) return;
             
-            if (!window.liveInventoryData || !window.liveLocationsData) return;
+            if (!liveInventoryData || !liveLocationsData) return;
 
             const branchSet = new Set();
             liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
@@ -3318,7 +3318,7 @@
                 return;
             }
 
-            if (!window.liveCatalogData) {
+            if (!liveCatalogData) {
                 alert("الكتالوج غير محمل بعد.");
                 return;
             }
@@ -3340,7 +3340,7 @@
 
             // Find current stock in Abees
             let abeesStock = 0;
-            if (window.liveInventoryData) {
+            if (liveInventoryData) {
                 const abeesItem = liveInventoryData.find(item => item.barcode === product.barcode && item.location_id.includes('ابيس'));
                 if (abeesItem) abeesStock = Number(abeesItem.quantity || 0);
             }
