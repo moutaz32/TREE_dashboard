@@ -544,6 +544,11 @@
             </div>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl min-w-[200px]">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+                <input type="text" id="low-stock-search-input" placeholder="بحث بالاسم أو الباركود..." oninput="renderLowStockAlerts()" 
+                       class="bg-transparent border-none text-xs outline-none w-full text-slate-700 placeholder-slate-400 font-bold focus:ring-0">
+            </div>
             <select id="export-season-filter" onchange="renderLowStockAlerts()" class="bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 px-2 py-1.5 rounded-lg outline-none cursor-pointer">
                 <option value="all">كل المواسم</option>
                 <option value="summer">الصيفي فقط</option>
@@ -589,6 +594,77 @@
         <!-- Dynamic low stock alerts will go here -->
     </div>
 </div>
+
+                <!-- New Stock Distribution Card (For Abees and Admin only) -->
+                <div id="new-stock-distribution-panel" class="hidden bg-white border border-emerald-200 rounded-2xl p-6 shadow-sm space-y-6 text-right" dir="rtl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-50 p-2.5 rounded-xl text-emerald-600 border border-emerald-100">
+                                <i data-lucide="package-plus" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">توزيع التوريدات الجديدة على الفروع</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">سجل البضائع الواردة من المصانع ووزعها مباشرة على الفروع لتحديث الأرصدة فوراً.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Select Product -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Barcode search input -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">امسح أو اكتب باركود المنتج الوارد:</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="dist-barcode-input" placeholder="مثال: 6223000..." 
+                                       class="flex-1 bg-slate-100 border border-slate-200 text-xs font-mono font-bold px-3 py-2 rounded-xl outline-none focus:ring-1 focus:ring-emerald-500">
+                                <button onclick="searchProductForDistribution()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition">
+                                    بحث 🔍
+                                </button>
+                            </div>
+                            <div id="dist-product-preview" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
+                                <!-- Dynamic product info will go here -->
+                            </div>
+                        </div>
+
+                        <!-- Total quantity to distribute -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">إجمالي الكمية الواردة للتوزيع (قطعة):</label>
+                            <input type="number" id="dist-total-qty" placeholder="أدخل الكمية الإجمالية..." oninput="calculateRemainingDistribution()"
+                                   class="w-full bg-slate-100 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl outline-none focus:ring-1 focus:ring-emerald-500">
+                            <div class="text-[10px] text-slate-500 font-medium">
+                                المتبقي في أبيس: <span id="dist-remaining-qty" class="font-bold text-slate-800">0</span> قطعة من أصل <span id="dist-shown-total" class="font-bold">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Auto distribute button -->
+                        <div class="flex items-end">
+                            <button onclick="autoDistributeEqually()" class="w-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                توزيع تلقائي بالتساوي 🪄
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Allocation table -->
+                    <div class="border-t border-slate-100 pt-4 space-y-3">
+                        <h5 class="text-xs font-bold text-slate-700">توزيع الحصص على فروع التجزئة:</h5>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="dist-branches-inputs-grid">
+                            <!-- Dynamic branches inputs will go here -->
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Action Buttons -->
+                    <div class="border-t border-slate-100 pt-4 flex justify-end gap-3">
+                        <button onclick="clearDistributionForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-5 py-2.5 rounded-xl transition">
+                            إلغاء وتفريغ ✗
+                        </button>
+                        <button id="btn-submit-distribution" onclick="submitStockDistribution()" disabled 
+                                class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            اعتماد ترحيل وتوزيع البضاعة 🚀
+                        </button>
+                    </div>
+                </div>
                             
 
                 <!-- Dead Stock Alerts Panel -->
@@ -3157,6 +3233,23 @@
                 if (headerRight) headerRight.prepend(badge);
             }, 300);
 
+            // إظهار أو إخفاء لوحة توزيع التوريدات أو النواقص بناء على الموقع والصلاحية
+            const isAbeesUser = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+            const showDistribution = (role === 'admin' || isAbeesUser);
+            const lowStockPanel = document.getElementById('low-stock-alert-panel');
+            const distPanel = document.getElementById('new-stock-distribution-panel');
+            
+            if (lowStockPanel && distPanel) {
+                if (showDistribution) {
+                    lowStockPanel.style.display = 'none';
+                    distPanel.style.display = 'block';
+                    setTimeout(renderDistributionBranches, 100);
+                } else {
+                    lowStockPanel.style.display = 'block';
+                    distPanel.style.display = 'none';
+                }
+            }
+
             // إظهار زر تسجيل الخروج للجميع دائماً
             setTimeout(() => {
                 if (document.getElementById('btn-global-logout')) return;
@@ -3182,6 +3275,321 @@
                     console.warn("localStorage remove failed:", e);
                 }
                 location.reload();
+            }
+        }
+
+        // =========================================================================
+        // ==================== NEW INBOUND STOCK DISTRIBUTION SYSTEM ====================
+        // =========================================================================
+        let selectedDistProduct = null;
+
+        function renderDistributionBranches() {
+            const grid = document.getElementById('dist-branches-inputs-grid');
+            if (!grid) return;
+            
+            if (!window.liveInventoryData || !window.liveLocationsData) return;
+
+            const branchSet = new Set();
+            liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            
+            // Get all branches excluding Abees
+            const branches = Array.from(branchSet).filter(b => b && !b.toLowerCase().includes('ابيس')).sort();
+            
+            grid.innerHTML = branches.map(b => {
+                const safeId = b.replace(/\s+/g, '_');
+                return `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center space-y-1.5 shadow-sm">
+                        <span class="block text-[10px] font-bold text-slate-700 truncate" title="${b}">${b}</span>
+                        <div class="text-[9px] text-slate-400 font-medium">الرصيد الحالي: <span id="dist-curr-qty-${safeId}" class="font-bold text-slate-600">0</span></div>
+                        <input type="number" data-branch="${b}" oninput="calculateRemainingDistribution()" 
+                               class="dist-branch-qty-input w-full bg-white border border-slate-300 rounded-lg text-center text-xs font-bold py-1 outline-none focus:ring-1 focus:ring-emerald-500" 
+                               placeholder="0" min="0">
+                    </div>
+                `;
+            }).join('');
+            
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function searchProductForDistribution() {
+            const barcodeVal = document.getElementById('dist-barcode-input').value.trim();
+            if (!barcodeVal) {
+                alert("يرجى إدخال أو مسح الباركود أولاً.");
+                return;
+            }
+
+            if (!window.liveCatalogData) {
+                alert("الكتالوج غير محمل بعد.");
+                return;
+            }
+
+            // Find product
+            const product = liveCatalogData.find(p => p.barcode === barcodeVal);
+            const preview = document.getElementById('dist-product-preview');
+            const submitBtn = document.getElementById('btn-submit-distribution');
+
+            if (!product) {
+                alert("هذا الباركود غير مسجل في الكتالوج. يرجى إضافته أولاً.");
+                selectedDistProduct = null;
+                if (preview) preview.classList.add('hidden');
+                if (submitBtn) submitBtn.disabled = true;
+                return;
+            }
+
+            selectedDistProduct = product;
+
+            // Find current stock in Abees
+            let abeesStock = 0;
+            if (window.liveInventoryData) {
+                const abeesItem = liveInventoryData.find(item => item.barcode === product.barcode && item.location_id.includes('ابيس'));
+                if (abeesItem) abeesStock = Number(abeesItem.quantity || 0);
+            }
+
+            // Render product info in preview box
+            if (preview) {
+                preview.innerHTML = `
+                    <img src="${product.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=80&auto=format&fit=crop&q=60'}" 
+                         alt="${product.product_name}" class="w-12 h-12 rounded-lg object-cover border border-slate-200">
+                    <div class="flex-1 text-right">
+                        <span class="block text-xs font-bold text-slate-800">${product.product_name}</span>
+                        <span class="block text-[10px] text-slate-400 font-mono font-bold">${product.barcode}</span>
+                        <span class="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-1.5 mt-1">المخزون الحالي بأبيس: ${abeesStock} قطعة</span>
+                    </div>
+                `;
+                preview.classList.remove('hidden');
+            }
+
+            // Load current stocks for other branches
+            const branchSet = new Set();
+            liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+            const branches = Array.from(branchSet).filter(b => b && !b.toLowerCase().includes('ابيس')).sort();
+
+            branches.forEach(b => {
+                const safeId = b.replace(/\s+/g, '_');
+                const span = document.getElementById(`dist-curr-qty-${safeId}`);
+                if (span) {
+                    const invItem = liveInventoryData.find(item => item.barcode === product.barcode && item.location_id === b);
+                    span.textContent = invItem ? (invItem.quantity || 0) : 0;
+                }
+            });
+
+            calculateRemainingDistribution();
+        }
+
+        function calculateRemainingDistribution() {
+            const totalInput = document.getElementById('dist-total-qty');
+            const totalVal = Number(totalInput.value) || 0;
+
+            const inputs = document.querySelectorAll('.dist-branch-qty-input');
+            let sum = 0;
+            inputs.forEach(input => {
+                sum += Number(input.value) || 0;
+            });
+
+            const remaining = totalVal - sum;
+            const remainingSpan = document.getElementById('dist-remaining-qty');
+            const shownTotal = document.getElementById('dist-shown-total');
+            const submitBtn = document.getElementById('btn-submit-distribution');
+
+            if (remainingSpan) {
+                remainingSpan.textContent = remaining;
+                if (remaining < 0) {
+                    remainingSpan.className = "font-bold text-rose-600 animate-pulse";
+                } else {
+                    remainingSpan.className = "font-bold text-slate-800";
+                }
+            }
+
+            if (shownTotal) shownTotal.textContent = totalVal;
+
+            if (submitBtn) {
+                submitBtn.disabled = !(selectedDistProduct && totalVal > 0 && remaining >= 0);
+            }
+        }
+
+        function autoDistributeEqually() {
+            const totalInput = document.getElementById('dist-total-qty');
+            const totalVal = Number(totalInput.value) || 0;
+
+            if (totalVal <= 0) {
+                alert("يرجى إدخال إجمالي الكمية الواردة أولاً.");
+                return;
+            }
+
+            const inputs = document.querySelectorAll('.dist-branch-qty-input');
+            if (inputs.length === 0) return;
+
+            const share = Math.floor(totalVal / inputs.length);
+            const remainder = totalVal % inputs.length;
+
+            inputs.forEach((input, index) => {
+                let allocated = share;
+                if (index < remainder) {
+                    allocated += 1;
+                }
+                input.value = allocated;
+            });
+
+            calculateRemainingDistribution();
+        }
+
+        function clearDistributionForm() {
+            document.getElementById('dist-barcode-input').value = '';
+            document.getElementById('dist-total-qty').value = '';
+            
+            selectedDistProduct = null;
+            
+            const preview = document.getElementById('dist-product-preview');
+            if (preview) {
+                preview.innerHTML = '';
+                preview.classList.add('hidden');
+            }
+
+            const inputs = document.querySelectorAll('.dist-branch-qty-input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+
+            const remainingSpan = document.getElementById('dist-remaining-qty');
+            if (remainingSpan) {
+                remainingSpan.textContent = '0';
+                remainingSpan.className = "font-bold text-slate-800";
+            }
+
+            const shownTotal = document.getElementById('dist-shown-total');
+            if (shownTotal) shownTotal.textContent = '0';
+
+            const submitBtn = document.getElementById('btn-submit-distribution');
+            if (submitBtn) submitBtn.disabled = true;
+        }
+
+        async function submitStockDistribution() {
+            if (!supabaseClient) return;
+            if (!selectedDistProduct) return;
+
+            const totalVal = Number(document.getElementById('dist-total-qty').value) || 0;
+            if (totalVal <= 0) return;
+
+            const inputs = document.querySelectorAll('.dist-branch-qty-input');
+            let sum = 0;
+            const allocations = [];
+
+            inputs.forEach(input => {
+                const qty = Number(input.value) || 0;
+                const branch = input.getAttribute('data-branch');
+                if (qty > 0) {
+                    sum += qty;
+                    allocations.push({ branch, qty });
+                }
+            });
+
+            const remainder = totalVal - sum;
+            if (remainder < 0) {
+                alert("إجمالي الكميات الموزعة يتجاوز الكمية الواردة!");
+                return;
+            }
+
+            const confirmAction = confirm(`تأكيد توزيع البضاعة:\n- إجمالي الوارد: ${totalVal} قطعة\n- الموزع على الفروع: ${sum} قطعة\n- المتبقي في مخزن أبيس: ${remainder} قطعة\n\nهل تريد اعتماد هذا التوزيع؟`);
+            if (!confirmAction) return;
+
+            const submitBtn = document.getElementById('btn-submit-distribution');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> جاري الحفظ...';
+            }
+
+            try {
+                // 1. Process allocations for branches
+                for (const alloc of allocations) {
+                    const { data: existing, error: fetchErr } = await supabaseClient
+                        .from('warehouse_inventory')
+                        .select('id, quantity')
+                        .eq('barcode', selectedDistProduct.barcode)
+                        .eq('location_id', alloc.branch);
+
+                    if (fetchErr) throw fetchErr;
+
+                    if (existing && existing.length > 0) {
+                        const newQty = Number(existing[0].quantity || 0) + alloc.qty;
+                        const { error: updateErr } = await supabaseClient
+                            .from('warehouse_inventory')
+                            .update({ quantity: newQty })
+                            .eq('id', existing[0].id);
+
+                        if (updateErr) throw updateErr;
+                    } else {
+                        const { error: insertErr } = await supabaseClient
+                            .from('warehouse_inventory')
+                            .insert({
+                                barcode: selectedDistProduct.barcode,
+                                location_id: alloc.branch,
+                                quantity: alloc.qty
+                            });
+
+                        if (insertErr) throw insertErr;
+                    }
+                }
+
+                // 2. Process remainder for Abees Warehouse
+                if (remainder >= 0) {
+                    const { data: existingAbees, error: abeesFetchErr } = await supabaseClient
+                        .from('warehouse_inventory')
+                        .select('id, quantity')
+                        .eq('barcode', selectedDistProduct.barcode)
+                        .like('location_id', '%ابيس%');
+
+                    if (abeesFetchErr) throw abeesFetchErr;
+
+                    if (existingAbees && existingAbees.length > 0) {
+                        const newAbeesQty = Number(existingAbees[0].quantity || 0) + remainder;
+                        const { error: updateAbeesErr } = await supabaseClient
+                            .from('warehouse_inventory')
+                            .update({ quantity: newAbeesQty })
+                            .eq('id', existingAbees[0].id);
+
+                        if (updateAbeesErr) throw updateAbeesErr;
+                    } else {
+                        const { error: insertAbeesErr } = await supabaseClient
+                            .from('warehouse_inventory')
+                            .insert({
+                                barcode: selectedDistProduct.barcode,
+                                location_id: 'مخزن ابيس',
+                                quantity: remainder
+                            });
+
+                        if (insertAbeesErr) throw insertAbeesErr;
+                    }
+                }
+
+                // 3. Log Activity
+                const { error: logErr } = await supabaseClient
+                    .from('activity_logs')
+                    .insert({
+                        operator_name: (currentUser && currentUser.username) || 'مخزن ابيس',
+                        action_type: 'توزيع توريدات',
+                        details: `تم توريد وتوزيع ${totalVal} قطعة من المنتج (${selectedDistProduct.product_name} - ${selectedDistProduct.barcode}): تم توزيع ${sum} قطعة على الفروع وتبقى ${remainder} قطعة في مخزن أبيس.`
+                    });
+
+                if (logErr) console.warn("Failed to insert activity log:", logErr);
+
+                alert("تم اعتماد ترحيل وتوزيع البضاعة بنجاح وتحديث الأرصدة في الفروع ومخزن أبيس! ✓");
+                clearDistributionForm();
+                
+                if (typeof fetchInventoryData === 'function') {
+                    fetchInventoryData();
+                }
+
+            } catch (err) {
+                console.error("Error distributing stock:", err);
+                alert("حدث خطأ أثناء توزيع البضاعة: " + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> اعتماد ترحيل وتوزيع البضاعة 🚀';
+                    if (window.lucide) lucide.createIcons({ root: submitBtn });
+                }
             }
         }
 
@@ -7396,6 +7804,7 @@
 
             const seasonFilter = document.getElementById('export-season-filter') ? document.getElementById('export-season-filter').value : 'all';
             const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+            const searchVal = document.getElementById('low-stock-search-input') ? document.getElementById('low-stock-search-input').value.toLowerCase().trim() : '';
 
             const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
             const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
@@ -7412,6 +7821,11 @@
                 if (lowStockItems.length >= maxAlerts) break;
                 
                 const name = (product.product_name || '').toLowerCase();
+                const barcode = (product.barcode || '').toLowerCase();
+                
+                if (searchVal && !name.includes(searchVal) && !barcode.includes(searchVal)) {
+                    continue;
+                }
                 
                 if (seasonFilter === 'winter') {
                     if (!winterKeywords.some(kw => name.includes(kw))) continue;
@@ -7846,18 +8260,14 @@
     async function fetchAndRenderBranchOrders() {
         if (!supabaseClient) return;
         
-        const tbody = document.getElementById('branch-orders-tbody');
-        if (!tbody) return;
+        const container = document.getElementById('branch-orders-list-container');
+        if (!container) return;
         
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="py-8 text-center text-slate-400">
-                    <div class="flex flex-col items-center gap-2 justify-center">
-                        <span class="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin"></span>
-                        <span>جاري تحميل طلبات الفروع...</span>
-                    </div>
-                </td>
-            </tr>
+        container.innerHTML = `
+            <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 shadow-sm flex flex-col items-center gap-2 justify-center">
+                <span class="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                <span class="font-bold text-xs">جاري تحميل طلبات الفروع...</span>
+            </div>
         `;
         
         try {
@@ -7872,81 +8282,129 @@
             renderBranchOrdersTable(branchOrdersCache);
         } catch (err) {
             console.error("Error fetching branch orders:", err);
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="py-8 text-center text-rose-500 font-bold">
-                        فشل تحميل البيانات: ${err.message}
-                    </td>
-                </tr>
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-rose-200 p-8 text-center text-rose-600 font-bold shadow-sm">
+                    فشل تحميل البيانات: ${err.message}
+                </div>
             `;
         }
     }
     
     function renderBranchOrdersTable(orders) {
-        const tbody = document.getElementById('branch-orders-tbody');
-        if (!tbody) return;
+        const container = document.getElementById('branch-orders-list-container');
+        if (!container) return;
         
-        if (orders.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="py-8 text-center text-slate-400 font-medium">
-                        لا توجد طلبات تحضير حالياً.
-                     </td>
-                 </tr>
-             `;
-             return;
-         }
-         
-         tbody.innerHTML = orders.map(order => {
-             const date = new Date(order.created_at).toLocaleString('ar-EG');
-             const itemsCount = (order.items || []).length;
-             
-             let statusBadge = '';
-             let actionButtons = '';
-             
-             if (order.status === 'pending') {
-                 statusBadge = `<span class="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                     <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                     قيد الانتظار
-                 </span>`;
-                 actionButtons = `
-                     <button onclick="updateBranchOrderStatus('${order.id}', 'completed')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
-                         اعتماد وتحضير الكلي ✓
-                     </button>
-                     <button onclick="updateBranchOrderStatus('${order.id}', 'cancelled')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
-                         إلغاء ✗
-                     </button>
-                 `;
-             } else if (order.status === 'completed') {
-                 statusBadge = `<span class="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                     <i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i>
-                     تم التحضير والاعتماد
-                 </span>`;
-             } else {
-                 statusBadge = `<span class="inline-flex items-center gap-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                     <i data-lucide="x-circle" class="w-3 h-3 text-rose-400"></i>
-                     ملغي
-                 </span>`;
-             }
-             
-             return `
-                 <tr class="hover:bg-slate-900/10 border-b border-slate-100 transition-colors">
-                     <td class="px-4 py-3.5 text-xs text-slate-800 font-bold">${order.branch_name}</td>
-                     <td class="px-4 py-3.5 text-xs text-slate-500">${date}</td>
-                     <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">${itemsCount} أصناف</td>
-                     <td class="px-4 py-3.5 text-xs">${statusBadge}</td>
-                     <td class="px-4 py-3.5 text-xs flex gap-2">
-                         <button onclick="showBranchOrderDetails('${order.id}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition">
-                             تفاصيل 🔍
+        const branchFilter = document.getElementById('branch-order-branch-filter');
+        if (branchFilter && branchFilter.options.length <= 1) {
+            const branches = Array.from(new Set(orders.map(o => o.branch_name))).filter(b => b);
+            branches.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                branchFilter.appendChild(opt);
+            });
+        }
+        
+        const statusVal = document.getElementById('branch-order-status-filter').value;
+        const branchVal = document.getElementById('branch-order-branch-filter').value;
+        
+        let filteredOrders = orders;
+        if (statusVal !== 'all') {
+            filteredOrders = filteredOrders.filter(o => o.status === statusVal);
+        }
+        if (branchVal !== 'all') {
+            filteredOrders = filteredOrders.filter(o => o.branch_name === branchVal);
+        }
+        
+        if (filteredOrders.length === 0) {
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 font-medium shadow-sm">
+                    لا توجد طلبات تحضير مطابقة للفلاتر المحددة حالياً.
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold">
+                                <th class="px-6 py-4">الفرع طالب الشحنة</th>
+                                <th class="px-6 py-4 font-mono">تاريخ الطلب</th>
+                                <th class="px-6 py-4">عدد الأصناف</th>
+                                <th class="px-6 py-4">الحالة</th>
+                                <th class="px-6 py-4 text-left px-8">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+        `;
+        
+        filteredOrders.forEach(order => {
+            const date = new Date(order.created_at).toLocaleString('ar-EG');
+            const itemsCount = (order.items || []).length;
+            
+            let statusBadge = '';
+            let actionButtons = '';
+            
+            if (order.status === 'pending') {
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/60 px-2.5 py-1 rounded-lg text-xs font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        قيد الانتظار
+                    </span>
+                `;
+                actionButtons = `
+                    <button onclick="updateBranchOrderStatus('${order.id}', 'completed')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-3 py-1.5 rounded-xl transition">
+                        اعتماد وتحضير الكلي ✓
+                    </button>
+                    <button onclick="updateBranchOrderStatus('${order.id}', 'cancelled')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] px-3 py-1.5 rounded-xl transition">
+                        إلغاء ✗
+                    </button>
+                `;
+            } else if (order.status === 'completed') {
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-lg text-xs font-bold">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+                        تم التحضير والشحن
+                    </span>
+                `;
+            } else {
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200/60 px-2.5 py-1 rounded-lg text-xs font-bold">
+                        <i data-lucide="x-circle" class="w-3.5 h-3.5 text-rose-500"></i>
+                        ملغي
+                    </span>
+                `;
+            }
+            
+            html += `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="px-6 py-4 font-bold text-slate-800">${order.branch_name}</td>
+                    <td class="px-6 py-4 text-xs text-slate-500 font-mono">${date}</td>
+                    <td class="px-6 py-4 font-bold text-slate-600">${itemsCount} أصناف</td>
+                    <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4 flex gap-2 justify-end px-8">
+                        <button onclick="showBranchOrderDetails('${order.id}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] px-3 py-1.5 rounded-xl transition">
+                            تفاصيل 🔍
                          </button>
                          ${actionButtons}
-                     </td>
-                 </tr>
-             `;
-         }).join('');
-         
-         if (window.lucide) lucide.createIcons();
-     }
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
      
      async function updateBranchOrderStatus(orderId, status) {
          if (!supabaseClient) return;
