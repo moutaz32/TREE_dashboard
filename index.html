@@ -2544,8 +2544,8 @@
 
                 const { data, error } = await supabaseClient
                     .from('store_users')
-                    .select('username')
-                    .eq('role', 'branch')
+                    .select('username, role')
+                    .in('role', ['branch', 'quality'])
                     .order('username');
 
                 if (error) throw error;
@@ -2554,7 +2554,11 @@
                     data.forEach(u => {
                         const opt = document.createElement('option');
                         opt.value = u.username;
-                        opt.textContent = `🏪 ${u.username}`;
+                        if (u.role === 'quality') {
+                            opt.textContent = `🔍 ${u.username} (إدارة الجودة)`;
+                        } else {
+                            opt.textContent = `🏪 ${u.username}`;
+                        }
                         select.appendChild(opt);
                     });
                 }
