@@ -2604,16 +2604,17 @@
             if (role === 'branch' && branch) {
                 const normBranch = normalizeLocationId(branch);
                 activeBranchFilter = normBranch;
-                const sel = document.getElementById('branch-filter-select');
-                if (sel) {
-                    sel.innerHTML = `<option value="${normBranch}">${normBranch}</option>`;
-                    sel.value = normBranch;
-                    sel.disabled = true;
-                }
-            } else {
-                const sel = document.getElementById('branch-filter-select');
-                if (sel) {
-                    sel.disabled = false;
+            }
+
+            // Populate branch filter dropdown options
+            populateBranchFilterDropdown();
+
+            const exportWrapper = document.getElementById('export-wrapper');
+            if (exportWrapper) {
+                if (activeBranchFilter && activeBranchFilter !== 'all') {
+                    exportWrapper.style.display = 'flex';
+                } else {
+                    exportWrapper.style.display = 'none';
                 }
             }
 
@@ -3054,6 +3055,7 @@
                 liveInventoryData = data || [];
                 rebuildInventoryIndex();  // بناء فهرس كميات المخزون O(1)
                 updateTopCounters();
+                populateBranchFilterDropdown();
                 
                 if (activeInventorySubTab === 'stock' || activeInventorySubTab === 'discrepancy') {
                     switchInventorySubTab(activeInventorySubTab);
@@ -3089,10 +3091,19 @@
 
             if (currentUser && currentUser.role === 'branch' && currentUser.branch) {
                 const b = currentUser.branch;
+                
+                // Calculate stock
+                let qty = 0;
+                if (window.liveInventoryData) {
+                    liveInventoryData.forEach(item => {
+                        if (item.location_id === b) qty += Number(item.quantity || 0);
+                    });
+                }
+                
                 select.innerHTML = '';
                 const opt = document.createElement('option');
                 opt.value = b;
-                opt.textContent = b;
+                opt.textContent = `${b} (${qty.toLocaleString('ar-EG')} قطعة)`;
                 opt.selected = true;
                 select.appendChild(opt);
                 select.disabled = true;
@@ -3106,12 +3117,25 @@
             liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             const branches = Array.from(branchSet).sort();
+            
+            // Calculate total stock per branch
+            const totalStockPerBranch = {};
+            if (window.liveInventoryData) {
+                liveInventoryData.forEach(item => {
+                    const br = item.location_id;
+                    if (br) {
+                        totalStockPerBranch[br] = (totalStockPerBranch[br] || 0) + Number(item.quantity || 0);
+                    }
+                });
+            }
+
             const current = select.value;
             select.innerHTML = '<option value="all">كل الفروع / المواقع</option>';
             branches.forEach(b => {
+                const qty = totalStockPerBranch[b] || 0;
                 const opt = document.createElement('option');
                 opt.value = b;
-                opt.textContent = b;
+                opt.textContent = `${b} (${qty.toLocaleString('ar-EG')} قطعة)`;
                 if (b === current) opt.selected = true;
                 select.appendChild(opt);
             });
@@ -5405,17 +5429,46 @@
             return Array.from(branchSet).sort();
         }
 
-        function populateTransferTargetDropdown(excludeBranch) {
+        function populateTransferTargetDropdown(excludeBranch, barcode) {
             const select = document.getElementById('transfer-target-branch');
             if (!select) return;
             
             const branches = getAllBranchesList();
+            
+            // Calculate current stock of this product in each branch
+            const branchQtyMap = {};
+            if (barcode && window.liveInventoryData) {
+                liveInventoryData.forEach(invItem => {
+                    if (matchBarcodesExact(invItem.barcode, barcode)) {
+                        const br = invItem.location_id;
+                        const qty = Number(invItem.quantity || 0);
+                        branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
+                    }
+                });
+                
+                const totalExact = Object.values(branchQtyMap).reduce((a, b) => a + b, 0);
+                if (totalExact === 0) {
+                    const clean = cleanBarcode(barcode);
+                    const base = extractBaseBarcode(clean);
+                    if (base) {
+                        liveInventoryData.forEach(invItem => {
+                            if (matchBarcodesBase(invItem.barcode, barcode)) {
+                                const br = invItem.location_id;
+                                const qty = Number(invItem.quantity || 0);
+                                branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
+                            }
+                        });
+                    }
+                }
+            }
+            
             select.innerHTML = '<option value="">اختر الفرع المستهدف...</option>';
             branches.forEach(b => {
                 if (normalizeLocationId(b) === normalizeLocationId(excludeBranch)) return;
+                const qty = branchQtyMap[b] || 0;
                 const opt = document.createElement('option');
                 opt.value = b;
-                opt.textContent = b;
+                opt.textContent = `${b} (${qty.toLocaleString('ar-EG')} قطعة)`;
                 select.appendChild(opt);
             });
         }
@@ -5442,17 +5495,13 @@
                 lucide.createIcons({ root: imgContainer });
             }
             
-            const clean = cleanBarcode(barcode);
-            const base = extractBaseBarcode(clean);
             const branchesList = getAllBranchesList();
-            
             const branchQtyMap = {};
             let totalQty = 0;
             
             if (window.liveInventoryData) {
                 liveInventoryData.forEach(invItem => {
-                    const invClean = cleanBarcode(invItem.barcode);
-                    if (invClean === clean) {
+                    if (matchBarcodesExact(invItem.barcode, barcode)) {
                         const br = invItem.location_id;
                         const qty = Number(invItem.quantity || 0);
                         branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
@@ -5460,11 +5509,9 @@
                     }
                 });
                 
-                if (totalQty === 0 && base) {
+                if (totalQty === 0) {
                     liveInventoryData.forEach(invItem => {
-                        const invClean = cleanBarcode(invItem.barcode);
-                        const invBase = extractBaseBarcode(invClean);
-                        if (invBase === base) {
+                        if (matchBarcodesBase(invItem.barcode, barcode)) {
                             const br = invItem.location_id;
                             const qty = Number(invItem.quantity || 0);
                             branchQtyMap[br] = (branchQtyMap[br] || 0) + qty;
@@ -6866,7 +6913,22 @@
             document.getElementById('transfer-product-name').textContent = productName;
             document.getElementById('transfer-product-barcode').textContent = 'باركود: ' + barcode;
             document.getElementById('transfer-source-branch').value = sourceBranch;
-            document.getElementById('transfer-target-branch').value = targetBranch;
+            
+            // Populate transfer target dropdown options with quantities of this product!
+            populateTransferTargetDropdown(sourceBranch, barcode);
+            
+            const targetSelect = document.getElementById('transfer-target-branch');
+            if (targetSelect) {
+                if (targetBranch) {
+                    targetSelect.value = targetBranch;
+                    targetSelect.disabled = true;
+                    targetSelect.classList.add('bg-slate-100');
+                } else {
+                    targetSelect.value = '';
+                    targetSelect.disabled = false;
+                    targetSelect.classList.remove('bg-slate-100');
+                }
+            }
             
             const qtyInput = document.getElementById('transfer-qty-input');
             qtyInput.value = maxQty;
