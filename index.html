@@ -7117,6 +7117,142 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        let activeHeatmapCategory = '';
+
+        function openHeatmapCategoryModal(categoryName, totalQty) {
+            activeHeatmapCategory = categoryName;
+            
+            const modal = document.getElementById('heatmap-category-modal');
+            const titleEl = document.getElementById('heatmap-category-modal-title');
+            const subtitleEl = document.getElementById('heatmap-category-modal-subtitle');
+            const totalQtyEl = document.getElementById('heatmap-category-modal-total-qty');
+            const searchInput = document.getElementById('heatmap-category-modal-search');
+            
+            if (searchInput) searchInput.value = '';
+            if (totalQtyEl) totalQtyEl.textContent = `${totalQty.toLocaleString('ar-EG')} قطعة`;
+            
+            const scopeName = (!activeBranchFilter || activeBranchFilter === 'all') ? "كافة الفروع مجتمعة" : `فرع (${activeBranchFilter})`;
+            if (titleEl) titleEl.textContent = `منتجات تصنيف: ${categoryName}`;
+            if (subtitleEl) subtitleEl.textContent = `عرض المنتجات المندرجة تحت هذا التصنيف في ${scopeName}`;
+            
+            if (modal) modal.classList.remove('hidden');
+            
+            renderHeatmapCategoryModalList();
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons({ root: modal });
+            }
+        }
+
+        function closeHeatmapCategoryModal() {
+            const modal = document.getElementById('heatmap-category-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function renderHeatmapCategoryModalList() {
+            const container = document.getElementById('heatmap-category-modal-list');
+            const searchInput = document.getElementById('heatmap-category-modal-search');
+            if (!container) return;
+            
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const isAll = (!activeBranchFilter || activeBranchFilter === 'all');
+            const currentInventory = isAll ? liveInventoryData : getBranchFilteredInventory();
+            
+            // Filter products matching the category name and search term
+            const matchedProductsMap = new Map(); // barcode -> qty
+            
+            currentInventory.forEach(item => {
+                let match = false;
+                
+                if (activeHeatmapPerspective === 'clothing') {
+                    const cat = getProductCategory(item.barcode);
+                    if (getCategoryName(cat) === activeHeatmapCategory) match = true;
+                } else if (activeHeatmapPerspective === 'demographic') {
+                    const cat = getProductDemographic(item.barcode);
+                    if (getDemographicName(cat) === activeHeatmapCategory) match = true;
+                } else if (activeHeatmapPerspective === 'velocity') {
+                    const cat = getProductVelocity(item.barcode, item.quantity);
+                    if (getVelocityName(cat) === activeHeatmapCategory) match = true;
+                } else if (activeHeatmapPerspective === 'storage') {
+                    const cat = getProductStorageType(item.barcode);
+                    if (getStorageTypeName(cat) === activeHeatmapCategory) match = true;
+                }
+                
+                if (match) {
+                    const clean = cleanBarcode(item.barcode);
+                    matchedProductsMap.set(clean, (matchedProductsMap.get(clean) || 0) + Number(item.quantity || 0));
+                }
+            });
+            
+            // Convert to list and attach catalog details
+            let listData = [];
+            matchedProductsMap.forEach((qty, barcode) => {
+                const catalogItem = getProductCatalogItem(barcode);
+                const productName = catalogItem ? catalogItem.product_name : barcode;
+                
+                if (searchTerm) {
+                    const matchName = productName.toLowerCase().includes(searchTerm);
+                    const matchBar = barcode.toLowerCase().includes(searchTerm);
+                    if (!matchName && !matchBar) return;
+                }
+                
+                listData.push({
+                    barcode: barcode,
+                    productName: productName,
+                    qty: qty,
+                    image: catalogItem ? catalogItem.product_image : ''
+                });
+            });
+            
+            // Sort by quantity descending
+            listData.sort((a, b) => b.qty - a.qty);
+            
+            if (listData.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-10 text-slate-400">
+                        <i data-lucide="package-search" class="w-10 h-10 mb-2 text-slate-300"></i>
+                        <p class="text-xs font-bold">لا توجد منتجات مطابقة للبحث في هذا التصنيف.</p>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') lucide.createIcons({ root: container });
+                return;
+            }
+            
+            container.innerHTML = listData.map(item => {
+                const imgHtml = item.image 
+                    ? `<img src="${item.image}" class="w-full h-full object-cover" onerror="this.src=''; this.parentElement.innerHTML='<i data-lucide=&quot;shirt&quot; class=&quot;w-5 h-5 text-slate-400&quot;></i>'">`
+                    : `<i data-lucide="shirt" class="w-5 h-5 text-slate-400"></i>`;
+                    
+                return `
+                <div class="p-3 bg-slate-50/60 hover:bg-slate-50 border border-slate-200/50 rounded-2xl transition flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-12 h-12 rounded-xl bg-white border border-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            ${imgHtml}
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-xs font-black text-slate-800 leading-tight truncate" title="${item.productName}">${item.productName}</h5>
+                            <p class="text-[9.5px] text-slate-400 font-mono tracking-wide mt-1">${item.barcode}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="px-2.5 py-1 rounded-xl text-[10.5px] font-black bg-brand-tint text-brand-deep border border-brand-accent/15">
+                            ${item.qty.toLocaleString('ar-EG')} قطعة
+                        </span>
+                        <button onclick="closeHeatmapCategoryModal(); openProductBranchesModal('${item.barcode}')" 
+                                class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition" 
+                                title="عرض الرصيد في الفروع...">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons({ root: container });
+            }
+        }
+
         async function saveManualQtyAdjustment() {
             if (!supabaseClient || !activeEditRecord) return;
 
@@ -9699,7 +9835,9 @@
                     }
 
                     html += `
-                        <div class="flex flex-col p-5 rounded-2xl border ${categoryCardBg} shadow-sm transition hover:shadow-md cursor-default space-y-4">
+                        <div class="group flex flex-col p-5 rounded-2xl border ${categoryCardBg} shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md cursor-pointer space-y-4"
+                             onclick="openHeatmapCategoryModal('${zone.replace(/'/g, "\\'")}', ${qty})"
+                             title="${zone} - انقر لعرض المنتجات">
                             <div class="flex items-center justify-between">
                                 <div class="p-2.5 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
                                     <i data-lucide="${iconName}" class="w-5 h-5 text-slate-600"></i>
@@ -10659,6 +10797,47 @@
             <!-- Footer -->
             <div class="flex items-center justify-end border-t border-slate-100 pt-3 flex-shrink-0">
                 <button onclick="closeProductBranchesModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-5 py-2.5 rounded-xl transition duration-200">
+                    إغلاق النافذة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap Category Products Modal -->
+    <div id="heatmap-category-modal" class="hidden fixed inset-0 z-50 overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative border border-slate-200 flex flex-col max-h-[85vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3" dir="rtl">
+                <div>
+                    <h3 class="font-black text-slate-800 text-sm" id="heatmap-category-modal-title">منتجات التصنيف</h3>
+                    <p class="text-[10px] text-slate-400 font-bold mt-0.5" id="heatmap-category-modal-subtitle">عرض المنتجات المندرجة تحت هذا البعد</p>
+                </div>
+                <button onclick="closeHeatmapCategoryModal()" class="text-slate-400 hover:text-slate-600 transition-all p-1 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Stats & Search Bar -->
+            <div class="space-y-3" dir="rtl">
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <span class="text-xs font-bold text-slate-500">إجمالي القطع في هذا التصنيف:</span>
+                    <span id="heatmap-category-modal-total-qty" class="px-3 py-1 rounded-full text-xs font-black bg-brand-tint text-brand-deep">0 قطعة</span>
+                </div>
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="heatmap-category-modal-search" oninput="renderHeatmapCategoryModalList()" placeholder="بحث باسم المنتج أو الباركود..." 
+                           class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all">
+                </div>
+            </div>
+
+            <!-- Products List -->
+            <div id="heatmap-category-modal-list" class="space-y-2 overflow-y-auto flex-1 pr-1 pl-1 min-h-[250px] max-h-[400px]" dir="rtl">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button onclick="closeHeatmapCategoryModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-5 py-2.5 rounded-xl transition duration-200">
                     إغلاق النافذة
                 </button>
             </div>
