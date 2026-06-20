@@ -12646,7 +12646,7 @@
                 let query = supabaseClient.from('inventory_audits').select('*').order('created_at', { ascending: false });
                 
                 if (currentUser && currentUser.role === 'branch') {
-                    query = query.eq('location_id', currentUser.branch_id);
+                    query = query.eq('location_id', currentUser.branch);
                 }
 
                 const { data: audits, error } = await query;
@@ -12734,8 +12734,8 @@
             
             if (currentUser && currentUser.role === 'branch') {
                 const opt = document.createElement('option');
-                opt.value = currentUser.branch_id;
-                opt.textContent = currentUser.branch_id;
+                opt.value = currentUser.branch;
+                opt.textContent = currentUser.branch;
                 select.appendChild(opt);
             } else {
                 const branches = ['مخزن ابيس', 'فرع سموحة', 'فرع لوران', 'فرع السيوف', 'فرع المنشية', 'فرع كفر عبده', 'فرع عباس العقاد'];
