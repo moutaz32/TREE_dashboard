@@ -364,6 +364,11 @@
                     تهيئة ومعالجة الملفات 🛠️
                 </button>
 
+                <button onclick="switchTab('audits')" id="tab-audits" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-400"></i>
+                    جرد الفروع الدوري 📊
+                </button>
+
                 <button onclick="switchTab('logs')" id="tab-logs" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="history" class="w-5 h-5"></i>
                     سجل العمليات التفصيلي
@@ -432,6 +437,10 @@
         <button onclick="switchTab('formatter')" id="mobile-tab-formatter" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="file-cog" class="w-5 h-5"></i>
             <span>تهيئة 🛠️</span>
+        </button>
+        <button onclick="switchTab('audits')" id="mobile-tab-audits" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+            <span>الجرد 📊</span>
         </button>
     </nav>
 
@@ -2039,67 +2048,151 @@
                     </div>
                 </div>
 
-                <!-- Statistics Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="space-y-1">
-                            <span class="text-xs text-slate-500 font-bold uppercase">معدل دقة الجرد المكتشف</span>
-                            <h4 id="analytics-accuracy" class="text-2xl font-black text-slate-800">98.5%</h4>
-                            <p class="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> مطابقة رائعة</p>
+                <!-- Sub-tabs navigation for Analytics -->
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-px">
+                    <button id="btn-analytics-tab-performance" onclick="switchAnalyticsSubTab('performance')" class="px-4 py-2.5 text-xs font-bold text-indigo-700 border-b-2 border-indigo-600 transition">
+                        📈 أداء المستودع وسرعة التحضير
+                    </button>
+                    <button id="btn-analytics-tab-replenish" onclick="switchAnalyticsSubTab('replenish')" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
+                        🔔 تنبيهات النواقص وإعادة التوزيع
+                    </button>
+                    <button id="btn-analytics-tab-deadstock" onclick="switchAnalyticsSubTab('deadstock')" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
+                        📉 تقرير البضاعة الراكدة
+                    </button>
+                </div>
+
+                <!-- Sub-tab 1: Performance (The existing statistics grid & charts) -->
+                <div id="analytics-sub-performance" class="space-y-6">
+                    <!-- Statistics Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">معدل دقة الجرد المكتشف</span>
+                                <h4 id="analytics-accuracy" class="text-2xl font-black text-slate-800">98.5%</h4>
+                                <p class="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> مطابقة رائعة</p>
+                            </div>
+                            <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+                                <i data-lucide="check-square" class="w-6 h-6"></i>
+                            </div>
                         </div>
-                        <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600">
-                            <i data-lucide="check-square" class="w-6 h-6"></i>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">الطلبات المجهزة اليوم</span>
+                                <h4 id="analytics-completed-today" class="text-2xl font-black text-slate-800">0</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">أوردرات مكتملة بالكامل</p>
+                            </div>
+                            <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                                <i data-lucide="package" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-xs text-slate-500 font-bold uppercase">إجمالي المرتجعات المسجلة</span>
+                                <h4 id="analytics-returns-count" class="text-2xl font-black text-rose-600">0</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">سجلات المرتجعات الفعالة</p>
+                            </div>
+                            <div class="bg-rose-50 p-3 rounded-xl text-rose-600">
+                                <i data-lucide="undo-2" class="w-6 h-6"></i>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="space-y-1">
-                            <span class="text-xs text-slate-500 font-bold uppercase">الطلبات المجهزة اليوم</span>
-                            <h4 id="analytics-completed-today" class="text-2xl font-black text-slate-800">0</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">أوردرات مكتملة بالكامل</p>
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div class="border-b border-slate-100 pb-3 mb-4">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="user-check" class="w-4 h-4 text-indigo-500"></i>
+                                    عدد الطلبات المنجزة لكل موظف تحضير
+                                </h4>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">مستخرج من سجلات تحضير الطلبات الفعلية</p>
+                            </div>
+                            <div class="relative h-64 w-full">
+                                <canvas id="pickerPerformanceChart"></canvas>
+                            </div>
                         </div>
-                        <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
-                            <i data-lucide="package" class="w-6 h-6"></i>
-                        </div>
-                    </div>
 
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="space-y-1">
-                            <span class="text-xs text-slate-500 font-bold uppercase">إجمالي المرتجعات المسجلة</span>
-                            <h4 id="analytics-returns-count" class="text-2xl font-black text-rose-600">0</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">سجلات المرتجعات الفعالة</p>
-                        </div>
-                        <div class="bg-rose-50 p-3 rounded-xl text-rose-600">
-                            <i data-lucide="undo-2" class="w-6 h-6"></i>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div class="border-b border-slate-100 pb-3 mb-4">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i>
+                                    توزيع الطلبات جغرافياً حسب المحافظة / المدينة
+                                </h4>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">أكثر المدن طلباً لمنتجات TREE</p>
+                            </div>
+                            <div class="relative h-64 w-full">
+                                <canvas id="cityDistributionChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div class="border-b border-slate-100 pb-3 mb-4">
-                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="user-check" class="w-4 h-4 text-indigo-500"></i>
-                                عدد الطلبات المنجزة لكل موظف تحضير
-                            </h4>
-                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">مستخرج من سجلات تحضير الطلبات الفعلية</p>
+                <!-- Sub-tab 2: Replenishment Alerts -->
+                <div id="analytics-sub-replenish" class="hidden space-y-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <h4 class="font-bold text-slate-800 text-sm">تنبيهات إعادة التعبئة والنواقص الفورية</h4>
+                            <span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">حد الأمان &lt; 3 قطع</span>
                         </div>
-                        <div class="relative h-64 w-full">
-                            <canvas id="pickerPerformanceChart"></canvas>
+                        <p class="text-xs text-slate-500">المنتجات التالية انخفض رصيدها في الفروع عن حد الأمان، بينما تتوفر كميات فائضة منها في مخزن أبيس الرئيسي أو الفروع الأخرى:</p>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-2.5 px-3">المنتج</th>
+                                        <th class="py-2.5 px-3">الفرع المتأثر</th>
+                                        <th class="py-2.5 px-3 text-center">الرصيد بالفرع</th>
+                                        <th class="py-2.5 px-3 text-center">الرصيد في أبيس</th>
+                                        <th class="py-2.5 px-3 text-center">الإجراء المقترح</th>
+                                        <th class="py-2.5 px-3 text-center">تنسيق</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="replenish-alerts-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <tr><td colspan="6" class="py-16 text-center text-slate-400">لا توجد نواقص نشطة حالياً. جميع الفروع ضمن حد الأمان!</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
 
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div class="border-b border-slate-100 pb-3 mb-4">
-                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i>
-                                توزيع الطلبات جغرافياً حسب المحافظة / المدينة
-                            </h4>
-                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">أكثر المدن طلباً لمنتجات TREE</p>
+                <!-- Sub-tab 3: Dead Stock Analyzer -->
+                <div id="analytics-sub-deadstock" class="hidden space-y-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">محلل ومكتشف البضاعة الراكدة</h4>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">يعرض المنتجات التي تمتلك رصيداً في الفروع ولم يتم تحريكها أو بيعها خلال الفترة المحددة.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-600 font-bold">حساب الركود لآخر:</span>
+                                <select id="deadstock-days-select" onchange="runDeadStockAnalyzer()" class="bg-slate-100 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-xl">
+                                    <option value="7">7 أيام</option>
+                                    <option value="15" selected>15 يوم</option>
+                                    <option value="30">30 يوم</option>
+                                    <option value="60">60 يوم</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="relative h-64 w-full">
-                            <canvas id="cityDistributionChart"></canvas>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-2.5 px-3">الباركود</th>
+                                        <th class="py-2.5 px-3">اسم المنتج/الموديل</th>
+                                        <th class="py-2.5 px-3">الفرع المتواجد به</th>
+                                        <th class="py-2.5 px-3 text-center">الكمية الراكدة</th>
+                                        <th class="py-2.5 px-3 text-center">آخر حركة مسجلة</th>
+                                        <th class="py-2.5 px-3 text-center">الإجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deadstock-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <tr><td colspan="6" class="py-16 text-center text-slate-400">يرجى تحديد المدة لبدء التحليل الدوري للبضاعة الراكدة.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -2276,6 +2369,227 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Store Inventory Audit Section -->
+            <section id="section-audits" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Header Card -->
+                <div class="bg-gradient-to-r from-amber-700 to-amber-900 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-extrabold tracking-tight">نظام جرد الفروع الدوري (Inventory Audit)</h3>
+                        <p class="text-sm text-amber-100 font-medium">أداة تسوية المخزون الفعلي ومطابقته بقاعدة البيانات للحد من العجز وضبط جودة الفروع.</p>
+                    </div>
+                    <div>
+                        <button id="btn-start-new-audit" onclick="showCreateAuditForm()" class="bg-white hover:bg-slate-100 text-amber-950 font-bold text-xs px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-lg">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-700"></i>
+                            بدء عملية جرد جديدة للفرع
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Create Audit Dialog (Hidden by default) -->
+                <div id="audit-creation-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-4">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i data-lucide="clipboard" class="w-4 h-4 text-amber-600"></i>
+                        إنشاء عملية جرد جديدة
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">اختر الفرع / المستودع المراد جرده:</label>
+                            <select id="audit-branch-select" class="w-full bg-slate-100 border border-slate-200 text-xs font-bold px-3 py-2.5 rounded-xl">
+                                <!-- Dynamic branch options -->
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="confirmCreateAudit()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md w-full md:w-auto">
+                                تأكيد وبدء الجرد الآن
+                            </button>
+                            <button onclick="hideCreateAuditForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-6 py-2.5 rounded-xl transition mr-2">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audits List View -->
+                <div id="audit-list-panel" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm">سجل عمليات الجرد والمطابقة</h4>
+                        <button onclick="loadInventoryAudits()" class="text-slate-500 hover:text-slate-800 transition">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                    <th class="py-3 px-4">رقم الجرد</th>
+                                    <th class="py-3 px-4">الفرع</th>
+                                    <th class="py-3 px-4">التاريخ</th>
+                                    <th class="py-3 px-4">المنشئ</th>
+                                    <th class="py-3 px-4 text-center">الحالة</th>
+                                    <th class="py-3 px-4 text-center">القطع الممسوحة</th>
+                                    <th class="py-3 px-4 text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-list-tbody" class="divide-y divide-slate-100 font-medium">
+                                <tr><td colspan="7" class="py-16 text-center text-slate-400">جاري تحميل سجل الجرد...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Active Audit Scanning Work Area (Hidden by default) -->
+                <div id="audit-work-panel" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Scan Barcode Panel -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5 h-fit">
+                        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i data-lucide="scan" class="w-4 h-4 text-amber-600"></i>
+                                واجهة المسح الضوئي
+                            </h4>
+                            <span id="audit-current-branch-badge" class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">فرع لوران</span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Scanning Input -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 block">امسح الباركود بالمسدس أو الكاميرا:</label>
+                                <div class="relative">
+                                    <input type="text" id="audit-barcode-input" onkeydown="handleAuditBarcodeKeydown(event)" placeholder="ادخل الباركود واضغط Enter..."
+                                           class="w-full pr-10 pl-4 py-2.5 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-xl text-xs font-medium transition">
+                                    <i data-lucide="scan-line" class="w-4 h-4 absolute right-3 top-3 text-slate-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Success alert flash -->
+                            <div id="audit-scan-flash" class="hidden bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-100 text-xs font-bold text-center">
+                                تم تسجيل القطعة بنجاح!
+                            </div>
+
+                            <!-- Manual Add/Lookup (Alternative) -->
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                                <span class="text-[10px] font-bold text-slate-500 block uppercase">بحث يدوي سريع بالاسم:</span>
+                                <div class="relative">
+                                    <input type="text" id="audit-search-product" onkeyup="searchProductInAuditCatalog(this.value)" placeholder="ابحث باسم الموديل..."
+                                           class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none">
+                                    <div id="audit-search-results" class="absolute w-full left-0 right-0 bg-white border border-slate-200 rounded-lg mt-1 max-h-48 overflow-y-auto hidden z-10 text-xs divide-y divide-slate-100 shadow-lg"></div>
+                                </div>
+                            </div>
+
+                            <!-- Finish & Save Actions -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <button onclick="saveAuditDraft()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2 border border-slate-300">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    حفظ الجرد كمسودة 💾
+                                </button>
+                                <button onclick="submitAuditForReview()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10">
+                                    <i data-lucide="check-check" class="w-4 h-4"></i>
+                                    تقديم الجرد وحساب الفروقات 🚀
+                                </button>
+                                <button onclick="closeAuditWorkspace()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2">
+                                    خروج من شاشة الجرد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scanned Items Table Panel -->
+                    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[450px]">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="list-checks" class="w-4 h-4 text-amber-600"></i>
+                                    القطع الممسوحة حالياً في هذا الجرد
+                                </span>
+                                <span id="audit-scanned-count-badge" class="bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-0.5 rounded-full">0 قطعة ممسوحة</span>
+                            </h4>
+
+                            <div class="overflow-y-auto max-h-[350px]">
+                                <table class="w-full text-right border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold sticky top-0">
+                                            <th class="py-2.5 px-3">الباركود</th>
+                                            <th class="py-2.5 px-3">اسم المنتج/الموديل</th>
+                                            <th class="py-2.5 px-3 text-center">الكمية الممسوحة</th>
+                                            <th class="py-2.5 px-3 text-center">إجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="audit-scanned-tbody" class="divide-y divide-slate-100">
+                                        <tr><td colspan="4" class="py-16 text-center text-slate-400">لا توجد قطع ممسوحة بعد. ابدأ بمسح الباركود.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discrepancy Reconciliation View Panel (Hidden by default) -->
+                <div id="audit-details-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h4 id="audit-details-title" class="text-base font-extrabold text-slate-800">تفاصيل وتقرير جرد فرع لوران</h4>
+                            <p id="audit-details-subtitle" class="text-xs text-slate-500 mt-1">رقم الجرد: 123 | أنشئ بواسطة: أحمد | الحالة: بانتظار الاعتماد</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="closeAuditDetails()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition">
+                                عودة للقائمة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Discrepancies statistics grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between text-emerald-800">
+                            <div>
+                                <span class="text-[10px] font-bold block uppercase">القطع المتطابقة تماماً</span>
+                                <h4 id="audit-stat-matched" class="text-2xl font-black mt-1">0</h4>
+                            </div>
+                            <i data-lucide="check-circle-2" class="w-8 h-8 opacity-40"></i>
+                        </div>
+                        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 flex items-center justify-between text-rose-800">
+                            <div>
+                                <span class="text-[10px] font-bold block uppercase">عجز (قطع مفقودة)</span>
+                                <h4 id="audit-stat-deficit" class="text-2xl font-black mt-1">0</h4>
+                            </div>
+                            <i data-lucide="minus-circle" class="w-8 h-8 opacity-40"></i>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between text-purple-800">
+                            <div>
+                                <span class="text-[10px] font-bold block uppercase">زيادة (قطع إضافية)</span>
+                                <h4 id="audit-stat-excess" class="text-2xl font-black mt-1">0</h4>
+                            </div>
+                            <i data-lucide="plus-circle" class="w-8 h-8 opacity-40"></i>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Selector inside Details -->
+                    <div class="flex items-center gap-2 border-b border-slate-200 pb-px">
+                        <button id="btn-audit-tab-discrepancies" onclick="switchAuditDetailsTab('discrepancies')" class="px-4 py-2.5 text-xs font-bold text-amber-700 border-b-2 border-amber-600">
+                            تقرير الفروقات (عجز وزيادة) 🚨
+                        </button>
+                        <button id="btn-audit-tab-all" onclick="switchAuditDetailsTab('all')" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
+                            جميع القطع الممسوحة 📋
+                        </button>
+                    </div>
+
+                    <!-- Discrepancies Table -->
+                    <div id="audit-details-table-container" class="overflow-x-auto max-h-[400px]">
+                        <!-- Dynamic details table -->
+                    </div>
+
+                    <!-- Reconcile Action Bar -->
+                    <div id="audit-reconciliation-action-bar" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-black text-slate-700 block">إجراء تسوية المخزون:</span>
+                            <span class="text-[10px] text-slate-500 block">عند الضغط على اعتماد، سيتم تعديل كميات الفرع في قاعدة البيانات فوراً لتطابق الواقع الفعلي الممسوح، وحفظ العملية في سجل الحركات.</span>
+                        </div>
+                        <button onclick="reconcileInventoryAudit()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-3 rounded-xl transition shadow-lg flex items-center gap-2">
+                            <i data-lucide="check-check" class="w-4 h-4"></i>
+                            اعتماد تسوية الرصيد وتحديث المخزن ⚙️
+                        </button>
                     </div>
                 </div>
             </section>
@@ -3223,7 +3537,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -3237,7 +3551,7 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders', 'audits'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
@@ -3245,7 +3559,7 @@
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else if (role === 'quality') {
-                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter'];
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits'];
                 roleLabel = '🔍 إدارة الجودة';
                 roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
             } else { // admin
@@ -4046,7 +4360,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -4089,7 +4403,8 @@
                 analytics: 'تحليلات الأداء ودقة المستودعات (WMS)',
                 'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)',
                 'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)',
-                formatter: 'أداة معالجة وتهيئة الملفات (File Formatter Tool)'
+                formatter: 'أداة معالجة وتهيئة الملفات (File Formatter Tool)',
+                audits: 'نظام جرد الفروع الدوري والمطابقة (Store Inventory Audit)'
             };
             const titleEl = document.getElementById('current-section-title');
             if (titleEl) titleEl.textContent = titles[tabId];
@@ -4115,6 +4430,8 @@
                 }, 100);
             } else if (tabId === 'analytics') {
                 renderWMSAnalytics();
+            } else if (tabId === 'audits') {
+                loadInventoryAudits();
             } else if (tabId === 'branch-returns') {
                 switchQCSubTab(activeQCSubTab);
             } else if (tabId === 'branch-orders') {
@@ -12097,6 +12414,945 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        // =========================================================================
+        // ================= WMS ADDITIONS: REPLENISH, DEADSTOCK & AUDITS ============
+        // =========================================================================
+
+        // 1. WMS Analytics Sub-tabs Navigation
+        let activeAnalyticsSubTab = 'performance';
+
+        function switchAnalyticsSubTab(subTabId) {
+            activeAnalyticsSubTab = subTabId;
+            const subTabs = ['performance', 'replenish', 'deadstock'];
+            
+            subTabs.forEach(tab => {
+                const btn = document.getElementById(`btn-analytics-tab-${tab}`);
+                const container = document.getElementById(`analytics-sub-${tab}`);
+                
+                if (tab === subTabId) {
+                    if (btn) {
+                        btn.className = "px-4 py-2.5 text-xs font-bold text-indigo-700 border-b-2 border-indigo-600 transition";
+                    }
+                    if (container) container.classList.remove('hidden');
+                } else {
+                    if (btn) {
+                        btn.className = "px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition";
+                    }
+                    if (container) container.classList.add('hidden');
+                }
+            });
+
+            if (subTabId === 'replenish') {
+                loadReplenishmentAlerts();
+            } else if (subTabId === 'deadstock') {
+                runDeadStockAnalyzer();
+            }
+        }
+
+        // 2. Load Replenishment Alerts
+        async function loadReplenishmentAlerts() {
+            const tbody = document.getElementById('replenish-alerts-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-slate-400 font-bold"><span class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block align-middle ml-2"></span> جاري فحص نواقص الفروع...</td></tr>`;
+
+            try {
+                const { data: catalog, error: catErr } = await supabaseClient.from('products_catalog').select('barcode, product_name');
+                if (catErr) throw catErr;
+
+                const { data: inventory, error: invErr } = await supabaseClient.from('warehouse_inventory').select('barcode, location_id, quantity');
+                if (invErr) throw invErr;
+
+                const catalogMap = {};
+                catalog.forEach(p => { catalogMap[p.barcode] = p.product_name; });
+
+                const inventoryByBarcode = {};
+                inventory.forEach(item => {
+                    if (!inventoryByBarcode[item.barcode]) {
+                        inventoryByBarcode[item.barcode] = {};
+                    }
+                    inventoryByBarcode[item.barcode][item.location_id] = item.quantity;
+                });
+
+                const alerts = [];
+                Object.entries(inventoryByBarcode).forEach(([barcode, branches]) => {
+                    const abeesQty = branches['مخزن ابيس'] || 0;
+                    const prodName = catalogMap[barcode] || 'منتج غير معروف';
+
+                    Object.entries(branches).forEach(([loc, qty]) => {
+                        if (loc !== 'مخزن ابيس' && qty < 3) {
+                            if (abeesQty > 0) {
+                                alerts.push({
+                                    barcode,
+                                    product_name: prodName,
+                                    location_id: loc,
+                                    branch_qty: qty,
+                                    abees_qty: abeesQty,
+                                    action_qty: Math.max(5, 10 - qty)
+                                });
+                            }
+                        }
+                    });
+                });
+
+                if (alerts.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-emerald-600 font-bold">✨ جميع الفروع مستقرة وضمن حد الأمان! لا توجد نواقص مطلوبة حالياً.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                alerts.forEach(alert => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                    tr.innerHTML = `
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-slate-800">${alert.product_name}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${alert.barcode}</div>
+                        </td>
+                        <td class="py-3 px-3 font-bold text-slate-700">${alert.location_id}</td>
+                        <td class="py-3 px-3 text-center text-rose-600 font-extrabold">${alert.branch_qty} قطع</td>
+                        <td class="py-3 px-3 text-center text-emerald-600 font-extrabold">${alert.abees_qty} قطع</td>
+                        <td class="py-3 px-3 text-center text-indigo-600 font-bold">تحويل ${alert.action_qty} قطع</td>
+                        <td class="py-3 px-3 text-center">
+                            <button onclick="prefillTransferRequest('${alert.barcode}', '${alert.location_id}', ${alert.action_qty})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-indigo-200">
+                                تنسيق سريع ⚡
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error loading replenishment alerts:", err);
+                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-rose-500 font-bold">حدث خطأ أثناء تحميل تنبيهات النواقص: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Prefill Transfer Request
+        function prefillTransferRequest(barcode, targetLocation, qty) {
+            switchTab('transfers');
+            
+            const srcSelect = document.getElementById('transfer-source-select');
+            const destSelect = document.getElementById('transfer-dest-select');
+            const barcodeInput = document.getElementById('transfer-barcode-input');
+            const qtyInput = document.getElementById('transfer-qty-input');
+
+            if (srcSelect) srcSelect.value = 'مخزن ابيس';
+            if (destSelect) destSelect.value = targetLocation;
+            if (barcodeInput) {
+                barcodeInput.value = barcode;
+                const event = new Event('input', { bubbles: true });
+                barcodeInput.dispatchEvent(event);
+            }
+            if (qtyInput) qtyInput.value = qty;
+
+            logToConsole('system', `تم تعبئة نموذج التحويل تلقائياً لتهيئة النواقص لفرع ${targetLocation}`);
+        }
+
+        // 3. Run Dead Stock Analyzer
+        async function runDeadStockAnalyzer() {
+            const tbody = document.getElementById('deadstock-tbody');
+            const daysSelect = document.getElementById('deadstock-days-select');
+            if (!tbody || !daysSelect) return;
+
+            const days = parseInt(daysSelect.value) || 15;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-slate-400 font-bold"><span class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block align-middle ml-2"></span> جاري تتبع وفحص البضاعة الراكدة...</td></tr>`;
+
+            try {
+                const { data: catalog } = await supabaseClient.from('products_catalog').select('barcode, product_name');
+                const { data: inventory } = await supabaseClient.from('warehouse_inventory').select('barcode, location_id, quantity').gt('quantity', 0);
+
+                if (!inventory || inventory.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-slate-400 font-bold">لا يوجد مخزون نشط في الفروع حالياً.</td></tr>`;
+                    return;
+                }
+
+                const catalogMap = {};
+                catalog.forEach(p => { catalogMap[p.barcode] = p.product_name; });
+
+                const cutOffDate = new Date();
+                cutOffDate.setDate(cutOffDate.getDate() - days);
+                const cutOffIso = cutOffDate.toISOString();
+
+                const { data: logs, error: logsErr } = await supabaseClient
+                    .from('activity_logs')
+                    .select('details, created_at')
+                    .gte('created_at', cutOffIso);
+
+                if (logsErr) throw logsErr;
+
+                const activeBarcodes = new Set();
+                logs.forEach(log => {
+                    const text = (log.details || '').toString();
+                    const matches = text.match(/\b\d{13}\b/g);
+                    if (matches) {
+                        matches.forEach(bc => activeBarcodes.add(bc));
+                    }
+                });
+
+                const deadstockItems = inventory.filter(item => {
+                    if (item.location_id === 'مخزن ابيس') return false;
+                    return !activeBarcodes.has(item.barcode);
+                });
+
+                if (deadstockItems.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-emerald-600 font-bold">🎉 لا توجد بضاعة راكدة! جميع البضائع شهدت حركات خلال آخر ${days} يوماً.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                deadstockItems.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 font-mono font-bold text-slate-700">${item.barcode}</td>
+                        <td class="py-3 px-3 font-bold text-slate-800">${catalogMap[item.barcode] || 'منتج غير معروف'}</td>
+                        <td class="py-3 px-3 text-slate-700 font-bold">${item.location_id}</td>
+                        <td class="py-3 px-3 text-center text-indigo-600 font-extrabold">${item.quantity} قطع</td>
+                        <td class="py-3 px-3 text-center text-slate-400 font-medium">لا توجد حركة مسجلة</td>
+                        <td class="py-3 px-3 text-center">
+                            <button onclick="prefillTransferRequest('${item.barcode}', 'مخزن ابيس', ${item.quantity})" class="bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-amber-200">
+                                سحب لأبيس 🚚
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error running dead stock analyzer:", err);
+                tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-rose-500 font-bold">حدث خطأ أثناء فحص البضاعة الراكدة: ${err.message}</td></tr>`;
+            }
+        }
+
+
+        // =========================================================================
+        // ================= 4. STORE INVENTORY AUDIT LIFE-CYCLE ===================
+        // =========================================================================
+        let currentAudit = null;
+        let currentScannedItems = [];
+        let activeAuditDetails = null;
+        let activeDetailsTab = 'discrepancies';
+
+        // Load Audits List
+        async function loadInventoryAudits() {
+            const tbody = document.getElementById('audit-list-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-slate-400 font-bold"><span class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block align-middle ml-2"></span> جاري تحميل سجلات الجرد...</td></tr>`;
+
+            try {
+                let query = supabaseClient.from('inventory_audits').select('*').order('created_at', { ascending: false });
+                
+                if (currentUser && currentUser.role === 'branch') {
+                    query = query.eq('location_id', currentUser.branch_id);
+                }
+
+                const { data: audits, error } = await query;
+                if (error) {
+                    if (error.message && error.message.includes('Could not find the table')) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="py-16 text-center text-rose-600 font-bold space-y-4">
+                                    <div class="text-sm">⚠️ جدول جرد الفروع (inventory_audits) غير موجود حالياً في قاعدة البيانات.</div>
+                                    <div class="text-xs text-slate-500 max-w-xl mx-auto leading-relaxed font-normal">
+                                        يرجى الانتقال للوحة التحكم في Supabase وتشغيل كود الـ SQL المرفق في خطة العمل لإنشاء الجدول وتفعيل السياسات الأمنية الخاصة به قبل البدء.
+                                    </div>
+                                </td>
+                            </tr>`;
+                        return;
+                    }
+                    throw error;
+                }
+
+                if (!audits || audits.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-slate-400 font-bold">لا يوجد سجلات جرد سابقة للفرع.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                audits.forEach(audit => {
+                    const dateStr = new Date(audit.created_at).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    
+                    let totalItems = 0;
+                    if (Array.isArray(audit.scanned_items)) {
+                        totalItems = audit.scanned_items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                    }
+
+                    let statusHtml = '';
+                    if (audit.status === 'pending_scan') {
+                        statusHtml = `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">قيد المسح 🔍</span>`;
+                    } else if (audit.status === 'submitted') {
+                        statusHtml = `<span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">تم التقديم - بانتظار الاعتماد ⏳</span>`;
+                    } else if (audit.status === 'reconciled') {
+                        statusHtml = `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">تمت التسوية بنجاح ✅</span>`;
+                    }
+
+                    let actionHtml = '';
+                    if (audit.status === 'pending_scan') {
+                        actionHtml = `
+                            <button onclick="enterAuditWorkspace('${audit.id}')" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition ml-1">
+                                استكمال المسح 📲
+                            </button>
+                        `;
+                    } else {
+                        actionHtml = `
+                            <button onclick="viewAuditDetails('${audit.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition ml-1">
+                                مراجعة الفروقات 🚨
+                            </button>
+                        `;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-600">${audit.id.slice(0, 8)}...</td>
+                        <td class="py-3.5 px-4 font-bold text-slate-800">${audit.location_id}</td>
+                        <td class="py-3.5 px-4 text-slate-500">${dateStr}</td>
+                        <td class="py-3.5 px-4 text-slate-600">${audit.created_by || 'موظف'}</td>
+                        <td class="py-3.5 px-4 text-center">${statusHtml}</td>
+                        <td class="py-3.5 px-4 text-center font-extrabold text-slate-700">${totalItems} قطعة</td>
+                        <td class="py-3.5 px-4 text-center">${actionHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error loading inventory audits:", err);
+                tbody.innerHTML = `<tr><td colspan="7" class="py-16 text-center text-rose-500 font-bold">حدث خطأ أثناء تحميل سجل الجرد: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Show Create Audit Form
+        function showCreateAuditForm() {
+            const panel = document.getElementById('audit-creation-panel');
+            const select = document.getElementById('audit-branch-select');
+            if (!panel || !select) return;
+
+            select.innerHTML = '';
+            
+            if (currentUser && currentUser.role === 'branch') {
+                const opt = document.createElement('option');
+                opt.value = currentUser.branch_id;
+                opt.textContent = currentUser.branch_id;
+                select.appendChild(opt);
+            } else {
+                const branches = ['مخزن ابيس', 'فرع سموحة', 'فرع لوران', 'فرع السيوف', 'فرع المنشية', 'فرع كفر عبده', 'فرع عباس العقاد'];
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    select.appendChild(opt);
+                });
+            }
+
+            panel.classList.remove('hidden');
+        }
+
+        function hideCreateAuditForm() {
+            const panel = document.getElementById('audit-creation-panel');
+            if (panel) panel.classList.add('hidden');
+        }
+
+        // Confirm & Create Audit in Supabase
+        async function confirmCreateAudit() {
+            const branchSelect = document.getElementById('audit-branch-select');
+            if (!branchSelect) return;
+
+            const selectedBranch = branchSelect.value;
+            const userName = (currentUser && currentUser.username) ? currentUser.username : 'موظف';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('inventory_audits')
+                    .insert([{
+                        location_id: selectedBranch,
+                        status: 'pending_scan',
+                        scanned_items: [],
+                        discrepancies: {},
+                        created_by: userName
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                hideCreateAuditForm();
+                await loadInventoryAudits();
+
+                if (data && data[0]) {
+                    enterAuditWorkspace(data[0].id);
+                }
+            } catch (err) {
+                console.error("Error creating audit:", err);
+                alert("حدث خطأ أثناء بدء الجرد: " + err.message);
+            }
+        }
+
+        // Enter Audit scan workspace
+        async function enterAuditWorkspace(auditId) {
+            try {
+                const { data: audit, error } = await supabaseClient
+                    .from('inventory_audits')
+                    .select('*')
+                    .eq('id', auditId)
+                    .single();
+
+                if (error) throw error;
+
+                currentAudit = audit;
+                currentScannedItems = Array.isArray(audit.scanned_items) ? audit.scanned_items : [];
+
+                document.getElementById('audit-list-panel').classList.add('hidden');
+                document.getElementById('audit-creation-panel').classList.add('hidden');
+                document.getElementById('audit-details-panel').classList.add('hidden');
+                
+                const workPanel = document.getElementById('audit-work-panel');
+                workPanel.classList.remove('hidden');
+
+                document.getElementById('audit-current-branch-badge').textContent = `الفرع النشط: ${audit.location_id}`;
+                document.getElementById('audit-scanned-count-badge').textContent = `${currentScannedItems.reduce((s, i) => s + i.quantity, 0)} قطعة ممسوحة`;
+
+                renderScannedItemsTable();
+                
+                setTimeout(() => {
+                    const input = document.getElementById('audit-barcode-input');
+                    if (input) input.focus();
+                }, 100);
+
+            } catch (err) {
+                console.error("Error entering audit workspace:", err);
+                alert("تعذر فتح شاشة الجرد: " + err.message);
+            }
+        }
+
+        // Close workspace
+        function closeAuditWorkspace() {
+            currentAudit = null;
+            currentScannedItems = [];
+            document.getElementById('audit-work-panel').classList.add('hidden');
+            document.getElementById('audit-list-panel').classList.remove('hidden');
+            loadInventoryAudits();
+        }
+
+        // Handle Scan Keydown
+        async function handleAuditBarcodeKeydown(e) {
+            if (e.key === 'Enter') {
+                const input = document.getElementById('audit-barcode-input');
+                const barcode = cleanBarcode(input.value);
+                input.value = '';
+
+                if (!barcode) return;
+
+                flashAuditScanAlert();
+                await addBarcodeToAuditList(barcode);
+            }
+        }
+
+        function flashAuditScanAlert() {
+            const flash = document.getElementById('audit-scan-flash');
+            if (flash) {
+                flash.classList.remove('hidden');
+                setTimeout(() => {
+                    flash.classList.add('hidden');
+                }, 1000);
+            }
+        }
+
+        // Add Barcode to active audit scanning memory
+        async function addBarcodeToAuditList(barcode) {
+            const existing = currentScannedItems.find(item => item.barcode === barcode);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                currentScannedItems.push({
+                    barcode: barcode,
+                    quantity: 1
+                });
+            }
+
+            renderScannedItemsTable();
+            debouncedSaveAuditDraft();
+        }
+
+        // Debounce setup for auto saving drafts
+        let autoSaveTimer = null;
+        function debouncedSaveAuditDraft() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                saveAuditDraft(true);
+            }, 2000);
+        }
+
+        // Save Draft to database
+        async function saveAuditDraft(silent = false) {
+            if (!currentAudit) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({
+                        scanned_items: currentScannedItems
+                    })
+                    .eq('id', currentAudit.id);
+
+                if (error) throw error;
+
+                if (!silent) {
+                    alert("تم حفظ مسودة الجرد بنجاح!");
+                }
+            } catch (err) {
+                console.error("Error saving audit draft:", err);
+                if (!silent) alert("فشل حفظ المسودة: " + err.message);
+            }
+        }
+
+        // Render Active Scanned Items Table
+        async function renderScannedItemsTable() {
+            const tbody = document.getElementById('audit-scanned-tbody');
+            if (!tbody) return;
+
+            let catalogMap = {};
+            try {
+                const { data } = await supabaseClient.from('products_catalog').select('barcode, product_name');
+                if (data) {
+                    data.forEach(p => { catalogMap[p.barcode] = p.product_name; });
+                }
+            } catch (e) {
+                console.error("Error looking up catalog names:", e);
+            }
+
+            if (currentScannedItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-16 text-center text-slate-400">لا توجد قطع ممسوحة بعد. ابدأ بمسح الباركود لتسجيل القطع.</td></tr>`;
+                document.getElementById('audit-scanned-count-badge').textContent = `0 قطعة ممسوحة`;
+                return;
+            }
+
+            const totalCount = currentScannedItems.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('audit-scanned-count-badge').textContent = `${totalCount} قطعة ممسوحة`;
+
+            tbody.innerHTML = '';
+            [...currentScannedItems].reverse().forEach(item => {
+                const name = catalogMap[item.barcode] || 'منتج غير مسجل بالكتالوج';
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
+                    <td class="py-3 px-3 font-bold text-slate-800">${name}</td>
+                    <td class="py-3 px-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="adjustAuditItemQty('${item.barcode}', -1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 font-extrabold text-slate-600 text-xs">-</button>
+                            <span class="font-extrabold text-slate-800 min-w-[30px]">${item.quantity}</span>
+                            <button onclick="adjustAuditItemQty('${item.barcode}', 1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 font-extrabold text-slate-600 text-xs">+</button>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <button onclick="removeAuditItem('${item.barcode}')" class="text-rose-500 hover:text-rose-700 font-bold text-[10px]">حذف 🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Adjust quantity in scanned list manually
+        function adjustAuditItemQty(barcode, change) {
+            const item = currentScannedItems.find(i => i.barcode === barcode);
+            if (item) {
+                item.quantity = Math.max(1, item.quantity + change);
+                renderScannedItemsTable();
+                debouncedSaveAuditDraft();
+            }
+        }
+
+        // Delete from scanned list
+        function removeAuditItem(barcode) {
+            currentScannedItems = currentScannedItems.filter(i => i.barcode !== barcode);
+            renderScannedItemsTable();
+            debouncedSaveAuditDraft();
+        }
+
+        // Manual search in audit workspace
+        async function searchProductInAuditCatalog(query) {
+            const resultsDiv = document.getElementById('audit-search-results');
+            if (!resultsDiv) return;
+
+            const q = query.trim().toLowerCase();
+            if (q.length < 2) {
+                resultsDiv.innerHTML = '';
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const { data } = await supabaseClient
+                    .from('products_catalog')
+                    .select('barcode, product_name')
+                    .ilike('product_name', `%${q}%`)
+                    .limit(5);
+
+                if (!data || data.length === 0) {
+                    resultsDiv.innerHTML = `<div class="p-2 text-slate-400 italic">لا توجد نتائج مطابقة</div>`;
+                    resultsDiv.classList.remove('hidden');
+                    return;
+                }
+
+                resultsDiv.innerHTML = '';
+                data.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = "p-2.5 hover:bg-slate-50 cursor-pointer font-medium text-slate-800 transition flex items-center justify-between";
+                    row.innerHTML = `
+                        <span>${p.product_name}</span>
+                        <span class="font-mono text-[10px] text-slate-400">${p.barcode}</span>
+                    `;
+                    row.onclick = () => {
+                        addBarcodeToAuditList(p.barcode);
+                        resultsDiv.innerHTML = '';
+                        resultsDiv.classList.add('hidden');
+                        document.getElementById('audit-search-product').value = '';
+                    };
+                    resultsDiv.appendChild(row);
+                });
+                resultsDiv.classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Error searching products in audit:", err);
+            }
+        }
+
+        // Calculate discrepancy report and Submit Audit
+        async function submitAuditForReview() {
+            if (!currentAudit) return;
+            if (currentScannedItems.length === 0) {
+                alert("عفواً، لا يمكن تقديم تقرير جرد فارغ! يرجى مسح القطع أولاً.");
+                return;
+            }
+
+            const confirmSubmit = confirm("هل أنت متأكد من تقديم تقرير الجرد وحساب الفروقات؟ لن تتمكن من التعديل عليه لاحقاً.");
+            if (!confirmSubmit) return;
+
+            try {
+                const { data: currentInv, error: invErr } = await supabaseClient
+                    .from('warehouse_inventory')
+                    .select('barcode, quantity')
+                    .eq('location_id', currentAudit.location_id);
+
+                if (invErr) throw invErr;
+
+                const systemInvMap = {};
+                if (currentInv) {
+                    currentInv.forEach(item => { systemInvMap[item.barcode] = item.quantity; });
+                }
+
+                const scannedMap = {};
+                currentScannedItems.forEach(item => { scannedMap[item.barcode] = item.quantity; });
+
+                const allBarcodes = new Set([
+                    ...Object.keys(systemInvMap),
+                    ...Object.keys(scannedMap)
+                ]);
+
+                let matchedCount = 0;
+                const deficit = [];
+                const excess = [];
+
+                allBarcodes.forEach(bc => {
+                    const sysQty = systemInvMap[bc] || 0;
+                    const scanQty = scannedMap[bc] || 0;
+                    const diff = scanQty - sysQty;
+
+                    if (diff === 0) {
+                        matchedCount++;
+                    } else if (diff < 0) {
+                        deficit.push({
+                            barcode: bc,
+                            system_qty: sysQty,
+                            scanned_qty: scanQty,
+                            discrepancy: diff
+                        });
+                    } else {
+                        excess.push({
+                            barcode: bc,
+                            system_qty: sysQty,
+                            scanned_qty: scanQty,
+                            discrepancy: diff
+                        });
+                    }
+                });
+
+                const discrepancies = {
+                    matched_count: matchedCount,
+                    deficit: deficit,
+                    excess: excess
+                };
+
+                const { error: updateErr } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({
+                        status: 'submitted',
+                        scanned_items: currentScannedItems,
+                        discrepancies: discrepancies,
+                        submitted_at: new Date().toISOString()
+                    })
+                    .eq('id', currentAudit.id);
+
+                if (updateErr) throw updateErr;
+
+                await addActivityLog("تقديم جرد فرع", `تم الانتهاء وتقديم الجرد الدوري لفرع ${currentAudit.location_id} (المطابق: ${matchedCount}، العجز: ${deficit.length}، الزيادة: ${excess.length}).`);
+
+                alert("تم حساب الفروقات وتقديم تقرير الجرد بنجاح! هو الآن بانتظار تسوية الإدارة.");
+                closeAuditWorkspace();
+
+            } catch (err) {
+                console.error("Error submitting audit:", err);
+                alert("حدث خطأ أثناء تقديم الجرد: " + err.message);
+            }
+        }
+
+        // View Discrepancy Details (Admin/Branch)
+        async function viewAuditDetails(auditId) {
+            try {
+                const { data: audit, error } = await supabaseClient
+                    .from('inventory_audits')
+                    .select('*')
+                    .eq('id', auditId)
+                    .single();
+
+                if (error) throw error;
+
+                activeAuditDetails = audit;
+                
+                document.getElementById('audit-list-panel').classList.add('hidden');
+                document.getElementById('audit-creation-panel').classList.add('hidden');
+                
+                const detailsPanel = document.getElementById('audit-details-panel');
+                detailsPanel.classList.remove('hidden');
+
+                const dateStr = new Date(audit.submitted_at || audit.created_at).toLocaleString('ar-EG');
+                document.getElementById('audit-details-title').textContent = `تقرير جرد ومطابقة: ${audit.location_id}`;
+                document.getElementById('audit-details-subtitle').textContent = `رقم الجرد: ${audit.id.slice(0, 8)}... | تاريخ التقديم: ${dateStr} | المنشئ: ${audit.created_by || 'غير معروف'}`;
+
+                const disc = audit.discrepancies || {};
+                document.getElementById('audit-stat-matched').textContent = (disc.matched_count || 0).toLocaleString('ar-EG');
+                document.getElementById('audit-stat-deficit').textContent = (disc.deficit ? disc.deficit.length : 0).toLocaleString('ar-EG');
+                document.getElementById('audit-stat-excess').textContent = (disc.excess ? disc.excess.length : 0).toLocaleString('ar-EG');
+
+                const actionBar = document.getElementById('audit-reconciliation-action-bar');
+                if (currentUser && currentUser.role === 'admin' && audit.status === 'submitted') {
+                    actionBar.classList.remove('hidden');
+                } else {
+                    actionBar.classList.add('hidden');
+                }
+
+                switchAuditDetailsTab('discrepancies');
+
+            } catch (err) {
+                console.error("Error loading audit details:", err);
+                alert("تعذر تحميل تفاصيل الجرد: " + err.message);
+            }
+        }
+
+        function closeAuditDetails() {
+            activeAuditDetails = null;
+            document.getElementById('audit-details-panel').classList.add('hidden');
+            document.getElementById('audit-list-panel').classList.remove('hidden');
+            loadInventoryAudits();
+        }
+
+        // Switch Tabs inside Discrepancies Details
+        function switchAuditDetailsTab(tabId) {
+            activeDetailsTab = tabId;
+            const btnDisc = document.getElementById('btn-audit-tab-discrepancies');
+            const btnAll = document.getElementById('btn-audit-tab-all');
+
+            if (tabId === 'discrepancies') {
+                if (btnDisc) btnDisc.className = "px-4 py-2.5 text-xs font-bold text-amber-700 border-b-2 border-amber-600";
+                if (btnAll) btnAll.className = "px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition";
+                renderAuditDiscrepanciesTable();
+            } else {
+                if (btnDisc) btnDisc.className = "px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition";
+                if (btnAll) btnAll.className = "px-4 py-2.5 text-xs font-bold text-amber-700 border-b-2 border-amber-600";
+                renderAuditAllScannedTable();
+            }
+        }
+
+        // Render Discrepancies Table
+        async function renderAuditDiscrepanciesTable() {
+            const container = document.getElementById('audit-details-table-container');
+            if (!container || !activeAuditDetails) return;
+
+            const disc = activeAuditDetails.discrepancies || {};
+            const deficits = disc.deficit || [];
+            const excesses = disc.excess || [];
+
+            if (deficits.length === 0 && excesses.length === 0) {
+                container.innerHTML = `<div class="py-16 text-center text-emerald-600 font-bold text-sm">✨ جرد ممتاز! رصيد الواقع الفعلي مطابق تماماً للرصيد المسجل بالسيستم بنسبة 100%.</div>`;
+                return;
+            }
+
+            let catalogMap = {};
+            try {
+                const { data } = await supabaseClient.from('products_catalog').select('barcode, product_name');
+                if (data) data.forEach(p => { catalogMap[p.barcode] = p.product_name; });
+            } catch (e) { console.error(e); }
+
+            let html = `
+                <table class="w-full text-right border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                            <th class="py-2.5 px-3">الباركود</th>
+                            <th class="py-2.5 px-3">اسم المنتج/الموديل</th>
+                            <th class="py-2.5 px-3 text-center">الرصيد بالسيستم</th>
+                            <th class="py-2.5 px-3 text-center">الواقع الممسوح</th>
+                            <th class="py-2.5 px-3 text-center">الفروقات</th>
+                            <th class="py-2.5 px-3 text-center">نوع الفرق</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+            `;
+
+            deficits.forEach(item => {
+                const name = catalogMap[item.barcode] || 'منتج غير معروف';
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
+                        <td class="py-3 px-3 text-slate-800 font-bold">${name}</td>
+                        <td class="py-3 px-3 text-center text-slate-600">${item.system_qty}</td>
+                        <td class="py-3 px-3 text-center text-slate-700">${item.scanned_qty}</td>
+                        <td class="py-3 px-3 text-center text-rose-600 font-extrabold">${item.discrepancy}</td>
+                        <td class="py-3 px-3 text-center"><span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[10px]">عجز 🚨</span></td>
+                    </tr>
+                `;
+            });
+
+            excesses.forEach(item => {
+                const name = catalogMap[item.barcode] || 'منتج غير معروف';
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
+                        <td class="py-3 px-3 text-slate-800 font-bold">${name}</td>
+                        <td class="py-3 px-3 text-center text-slate-600">${item.system_qty}</td>
+                        <td class="py-3 px-3 text-center text-slate-700">${item.scanned_qty}</td>
+                        <td class="py-3 px-3 text-center text-purple-600 font-extrabold">+${item.discrepancy}</td>
+                        <td class="py-3 px-3 text-center"><span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">زيادة ⚠️</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // Render All Scanned Items details
+        async function renderAuditAllScannedTable() {
+            const container = document.getElementById('audit-details-table-container');
+            if (!container || !activeAuditDetails) return;
+
+            const scanned = activeAuditDetails.scanned_items || [];
+            if (scanned.length === 0) {
+                container.innerHTML = `<div class="py-16 text-center text-slate-400 font-medium">لم يتم مسح أي قطع في هذا الجرد.</div>`;
+                return;
+            }
+
+            let catalogMap = {};
+            try {
+                const { data } = await supabaseClient.from('products_catalog').select('barcode, product_name');
+                if (data) data.forEach(p => { catalogMap[p.barcode] = p.product_name; });
+            } catch (e) { console.error(e); }
+
+            let html = `
+                <table class="w-full text-right border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                            <th class="py-2.5 px-3">الباركود</th>
+                            <th class="py-2.5 px-3">اسم المنتج/الموديل</th>
+                            <th class="py-2.5 px-3 text-center">الكمية الممسوحة</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+            `;
+
+            scanned.forEach(item => {
+                const name = catalogMap[item.barcode] || 'منتج غير معروف';
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
+                        <td class="py-3 px-3 text-slate-800 font-bold">${name}</td>
+                        <td class="py-3 px-3 text-center text-indigo-600 font-extrabold">${item.quantity} قطع</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // Admin Reconcile inventory audit
+        async function reconcileInventoryAudit() {
+            if (!activeAuditDetails) return;
+
+            const confirmReconciliation = confirm("تحذير: هل أنت متأكد من تسوية الجرد؟ سيقوم السيستم بتعديل المخزون الفعلي في الفروع ليطابق الواقع تماماً بشكل دائم.");
+            if (!confirmReconciliation) return;
+
+            const adminName = (currentUser && currentUser.username) ? currentUser.username : 'مسؤول النظام';
+
+            try {
+                const branch = activeAuditDetails.location_id;
+                const scannedItems = activeAuditDetails.scanned_items || [];
+
+                const { data: currentBranchInv } = await supabaseClient
+                    .from('warehouse_inventory')
+                    .select('barcode')
+                    .eq('location_id', branch);
+
+                const dbBarcodes = currentBranchInv ? currentBranchInv.map(i => i.barcode) : [];
+                const scannedBarcodes = scannedItems.map(i => i.barcode);
+
+                const missingBarcodes = dbBarcodes.filter(bc => !scannedBarcodes.includes(bc));
+
+                for (const item of scannedItems) {
+                    const { error } = await supabaseClient
+                        .from('warehouse_inventory')
+                        .upsert([{
+                            barcode: item.barcode,
+                            location_id: branch,
+                            quantity: item.quantity
+                        }], { onConflict: 'barcode, location_id' });
+
+                    if (error) throw error;
+                }
+
+                for (const bc of missingBarcodes) {
+                    const { error } = await supabaseClient
+                        .from('warehouse_inventory')
+                        .update({ quantity: 0 })
+                        .match({ barcode: bc, location_id: branch });
+
+                    if (error) throw error;
+                }
+
+                const { error: statusErr } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({
+                        status: 'reconciled',
+                        reconciled_by: adminName,
+                        reconciled_at: new Date().toISOString()
+                    })
+                    .eq('id', activeAuditDetails.id);
+
+                if (statusErr) throw statusErr;
+
+                await addActivityLog("تسوية جرد فرع", `تم تسوية وإقرار جرد فرع ${branch} بواسطة ${adminName} وتعديل قاعدة البيانات بالكامل.`);
+
+                alert(`تم تسوية جرد فرع ${branch} بالكامل وتعديل الأرصدة الفعلية بنجاح!`);
+                closeAuditDetails();
+
+            } catch (err) {
+                console.error("Error reconciling inventory audit:", err);
+                alert("حدث خطأ أثناء التسوية: " + err.message);
+            }
+        }
+
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
     </script>
     <!-- Shipping Carrier Modal -->
     <div id="shipping-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
