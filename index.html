@@ -613,7 +613,7 @@
                     </div>
 
                     <!-- Step 1: Select Product -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <!-- Barcode search input -->
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700">امسح أو اكتب باركود المنتج الوارد:</label>
@@ -639,11 +639,22 @@
                             </div>
                         </div>
 
+                        <!-- Distribution Strategy -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">استراتيجية التوزيع التلقائي:</label>
+                            <select id="dist-strategy-select" onchange="autoDistributeSmart()"
+                                    class="w-full bg-slate-100 border border-slate-200 text-xs font-bold px-3.5 py-2.5 rounded-xl outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+                                <option value="equal">توزيع متساوي بالتساوي</option>
+                                <option value="safety_first">أولوية الأمان (تغذية النواقص أولاً)</option>
+                                <option value="sales_ratio">حجم المبيعات (الأكثر مبيعاً يأخذ أكثر)</option>
+                            </select>
+                        </div>
+
                         <!-- Auto distribute button -->
                         <div class="flex items-end">
-                            <button onclick="autoDistributeEqually()" class="w-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                            <button onclick="autoDistributeSmart()" class="w-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center justify-center gap-2">
                                 <i data-lucide="sparkles" class="w-4 h-4"></i>
-                                توزيع تلقائي بالتساوي 🪄
+                                توزيع تلقائي ذكي 🪄
                             </button>
                         </div>
                     </div>
@@ -3416,30 +3427,160 @@
             }
         }
 
-        function autoDistributeEqually() {
+        async function autoDistributeSmart() {
             const totalInput = document.getElementById('dist-total-qty');
             const totalVal = Number(totalInput.value) || 0;
 
             if (totalVal <= 0) {
-                alert("يرجى إدخال إجمالي الكمية الواردة أولاً.");
+                alert("يرجى إدخال إجمالي كمية صالحة أكبر من الصفر أولاً.");
                 return;
             }
 
+            const strategy = document.getElementById('dist-strategy-select').value;
             const inputs = document.querySelectorAll('.dist-branch-qty-input');
-            if (inputs.length === 0) return;
+            const branchesCount = inputs.length;
+            if (branchesCount === 0) return;
 
-            const share = Math.floor(totalVal / inputs.length);
-            const remainder = totalVal % inputs.length;
+            // Show loading state on the button
+            const btn = document.querySelector('[onclick="autoDistributeSmart()"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span> جاري التحليل...';
+            }
 
-            inputs.forEach((input, index) => {
-                let allocated = share;
-                if (index < remainder) {
-                    allocated += 1;
+            try {
+                // Gather branch inputs and initialize values to 0
+                const branchesList = [];
+                inputs.forEach(input => {
+                    const bName = input.getAttribute('data-branch');
+                    branchesList.push({ name: bName, inputEl: input });
+                    input.value = 0;
+                });
+
+                if (strategy === 'equal') {
+                    const share = Math.floor(totalVal / branchesCount);
+                    const remainder = totalVal % branchesCount;
+                    branchesList.forEach((item, index) => {
+                        let allocated = share;
+                        if (index < remainder) {
+                            allocated += 1;
+                        }
+                        item.inputEl.value = allocated;
+                    });
+                } else if (strategy === 'safety_first') {
+                    // Safety threshold is dynamically set in the page input
+                    const thresholdInput = document.getElementById('low-stock-threshold-input');
+                    const threshold = thresholdInput ? (parseInt(thresholdInput.value) || 5) : 5;
+                    let remaining = totalVal;
+
+                    // 1. Identify current quantities in branches for the scanned product
+                    if (selectedDistProduct) {
+                        const branchCurrentStocks = {};
+                        branchesList.forEach(item => {
+                            const invItem = liveInventoryData.find(inv => inv.barcode === selectedDistProduct.barcode && inv.location_id === item.name);
+                            branchCurrentStocks[item.name] = invItem ? Number(invItem.quantity || 0) : 0;
+                        });
+
+                        // 2. Distribute to branches below the safety threshold
+                        const needyBranches = branchesList.filter(item => branchCurrentStocks[item.name] < threshold);
+                        needyBranches.forEach(item => {
+                            const diff = threshold - branchCurrentStocks[item.name];
+                            const allocated = Math.min(diff, remaining);
+                            item.inputEl.value = allocated;
+                            remaining -= allocated;
+                        });
+
+                        // 3. Split the rest equally among all branches if any remains
+                        if (remaining > 0) {
+                            const share = Math.floor(remaining / branchesCount);
+                            const remainder = remaining % branchesCount;
+                            branchesList.forEach((item, index) => {
+                                const val = parseInt(item.inputEl.value) || 0;
+                                let allocated = share;
+                                if (index < remainder) {
+                                    allocated += 1;
+                                }
+                                item.inputEl.value = val + allocated;
+                            });
+                        }
+                    } else {
+                        // Fallback to equal split if no product is selected yet
+                        const share = Math.floor(totalVal / branchesCount);
+                        const remainder = totalVal % branchesCount;
+                        branchesList.forEach((item, index) => {
+                            let allocated = share;
+                            if (index < remainder) {
+                                allocated += 1;
+                            }
+                            item.inputEl.value = allocated;
+                        });
+                    }
+                } else if (strategy === 'sales_ratio') {
+                    // Proportional to completed orders count
+                    let weights = {};
+                    branchesList.forEach(item => { weights[item.name] = 1; }); // default base weight of 1
+
+                    try {
+                        const { data: completedOrders, error: fetchErr } = await supabaseClient
+                            .from('branch_prep_orders')
+                            .select('branch_name, items')
+                            .eq('status', 'completed');
+
+                        if (fetchErr) throw fetchErr;
+
+                        if (completedOrders) {
+                            completedOrders.forEach(order => {
+                                const b = order.branch_name;
+                                if (weights[b] !== undefined) {
+                                    let qty = 0;
+                                    if (Array.isArray(order.items)) {
+                                        order.items.forEach(i => {
+                                            qty += Number(i.quantity || 0);
+                                        });
+                                    }
+                                    weights[b] += qty;
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        console.warn("Could not load order weights, using defaults:", err);
+                    }
+
+                    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+                    let remaining = totalVal;
+
+                    if (totalWeight > 0) {
+                        // Distribute proportionally
+                        branchesList.forEach(item => {
+                            const w = weights[item.name] || 1;
+                            const share = Math.floor((w / totalWeight) * totalVal);
+                            item.inputEl.value = share;
+                            remaining -= share;
+                        });
+
+                        // Distribute remaining fraction points one-by-one to highest weights
+                        if (remaining > 0) {
+                            const sorted = [...branchesList].sort((a, b) => (weights[b.name] || 0) - (weights[a.name] || 0));
+                            for (let i = 0; i < remaining; i++) {
+                                const item = sorted[i % sorted.length];
+                                item.inputEl.value = (parseInt(item.inputEl.value) || 0) + 1;
+                            }
+                        }
+                    }
                 }
-                input.value = allocated;
-            });
 
-            calculateRemainingDistribution();
+                // Recalculate remaining and update UI
+                calculateRemainingDistribution();
+
+            } catch (err) {
+                console.error("Error running smart distribution:", err);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> توزيع تلقائي ذكي 🪄';
+                    if (window.lucide) lucide.createIcons({ root: btn });
+                }
+            }
         }
 
         function clearDistributionForm() {
@@ -5019,7 +5160,7 @@
                 
                 // Calculate stock
                 let qty = 0;
-                if (window.liveInventoryData) {
+                if (liveInventoryData) {
                     liveInventoryData.forEach(item => {
                         if (item.location_id === b) qty += Number(item.quantity || 0);
                     });
@@ -5045,7 +5186,7 @@
             
             // Calculate total stock per branch
             const totalStockPerBranch = {};
-            if (window.liveInventoryData) {
+            if (liveInventoryData) {
                 liveInventoryData.forEach(item => {
                     const br = item.location_id;
                     if (br) {
