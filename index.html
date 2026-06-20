@@ -344,6 +344,11 @@
                     مرتجعات الفروع
                 </button>
 
+                <button onclick="switchTab('seasonal')" id="tab-seasonal" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="box" class="w-5 h-5 text-teal-300"></i>
+                    مرتجعات المواسم 📦
+                </button>
+
                 <button onclick="switchTab('branch-orders')" id="tab-branch-orders" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="inbox" class="w-5 h-5 text-amber-300"></i>
                     طلبات الفروع 📥
@@ -441,6 +446,10 @@
         <button onclick="switchTab('audits')" id="mobile-tab-audits" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="clipboard-list" class="w-5 h-5"></i>
             <span>الجرد 📊</span>
+        </button>
+        <button onclick="switchTab('seasonal')" id="mobile-tab-seasonal" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="box" class="w-5 h-5"></i>
+            <span>المواسم 📦</span>
         </button>
     </nav>
 
@@ -1026,6 +1035,7 @@
                                     <option value="branch">🏪 موظف فرع (Branch)</option>
                                     <option value="online">💻 قسم الأونلاين (Online)</option>
                                     <option value="quality">🔍 قسم إدارة الجودة (Quality)</option>
+                                    <option value="sorting">📦 قسم الفرز والتعبئة (Sorting)</option>
                                     <option value="admin">👑 مدير النظام (Admin)</option>
                                 </select>
                             </div>
@@ -2593,6 +2603,278 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ================= SEASONAL RETURNS & BOXING SECTION ================= -->
+            <section id="section-seasonal" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Header Banner -->
+                <div class="bg-gradient-to-r from-teal-800 to-emerald-950 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-extrabold tracking-tight">نظام مرتجعات المواسم والكارتنة الذكية 📦</h3>
+                        <p class="text-sm text-teal-100 font-medium">سحب مرتجعات الفروع الموسمية وفحصها وتخزينها بمخزن أبيس بالرفوف والمقاسات.</p>
+                    </div>
+                    <div id="btn-create-seasonal-box-container">
+                        <button onclick="showCreateSeasonalBoxForm()" class="bg-white hover:bg-slate-100 text-teal-900 font-bold text-xs px-5 py-3 rounded-xl shadow-lg transition flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            شحن كرتونة مواسم جديدة للفرع
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Box List Panel -->
+                <div id="seasonal-list-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <h4 class="font-bold text-slate-800 text-sm">سجل الصناديق والكراتين المشحونة</h4>
+                        
+                        <!-- Filters -->
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <select id="seasonal-filter-season" onchange="loadSeasonalBoxes()" class="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl">
+                                <option value="">كل المواسم</option>
+                                <option value="شتاء 2025/2026">شتاء 2025/2026</option>
+                                <option value="صيف 2026">صيف 2026</option>
+                            </select>
+                            <select id="seasonal-filter-status" onchange="loadSeasonalBoxes()" class="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl">
+                                <option value="">كل الحالات</option>
+                                <option value="shipped">تم الشحن 🚚</option>
+                                <option value="received_sorting">تم الفرز والاستلام 🔎</option>
+                                <option value="stored_abees">تم التخزين بأبيس 📥</option>
+                            </select>
+                            <button onclick="loadSeasonalBoxes()" class="p-2 text-slate-500 hover:text-slate-800 transition">
+                                <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                    <th class="py-3 px-4">رقم الكرتونة</th>
+                                    <th class="py-3 px-4">الفرع المصدر</th>
+                                    <th class="py-3 px-4">الموسم</th>
+                                    <th class="py-3 px-4 text-center">الحالة</th>
+                                    <th class="py-3 px-4 text-center">إجمالي القطع</th>
+                                    <th class="py-3 px-4 text-center">الرف بأبيس</th>
+                                    <th class="py-3 px-4 text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="seasonal-list-tbody" class="divide-y divide-slate-100 font-medium">
+                                <tr><td colspan="7" class="py-16 text-center text-slate-400">لا توجد كراتين مسجلة بعد.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Box Creation & Packing Panel -->
+                <div id="seasonal-creation-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-sm">تعبئة كرتونة مرتجعات مواسم جديدة وتوليد كارتة المقاسات</h4>
+                        <button onclick="hideCreateSeasonalBoxForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl transition">
+                            إلغاء والعودة
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Left inputs: Scan & Add -->
+                        <div class="md:col-span-1 space-y-4">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-600 block">حدد موسم المرتجع:</label>
+                                <select id="seasonal-box-season-select" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold p-3 rounded-xl">
+                                    <option value="شتاء 2025/2026">شتاء 2025/2026</option>
+                                    <option value="صيف 2026">صيف 2026</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-600 block">امسح باركود القطعة المرتجعة:</label>
+                                <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود واضغط Enter..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-600 block">اختر مقاس القطعة الممسوحة:</label>
+                                <div class="grid grid-cols-5 gap-2">
+                                    <button type="button" onclick="selectSeasonalActiveSize('S')" id="btn-size-S" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">S</button>
+                                    <button type="button" onclick="selectSeasonalActiveSize('M')" id="btn-size-M" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">M</button>
+                                    <button type="button" onclick="selectSeasonalActiveSize('L')" id="btn-size-L" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200 font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-800">L</button>
+                                    <button type="button" onclick="selectSeasonalActiveSize('XL')" id="btn-size-XL" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">XL</button>
+                                    <button type="button" onclick="selectSeasonalActiveSize('XXL')" id="btn-size-XXL" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">XXL</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right inputs: Matrix & Items Table -->
+                        <div class="md:col-span-2 space-y-6">
+                            <!-- Box Size Matrix Preview -->
+                            <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                                <span class="text-xs font-bold text-indigo-900 block">جدول توزيع مقاسات الصندوق الحالي (Box Size Matrix)</span>
+                                <div class="grid grid-cols-5 gap-4 text-center">
+                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div class="text-[10px] font-bold text-slate-400">S</div>
+                                        <div id="matrix-count-S" class="text-lg font-black text-indigo-700 mt-1">0</div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div class="text-[10px] font-bold text-slate-400">M</div>
+                                        <div id="matrix-count-M" class="text-lg font-black text-indigo-700 mt-1">0</div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div class="text-[10px] font-bold text-slate-400">L</div>
+                                        <div id="matrix-count-L" class="text-lg font-black text-indigo-700 mt-1">0</div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div class="text-[10px] font-bold text-slate-400">XL</div>
+                                        <div id="matrix-count-XL" class="text-lg font-black text-indigo-700 mt-1">0</div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                                        <div class="text-[10px] font-bold text-slate-400">XXL</div>
+                                        <div id="matrix-count-XXL" class="text-lg font-black text-indigo-700 mt-1">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- List of Scanned items in current packing Box -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+                                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-700">محتويات الكرتونة النشطة</span>
+                                    <span id="seasonal-box-scanned-count-badge" class="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0 قطعة</span>
+                                </div>
+                                <div class="overflow-x-auto max-h-60">
+                                    <table class="w-full text-right border-collapse text-xs">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                                <th class="py-2.5 px-3">الباركود</th>
+                                                <th class="py-2.5 px-3">المنتج</th>
+                                                <th class="py-2.5 px-3 text-center">المقاس</th>
+                                                <th class="py-2.5 px-3 text-center">الكمية</th>
+                                                <th class="py-2.5 px-3 text-center">إجراء</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="seasonal-box-scanned-tbody" class="divide-y divide-slate-100 font-medium">
+                                            <tr><td colspan="5" class="py-8 text-center text-slate-400">لا توجد قطع مضافة بعد.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Final action button -->
+                            <button onclick="shipSeasonalBox()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-extrabold transition shadow-lg shadow-emerald-950/20">
+                                شحن الكرتونة وتوليد كارتة المقاسات 🚚
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box Details and Actions Panel -->
+                <div id="seasonal-details-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+                        <div>
+                            <h4 id="seasonal-details-title" class="font-bold text-slate-800 text-sm">تفاصيل كرتونة المرتجعات</h4>
+                            <p id="seasonal-details-subtitle" class="text-xs text-slate-400 mt-1">معلومات كاملة وموقع التخزين الحالي</p>
+                        </div>
+                        <button onclick="closeSeasonalDetails()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition">
+                            عودة للقائمة
+                        </button>
+                    </div>
+
+                    <!-- Size Matrix of returned Box -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <span class="text-xs font-bold text-slate-700 block">جدول توزيع المقاسات للكرتونة (Box Size Matrix)</span>
+                        <div class="grid grid-cols-5 gap-4 text-center">
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-400">S</div>
+                                <div id="details-count-S" class="text-lg font-black text-slate-800 mt-1">0</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-400">M</div>
+                                <div id="details-count-M" class="text-lg font-black text-slate-800 mt-1">0</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-400">L</div>
+                                <div id="details-count-L" class="text-lg font-black text-slate-800 mt-1">0</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-400">XL</div>
+                                <div id="details-count-XL" class="text-lg font-black text-slate-800 mt-1">0</div>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-400">XXL</div>
+                                <div id="details-count-XXL" class="text-lg font-black text-slate-800 mt-1">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Items List -->
+                    <div class="border border-slate-200 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-200 px-4 py-3">
+                            <span class="text-xs font-bold text-slate-700">قائمة القطع بالكرتونة بالتفصيل</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-60">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-2.5 px-3">الباركود</th>
+                                        <th class="py-2.5 px-3">المنتج</th>
+                                        <th class="py-2.5 px-3 text-center">المقاس</th>
+                                        <th class="py-2.5 px-3 text-center">الكمية</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="seasonal-details-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <tr><td colspan="4" class="py-8 text-center text-slate-400">لا توجد قطع مضافة بعد.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Actions based on Role and Status -->
+                    <div id="sorting-department-action-bar" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-amber-800 block">إجراء الفرز والاستلام (خاص بقسم الفرز والتعبئة)</span>
+                            <p class="text-[10px] text-amber-600 font-medium">يرجى مطابقة محتويات الكرتونة يدوياً مع الجدول أعلاه قبل التأكيد.</p>
+                        </div>
+                        <button id="btn-sorting-confirm-receive" onclick="confirmReceiveSorting()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-3 rounded-xl transition shadow-sm">
+                            تأكيد الفرز والخلو من العيوب واستلام الكرتونة 🔎
+                        </button>
+                    </div>
+
+                    <div id="abees-warehouse-action-bar" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-indigo-900 block">إجراء التخزين وتحديد الرف (خاص بمخزن أبيس الرئيسي)</span>
+                            <p class="text-[10px] text-indigo-600 font-medium">قم بتحديد موقع الرف الذي سيخزن عليه الصندوق بمخزن أبيس الدائم.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="seasonal-bin-location-input" placeholder="أدخل كود الرف (مثال: A-03-B2)..." class="bg-white border border-slate-200 text-xs px-4 py-2.5 rounded-xl font-bold font-mono text-center">
+                            <button onclick="storeBoxInAbees()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-sm whitespace-nowrap">
+                                تخزين وتثبيت الرف 📥
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Size Matrix Analytics Panel -->
+                <div id="seasonal-analytics-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h4 class="font-bold text-slate-800 text-sm">مصفوفة المقاسات الإجمالية للمرتجعات (Size Matrix Analytics)</h4>
+                        <p class="text-[10px] text-slate-400 font-medium mt-0.5">تجميع المقاسات المسترجعة لمساعدتك في التخطيط للموسم القادم.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold text-center">
+                                    <th class="py-2.5 px-3 text-right">المنتج / الموديل</th>
+                                    <th class="py-2.5 px-3">S</th>
+                                    <th class="py-2.5 px-3">M</th>
+                                    <th class="py-2.5 px-3">L</th>
+                                    <th class="py-2.5 px-3">XL</th>
+                                    <th class="py-2.5 px-3">XXL</th>
+                                    <th class="py-2.5 px-3 font-extrabold text-indigo-700">إجمالي المرتجع</th>
+                                </tr>
+                            </thead>
+                            <tbody id="seasonal-analytics-tbody" class="divide-y divide-slate-100 font-medium text-center">
+                                <tr><td colspan="7" class="py-8 text-center text-slate-400">لا توجد بيانات متاحة حالياً.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -3214,7 +3496,7 @@
                 const { data, error } = await supabaseClient
                     .from('store_users')
                     .select('username, role')
-                    .in('role', ['branch', 'quality'])
+                    .in('role', ['branch', 'quality', 'sorting'])
                     .order('username');
 
                 if (error) throw error;
@@ -3225,6 +3507,8 @@
                         opt.value = u.username;
                         if (u.role === 'quality') {
                             opt.textContent = `🔍 ${u.username} (إدارة الجودة)`;
+                        } else if (u.role === 'sorting') {
+                            opt.textContent = `📦 ${u.username} (الفرز والتعبئة)`;
                         } else {
                             opt.textContent = `🏪 ${u.username}`;
                         }
@@ -3344,6 +3628,8 @@
                         defaultTab = 'dashboard';
                     } else if (user.role === 'quality') {
                         defaultTab = 'branch-returns';
+                    } else if (user.role === 'sorting') {
+                        defaultTab = 'seasonal';
                     } else { // admin
                         defaultTab = 'executive';
                         loadActiveUsersList();
@@ -3537,7 +3823,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits', 'seasonal'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -3551,7 +3837,7 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders', 'audits'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders', 'audits', 'seasonal'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
@@ -3559,9 +3845,13 @@
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else if (role === 'quality') {
-                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits'];
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits', 'seasonal'];
                 roleLabel = '🔍 إدارة الجودة';
                 roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
+            } else if (role === 'sorting') {
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits'];
+                roleLabel = '📦 إدارة الفرز والتعبئة';
+                roleClass = 'bg-teal-100 text-teal-700 border-teal-200';
             } else { // admin
                 roleLabel = '👑 مدير النظام';
                 roleClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -4360,7 +4650,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits', 'seasonal'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -4404,7 +4694,8 @@
                 'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)',
                 'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)',
                 formatter: 'أداة معالجة وتهيئة الملفات (File Formatter Tool)',
-                audits: 'نظام جرد الفروع الدوري والمطابقة (Store Inventory Audit)'
+                audits: 'نظام جرد الفروع الدوري والمطابقة (Store Inventory Audit)',
+                seasonal: 'نظام مرتجعات المواسم والكارتنة الذكية (Seasonal Returns & Boxing)'
             };
             const titleEl = document.getElementById('current-section-title');
             if (titleEl) titleEl.textContent = titles[tabId];
@@ -4436,6 +4727,8 @@
                 switchQCSubTab(activeQCSubTab);
             } else if (tabId === 'branch-orders') {
                 fetchAndRenderBranchOrders();
+            } else if (tabId === 'seasonal') {
+                loadSeasonalBoxes();
             }
         }
 
@@ -13352,6 +13645,493 @@
             }
         }
 
+        // =========================================================================
+        // ================== SEASONAL RETURNS & BOXING MODULE =====================
+        // =========================================================================
+        let activeSeasonalBoxItems = [];
+        let activeSeasonalSize = 'L';
+        let activeSeasonalBoxDetails = null;
+
+        function showCreateSeasonalBoxForm() {
+            activeSeasonalBoxItems = [];
+            activeSeasonalSize = 'L';
+            document.getElementById('seasonal-box-barcode-input').value = '';
+            
+            // Set size button highlight
+            selectSeasonalActiveSize('L');
+            renderSeasonalBoxScannedTable();
+            updateSeasonalBoxMatrixPreview();
+            
+            document.getElementById('seasonal-list-panel').classList.add('hidden');
+            document.getElementById('seasonal-creation-panel').classList.remove('hidden');
+            document.getElementById('seasonal-details-panel').classList.add('hidden');
+            document.getElementById('seasonal-analytics-panel').classList.add('hidden');
+            
+            setTimeout(() => {
+                const input = document.getElementById('seasonal-box-barcode-input');
+                if (input) input.focus();
+            }, 100);
+        }
+
+        function hideCreateSeasonalBoxForm() {
+            document.getElementById('seasonal-list-panel').classList.remove('hidden');
+            document.getElementById('seasonal-creation-panel').classList.add('hidden');
+            document.getElementById('seasonal-analytics-panel').classList.remove('hidden');
+            loadSeasonalBoxes();
+        }
+
+        function selectSeasonalActiveSize(size) {
+            activeSeasonalSize = size;
+            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            sizes.forEach(s => {
+                const btn = document.getElementById(`btn-size-${s}`);
+                if (btn) {
+                    if (s === size) {
+                        btn.className = "py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-extrabold rounded-lg text-xs transition border-2 border-indigo-600 shadow-sm";
+                    } else {
+                        btn.className = "py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200";
+                    }
+                }
+            });
+            const input = document.getElementById('seasonal-box-barcode-input');
+            if (input) input.focus();
+        }
+
+        async function handleSeasonalBarcodeKeydown(e) {
+            if (e.key === 'Enter') {
+                const rawBarcode = e.target.value.trim();
+                if (!rawBarcode) return;
+                
+                const cleaned = cleanBarcode(rawBarcode);
+                e.target.value = '';
+                
+                try {
+                    // Try to fetch product name from products_catalog
+                    let productName = "منتج غير معروف";
+                    const { data: prod, error } = await supabaseClient
+                        .from('products_catalog')
+                        .select('product_name')
+                        .eq('barcode', cleaned)
+                        .maybeSingle();
+                        
+                    if (!error && prod) {
+                        productName = prod.product_name;
+                    }
+                    
+                    addSeasonalScannedItem(cleaned, productName, activeSeasonalSize, 1);
+                } catch (err) {
+                    console.error("Error looking up barcode:", err);
+                    addSeasonalScannedItem(cleaned, "منتج غير معروف", activeSeasonalSize, 1);
+                }
+            }
+        }
+
+        function addSeasonalScannedItem(barcode, productName, size, quantity) {
+            // Check if item with same barcode and size already in list
+            const existing = activeSeasonalBoxItems.find(item => item.barcode === barcode && item.size === size);
+            if (existing) {
+                existing.quantity += quantity;
+            } else {
+                activeSeasonalBoxItems.push({
+                    barcode: barcode,
+                    product_name: productName,
+                    size: size,
+                    quantity: quantity
+                });
+            }
+            
+            renderSeasonalBoxScannedTable();
+            updateSeasonalBoxMatrixPreview();
+            
+            const input = document.getElementById('seasonal-box-barcode-input');
+            if (input) input.focus();
+        }
+
+        function deleteSeasonalScannedItem(index) {
+            activeSeasonalBoxItems.splice(index, 1);
+            renderSeasonalBoxScannedTable();
+            updateSeasonalBoxMatrixPreview();
+        }
+
+        function renderSeasonalBoxScannedTable() {
+            const tbody = document.getElementById('seasonal-box-scanned-tbody');
+            const badge = document.getElementById('seasonal-box-scanned-count-badge');
+            
+            let totalQty = 0;
+            tbody.innerHTML = '';
+            
+            if (activeSeasonalBoxItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">لا توجد قطع مضافة بعد.</td></tr>`;
+                badge.textContent = "0 قطعة";
+                return;
+            }
+            
+            activeSeasonalBoxItems.forEach((item, index) => {
+                totalQty += item.quantity;
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                        <td class="py-2.5 px-3 font-mono text-slate-700">${item.barcode}</td>
+                        <td class="py-2.5 px-3 text-slate-800 font-semibold">${item.product_name}</td>
+                        <td class="py-2.5 px-3 text-center"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">${item.size}</span></td>
+                        <td class="py-2.5 px-3 text-center font-extrabold text-slate-800">${item.quantity}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <button onclick="deleteSeasonalScannedItem(${index})" class="text-rose-500 hover:text-rose-700 font-bold">حذف</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            badge.textContent = `${totalQty} قطعة`;
+        }
+
+        function updateSeasonalBoxMatrixPreview() {
+            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            sizes.forEach(size => {
+                const count = activeSeasonalBoxItems
+                    .filter(item => item.size === size)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+                    
+                document.getElementById(`matrix-count-${size}`).textContent = count;
+            });
+        }
+
+        async function shipSeasonalBox() {
+            const season = document.getElementById('seasonal-box-season-select').value;
+            if (activeSeasonalBoxItems.length === 0) {
+                alert("يرجى إضافة قطعة واحدة على الأقل داخل الكرتونة قبل الشحن!");
+                return;
+            }
+            
+            const branchName = currentUser ? currentUser.branch : 'فرع غير معروف';
+            const adminName = currentUser ? currentUser.username : 'موظف';
+            const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            const boxId = `BOX-${dateStr}-${rand}`;
+            
+            const payload = {
+                id: boxId,
+                source_location: branchName,
+                season: season,
+                status: 'shipped',
+                items: activeSeasonalBoxItems,
+                created_by: adminName,
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('seasonal_boxes')
+                    .insert([payload]);
+                    
+                if (error) {
+                    if (error.message && error.message.includes("does not exist")) {
+                        showSeasonalTableErrorModal();
+                        return;
+                    }
+                    throw error;
+                }
+                
+                await addActivityLog("شحن كرتونة مواسم", `شحن كرتونة مواسم ${season} كود ${boxId} من فرع ${branchName} تحتوي على ${activeSeasonalBoxItems.reduce((s,i)=>s+i.quantity,0)} قطعة.`);
+                
+                // Print/Show Label Modal or instructions
+                alert(`تم شحن الكرتونة بنجاح كود: ${boxId}\n\nيرجى كتابة الكود بوضوح على الصندوق الخارجي!`);
+                hideCreateSeasonalBoxForm();
+                
+            } catch (err) {
+                console.error("Error shipping seasonal box:", err);
+                alert("حدث خطأ أثناء حفظ الكرتونة: " + err.message);
+            }
+        }
+
+        async function loadSeasonalBoxes() {
+            if (!supabaseClient) return;
+            
+            const seasonFilter = document.getElementById('seasonal-filter-season').value;
+            const statusFilter = document.getElementById('seasonal-filter-status').value;
+            const tbody = document.getElementById('seasonal-list-tbody');
+            
+            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">جاري تحميل كراتين المواسم...</td></tr>`;
+            
+            try {
+                let query = supabaseClient.from('seasonal_boxes').select('*');
+                
+                if (currentUser && currentUser.role === 'branch') {
+                    query = query.eq('source_location', currentUser.branch);
+                }
+                if (seasonFilter) {
+                    query = query.eq('season', seasonFilter);
+                }
+                if (statusFilter) {
+                    query = query.eq('status', statusFilter);
+                }
+                
+                const { data: boxes, error } = await query.order('created_at', { ascending: false });
+                
+                if (error) {
+                    if (error.message && error.message.includes("does not exist")) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-bold">
+                            ⚠️ جدول كراتين المواسم غير منشأ بعد. يرجى الطلب من مسؤول النظام تشغيل كود الـ SQL اللازم.
+                        </td></tr>`;
+                        return;
+                    }
+                    throw error;
+                }
+                
+                tbody.innerHTML = '';
+                
+                if (!boxes || boxes.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">لا توجد كراتين مسجلة بعد.</td></tr>`;
+                    renderSeasonalAnalyticsTable([]);
+                    return;
+                }
+                
+                boxes.forEach(box => {
+                    const totalQty = box.items.reduce((sum, item) => sum + item.quantity, 0);
+                    let statusLabel = '';
+                    let statusClass = '';
+                    
+                    if (box.status === 'shipped') {
+                        statusLabel = 'تم الشحن 🚚';
+                        statusClass = 'bg-amber-100 text-amber-800';
+                    } else if (box.status === 'received_sorting') {
+                        statusLabel = 'تم الفرز والاستلام 🔎';
+                        statusClass = 'bg-indigo-100 text-indigo-800';
+                    } else if (box.status === 'stored_abees') {
+                        statusLabel = 'مخزن في أبيس 📥';
+                        statusClass = 'bg-emerald-100 text-emerald-800';
+                    }
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                            <td class="py-3 px-4 font-mono font-bold text-slate-700">${box.id}</td>
+                            <td class="py-3 px-4 text-slate-800">${box.source_location}</td>
+                            <td class="py-3 px-4 text-slate-600 font-bold">${box.season}</td>
+                            <td class="py-3 px-4 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${statusClass}">${statusLabel}</span>
+                            </td>
+                            <td class="py-3 px-4 text-center font-extrabold text-slate-800">${totalQty}</td>
+                            <td class="py-3 px-4 text-center font-mono font-bold text-slate-600">${box.bin_location || '-'}</td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="viewSeasonalBoxDetails('${box.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition">
+                                    تفاصيل وفحص 🔎
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                renderSeasonalAnalyticsTable(boxes);
+                
+            } catch (err) {
+                console.error("Error loading seasonal boxes:", err);
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500">حدث خطأ أثناء جلب البيانات: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function viewSeasonalBoxDetails(boxId) {
+            if (!supabaseClient) return;
+            
+            try {
+                const { data: box, error } = await supabaseClient
+                    .from('seasonal_boxes')
+                    .select('*')
+                    .eq('id', boxId)
+                    .single();
+                    
+                if (error) throw error;
+                
+                activeSeasonalBoxDetails = box;
+                
+                document.getElementById('seasonal-details-title').textContent = `كرتونة مرتجعات مواسم: ${box.id}`;
+                document.getElementById('seasonal-details-subtitle').textContent = `الفرع المصدر: ${box.source_location} | الموسم: ${box.season} | الحالة: ${box.status}`;
+                
+                // Populate size matrix
+                const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+                sizes.forEach(size => {
+                    const count = box.items
+                        .filter(item => item.size === size)
+                        .reduce((sum, item) => sum + item.quantity, 0);
+                        
+                    document.getElementById(`details-count-${size}`).textContent = count;
+                });
+                
+                // Populate items table
+                const tbody = document.getElementById('seasonal-details-tbody');
+                tbody.innerHTML = '';
+                box.items.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="py-2.5 px-3 font-mono text-slate-600">${item.barcode}</td>
+                            <td class="py-2.5 px-3 text-slate-800 font-semibold">${item.product_name}</td>
+                            <td class="py-2.5 px-3 text-center"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">${item.size}</span></td>
+                            <td class="py-2.5 px-3 text-center font-extrabold text-slate-800">${item.quantity}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Toggle Action Bars
+                const isSortingDept = (currentUser && currentUser.role === 'sorting');
+                const isAdmin = (currentUser && currentUser.role === 'admin');
+                const isAbees = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+                
+                // Reset
+                document.getElementById('sorting-department-action-bar').classList.add('hidden');
+                document.getElementById('abees-warehouse-action-bar').classList.add('hidden');
+                
+                if (box.status === 'shipped' && (isSortingDept || isAdmin)) {
+                    document.getElementById('sorting-department-action-bar').classList.remove('hidden');
+                } else if (box.status === 'received_sorting' && (isAbees || isAdmin)) {
+                    document.getElementById('abees-warehouse-action-bar').classList.remove('hidden');
+                    document.getElementById('seasonal-bin-location-input').value = '';
+                }
+                
+                document.getElementById('seasonal-list-panel').classList.add('hidden');
+                document.getElementById('seasonal-details-panel').classList.remove('hidden');
+                document.getElementById('seasonal-analytics-panel').classList.add('hidden');
+                
+            } catch (err) {
+                console.error("Error fetching box details:", err);
+                alert("حدث خطأ أثناء تحميل تفاصيل الكرتونة: " + err.message);
+            }
+        }
+
+        function closeSeasonalDetails() {
+            document.getElementById('seasonal-list-panel').classList.remove('hidden');
+            document.getElementById('seasonal-details-panel').classList.add('hidden');
+            document.getElementById('seasonal-analytics-panel').classList.remove('hidden');
+            loadSeasonalBoxes();
+        }
+
+        async function confirmReceiveSorting() {
+            if (!activeSeasonalBoxDetails) return;
+            const adminName = currentUser ? currentUser.username : 'فرز وتعبئة';
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('seasonal_boxes')
+                    .update({
+                        status: 'received_sorting',
+                        received_by: adminName,
+                        received_at: new Date().toISOString()
+                    })
+                    .eq('id', activeSeasonalBoxDetails.id);
+                    
+                if (error) throw error;
+                
+                await addActivityLog("فرز كرتونة مواسم", `تأكيد فرز واستلام كرتونة المواسم ${activeSeasonalBoxDetails.id} بنجاح وخلوها من العيوب بواسطة ${adminName}.`);
+                alert("تم تأكيد الفرز واستلام الكرتونة بنجاح!");
+                viewSeasonalBoxDetails(activeSeasonalBoxDetails.id);
+                
+            } catch (err) {
+                console.error("Error confirming sorting receive:", err);
+                alert("حدث خطأ أثناء تأكيد الاستلام: " + err.message);
+            }
+        }
+
+        async function storeBoxInAbees() {
+            if (!activeSeasonalBoxDetails) return;
+            const binLoc = document.getElementById('seasonal-bin-location-input').value.trim();
+            if (!binLoc) {
+                alert("يرجى كتابة كود الرف/الموقع في مخزن أبيس أولاً!");
+                return;
+            }
+            
+            const adminName = currentUser ? currentUser.username : 'أبيس';
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('seasonal_boxes')
+                    .update({
+                        status: 'stored_abees',
+                        bin_location: binLoc,
+                        stored_by: adminName,
+                        stored_at: new Date().toISOString()
+                    })
+                    .eq('id', activeSeasonalBoxDetails.id);
+                    
+                if (error) throw error;
+                
+                await addActivityLog("تخزين كرتونة مواسم", `تخزين الكرتونة ${activeSeasonalBoxDetails.id} في الرف ${binLoc} بمخزن أبيس بواسطة ${adminName}.`);
+                alert("تم تخزين الكرتونة وتثبيت الرف بنجاح!");
+                viewSeasonalBoxDetails(activeSeasonalBoxDetails.id);
+                
+            } catch (err) {
+                console.error("Error storing box in Abees:", err);
+                alert("حدث خطأ أثناء التخزين: " + err.message);
+            }
+        }
+
+        function renderSeasonalAnalyticsTable(boxes) {
+            const tbody = document.getElementById('seasonal-analytics-tbody');
+            tbody.innerHTML = '';
+            
+            if (!boxes || boxes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">لا توجد بيانات متاحة حالياً.</td></tr>`;
+                return;
+            }
+            
+            // Map to aggregate data by product name
+            const productMatrix = {}; // { productName: { S, M, L, XL, XXL } }
+            
+            boxes.forEach(box => {
+                box.items.forEach(item => {
+                    const name = item.product_name || 'منتج غير معروف';
+                    if (!productMatrix[name]) {
+                        productMatrix[name] = { S: 0, M: 0, L: 0, XL: 0, XXL: 0 };
+                    }
+                    if (productMatrix[name][item.size] !== undefined) {
+                        productMatrix[name][item.size] += item.quantity;
+                    }
+                });
+            });
+            
+            const names = Object.keys(productMatrix);
+            if (names.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">لا توجد بيانات متاحة حالياً.</td></tr>`;
+                return;
+            }
+            
+            names.forEach(name => {
+                const sizes = productMatrix[name];
+                const total = sizes.S + sizes.M + sizes.L + sizes.XL + sizes.XXL;
+                
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                        <td class="py-2.5 px-3 text-right font-bold text-slate-800">${name}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700">${sizes.S}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700">${sizes.M}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700">${sizes.L}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700">${sizes.XL}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700">${sizes.XXL}</td>
+                        <td class="py-2.5 px-3 font-black text-indigo-700">${total}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function showSeasonalTableErrorModal() {
+            const sqlQuery = `
+CREATE TABLE IF NOT EXISTS public.seasonal_boxes (
+    id TEXT PRIMARY KEY,
+    source_location TEXT NOT NULL,
+    season TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'shipped',
+    items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    bin_location TEXT,
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    received_by TEXT,
+    received_at TIMESTAMP WITH TIME ZONE,
+    stored_by TEXT,
+    stored_at TIMESTAMP WITH TIME ZONE
+);
+ALTER TABLE public.seasonal_boxes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes FOR ALL USING (true);
+            `;
+            alert("⚠️ تنبيه: جدول كراتين المواسم (seasonal_boxes) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتشغيله في SQL Editor بلوحة تحكم Supabase:\n\n" + sqlQuery);
+        }
+
+        // Restoring the original stray download code block safely
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
     </script>
     <!-- Shipping Carrier Modal -->
