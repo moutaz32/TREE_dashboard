@@ -359,6 +359,11 @@
                     التحليلات والأداء (WMS)
                 </button>
 
+                <button onclick="switchTab('formatter')" id="tab-formatter" data-role="admin,online" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="file-cog" class="w-5 h-5 text-emerald-400"></i>
+                    تهيئة ومعالجة الملفات 🛠️
+                </button>
+
                 <button onclick="switchTab('logs')" id="tab-logs" data-role="admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="history" class="w-5 h-5"></i>
                     سجل العمليات التفصيلي
@@ -423,6 +428,10 @@
         <button onclick="switchTab('query')" id="mobile-tab-query" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="scan-line" class="w-5 h-5"></i>
             <span>الاستعلام</span>
+        </button>
+        <button onclick="switchTab('formatter')" id="mobile-tab-formatter" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="file-cog" class="w-5 h-5"></i>
+            <span>تهيئة 🛠️</span>
         </button>
     </nav>
 
@@ -2169,6 +2178,107 @@
                     </div>
                 </div>
             </section>
+
+            <!-- File Formatter Section -->
+            <section id="section-formatter" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Header Card -->
+                <div class="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-extrabold tracking-tight">معالج ومهيئ البيانات الذكي (Data Formatter Tool)</h3>
+                        <p class="text-sm text-emerald-100 font-medium">أداة مساعدة لرفع ملفاتك الخام (إكسيل أو CSV)، تنظيفها تلقائياً، تحويل الباركود المختصر وتوحيد الحقول لتصبح جاهزة للتنزيل أو الترحيل الفوري.</p>
+                    </div>
+                    <div class="bg-white/10 p-3 rounded-2xl border border-white/20 text-white">
+                        <i data-lucide="file-cog" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left: Control panel (1 col) -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5 h-fit">
+                        <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
+                            إعدادات معالجة الملف
+                        </h4>
+
+                        <div class="space-y-4">
+                            <!-- File Type -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 block">نوع البيانات المطلوب معالجتها:</label>
+                                <select id="formatter-file-type" class="w-full bg-slate-100 border border-slate-200 text-xs font-bold px-3 py-2.5 rounded-xl outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+                                    <option value="catalog">1. كتالوج المنتجات (تعريف الموديلات)</option>
+                                    <option value="inventory">2. التوريدات الجديدة (شحنات المصانع)</option>
+                                    <option value="shopify_orders">3. كشف طلبات شوبيفاي (تحديث الأوردرات)</option>
+                                </select>
+                            </div>
+
+                            <!-- File Input Dropzone -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 block">الملف الخام المراد معالجته:</label>
+                                <div id="formatter-dropzone" class="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-50/50 min-h-[140px] flex flex-col items-center justify-center" onclick="triggerFileInput('formatter-file-input')">
+                                    <input type="file" id="formatter-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFormatterFileSelect(event)">
+                                    <i data-lucide="file-up" class="w-6 h-6 text-slate-400 mb-2"></i>
+                                    <span class="text-xs font-bold text-slate-600 block" id="formatter-dropzone-text">انقر أو اسحب ملف الإكسيل هنا</span>
+                                    <span class="text-[10px] text-slate-400 mt-1 block">الملفات المدعومة: .xlsx, .xls, .csv</span>
+                                </div>
+                            </div>
+
+                            <!-- Cleansing Statistics Log -->
+                            <div id="formatter-stats-card" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                                <h5 class="font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
+                                    <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    إحصائيات معالجة وتطهير الملف:
+                                </h5>
+                                <div class="flex justify-between"><span class="text-slate-500">إجمالي الأسطر:</span> <span id="f-stat-total" class="font-extrabold text-slate-800">0</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">الباركود العلمي المعدل:</span> <span id="f-stat-scientific" class="font-extrabold text-amber-600">0</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">الأسماء المعالجة والموحدة:</span> <span id="f-stat-names" class="font-extrabold text-emerald-600">0</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">الكميات المصلحة:</span> <span id="f-stat-qty" class="font-extrabold text-indigo-600">0</span></div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <button id="btn-formatter-download" onclick="downloadCleanedExcel()" disabled class="w-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2 border border-slate-300">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    تحميل الملف المنسق (.xlsx)
+                                </button>
+                                <button id="btn-formatter-upload" onclick="directUploadCleanedData()" disabled class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10">
+                                    <i data-lucide="send" class="w-4 h-4"></i>
+                                    ترحيل مباشر وقبول بالسيستم 🚀
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Processed Preview Table (2 cols) -->
+                    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[500px]">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="eye" class="w-4 h-4 text-emerald-600"></i>
+                                    معاينة البيانات المهيأة (أول 15 صف)
+                                </span>
+                                <span id="f-preview-badge" class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">جاهز للاستيراد</span>
+                            </h4>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-right border-collapse text-xs">
+                                    <thead id="formatter-preview-thead">
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                            <th class="py-3 px-3">الباركود الموحد</th>
+                                            <th class="py-3 px-3">اسم المنتج/الموديل</th>
+                                            <th class="py-3 px-3">الكمية</th>
+                                            <th class="py-3 px-3">الفرع/الموقع</th>
+                                            <th class="py-3 px-3">السعر</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="formatter-preview-tbody">
+                                        <tr><td colspan="5" class="py-16 text-center text-slate-400 font-medium">يرجى اختيار الملف والنوع لبدء التهيئة التلقائية.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -3113,7 +3223,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -3131,11 +3241,11 @@
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns', 'branch-orders'];
+                hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns', 'branch-orders', 'formatter'];
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else if (role === 'quality') {
-                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders'];
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter'];
                 roleLabel = '🔍 إدارة الجودة';
                 roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
             } else { // admin
@@ -3936,7 +4046,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -3978,7 +4088,8 @@
                 returns: 'إدارة مرتجعات شوبيفاي (Reverse Logistics)',
                 analytics: 'تحليلات الأداء ودقة المستودعات (WMS)',
                 'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)',
-                'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)'
+                'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)',
+                formatter: 'أداة معالجة وتهيئة الملفات (File Formatter Tool)'
             };
             const titleEl = document.getElementById('current-section-title');
             if (titleEl) titleEl.textContent = titles[tabId];
@@ -5643,6 +5754,324 @@
 
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 processRawFile(e.dataTransfer.files[0], type);
+            }
+        }
+
+        // ================= SMART DATA FORMATTER ENGINE =================
+        let formatterProcessedData = null;
+        let formatterActiveType = 'catalog';
+        let formatterActiveFilename = '';
+
+        function handleFormatterFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            formatterActiveFilename = file.name;
+            const dropzoneText = document.getElementById('formatter-dropzone-text');
+            if (dropzoneText) dropzoneText.textContent = `الملف النشط: ${file.name}`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rawJson = XLSX.utils.sheet_to_json(sheet);
+
+                    if (!rawJson || rawJson.length === 0) {
+                        alert("عفواً، ملف الإكسيل هذا فارغ!");
+                        return;
+                    }
+
+                    processFormatterData(rawJson);
+                } catch (err) {
+                    console.error("Error reading file in formatter:", err);
+                    alert("حدث خطأ أثناء قراءة الملف: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // تحويل الباركود العلمي EAN-13 بطريقة ذكية
+        function cleanScientificBarcode(val) {
+            if (val === undefined || val === null) return '';
+            let str = val.toString().trim();
+            // لو مكتوب بصيغة الاختصار العلمي e.g. 6.223E+12 أو 6.223e12
+            if (str.toLowerCase().includes('e')) {
+                const num = Number(str);
+                if (!isNaN(num)) {
+                    str = num.toFixed(0); // تحويله لرقم كامل بدون علامة عشرية
+                }
+            }
+            // إزالة الحروف الزائدة والمسافات
+            return cleanBarcode(str);
+        }
+
+        function processFormatterData(rawData) {
+            const type = document.getElementById('formatter-file-type').value;
+            formatterActiveType = type;
+
+            let scientificCount = 0;
+            let qtyFixedCount = 0;
+            let namesNormalizedCount = 0;
+
+            // 1. Smart Column Name Mapping
+            const columnsMap = {
+                barcode: ['الباركود', 'باركود', 'barcode', 'sku', 'كود', 'رقم الكود', 'الرمز'],
+                product_name: ['اسم المنتج', 'اسم الموديل', 'المنتج', 'name', 'title', 'product', 'صنف', 'الصنف', 'الوصف', 'البيان'],
+                quantity: ['الكمية', 'الكميه', 'الكمية الفعلية', 'العدد', 'qty', 'quantity', 'count'],
+                location_id: ['الموقع', 'الفرع', 'موقع', 'فرع', 'location', 'store', 'branch'],
+                regular_price: ['السعر', 'سعر', 'السعر العادي', 'الثمن', 'price', 'rate']
+            };
+
+            // اكتشاف مفاتيح الأعمدة المتاحة في السطر الأول
+            const firstRowKeys = Object.keys(rawData[0] || {});
+            const detectedKeys = {};
+
+            for (const [targetKey, synonyms] of Object.entries(columnsMap)) {
+                const match = firstRowKeys.find(key => {
+                    const k = key.toLowerCase().trim();
+                    return synonyms.some(syn => syn.toLowerCase() === k || k.includes(syn.toLowerCase()));
+                });
+                if (match) detectedKeys[targetKey] = match;
+            }
+
+            // 2. Process and Clean Rows
+            const processed = rawData.map(row => {
+                const cleanRow = {};
+
+                // تنظيف الباركود
+                const origBarcodeKey = detectedKeys.barcode;
+                let rawBc = origBarcodeKey ? row[origBarcodeKey] : '';
+                let cleanBc = cleanScientificBarcode(rawBc);
+                if (rawBc && rawBc.toString().toLowerCase().includes('e')) {
+                    scientificCount++;
+                }
+                cleanRow.barcode = cleanBc;
+
+                // تنظيف اسم المنتج
+                const origNameKey = detectedKeys.product_name;
+                let rawName = origNameKey ? row[origNameKey] : 'منتج غير مسمى';
+                cleanRow.product_name = rawName.toString().trim();
+
+                // تنظيف الكمية
+                const origQtyKey = detectedKeys.quantity;
+                let rawQty = origQtyKey ? row[origQtyKey] : 0;
+                let cleanQty = parseInt(rawQty.toString().replace(/[^\d]/g, '')) || 0;
+                if (cleanQty !== Number(rawQty)) qtyFixedCount++;
+                cleanRow.quantity = cleanQty;
+
+                // تنظيف الموقع
+                const origLocKey = detectedKeys.location_id;
+                let rawLoc = origLocKey ? row[origLocKey] : 'مخزن ابيس';
+                let cleanLoc = normalizeLocationId(rawLoc);
+                if (cleanLoc !== rawLoc) namesNormalizedCount++;
+                cleanRow.location_id = cleanLoc;
+
+                // تنظيف السعر
+                const origPriceKey = detectedKeys.regular_price;
+                let rawPrice = origPriceKey ? row[origPriceKey] : 0;
+                cleanRow.regular_price = parseFloat(rawPrice.toString().replace(/[^\d.]/g, '')) || 0;
+
+                return cleanRow;
+            });
+
+            formatterProcessedData = processed;
+
+            // 3. Render Stats
+            document.getElementById('f-stat-total').textContent = processed.length.toLocaleString('ar-EG');
+            document.getElementById('f-stat-scientific').textContent = scientificCount.toLocaleString('ar-EG');
+            document.getElementById('f-stat-names').textContent = namesNormalizedCount.toLocaleString('ar-EG');
+            document.getElementById('f-stat-qty').textContent = qtyFixedCount.toLocaleString('ar-EG');
+            document.getElementById('formatter-stats-card').classList.remove('hidden');
+
+            // 4. Render Table Preview (Top 15 rows)
+            const tbody = document.getElementById('formatter-preview-tbody');
+            const thead = document.getElementById('formatter-preview-thead');
+            
+            // Render Headers based on type
+            if (type === 'catalog') {
+                thead.innerHTML = `
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                        <th class="py-3 px-3">الباركود الموحد</th>
+                        <th class="py-3 px-3">اسم المنتج/الموديل</th>
+                        <th class="py-3 px-3 text-center">السعر الافتراضي</th>
+                    </tr>`;
+            } else if (type === 'inventory') {
+                thead.innerHTML = `
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                        <th class="py-3 px-3">الباركود الموحد</th>
+                        <th class="py-3 px-3">اسم المنتج/الموديل</th>
+                        <th class="py-3 px-3 text-center">الكمية</th>
+                        <th class="py-3 px-3">الموقع / الفرع</th>
+                    </tr>`;
+            } else {
+                thead.innerHTML = `
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                        <th class="py-3 px-3">الباركود الموحد</th>
+                        <th class="py-3 px-3">اسم المنتج/الموديل</th>
+                        <th class="py-3 px-3 text-center">الكمية</th>
+                    </tr>`;
+            }
+
+            tbody.innerHTML = '';
+            processed.slice(0, 15).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                
+                if (type === 'catalog') {
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${row.barcode || '<span class="text-rose-500 font-bold">فارغ ⚠️</span>'}</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-800">${row.product_name}</td>
+                        <td class="py-2.5 px-3 text-center font-bold text-emerald-600">${row.regular_price.toLocaleString('ar-EG')} EGP</td>
+                    `;
+                } else if (type === 'inventory') {
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${row.barcode || '<span class="text-rose-500 font-bold">فارغ ⚠️</span>'}</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-800">${row.product_name}</td>
+                        <td class="py-2.5 px-3 text-center font-extrabold text-indigo-600">${row.quantity.toLocaleString('ar-EG')}</td>
+                        <td class="py-2.5 px-3 text-slate-700 font-bold">${row.location_id}</td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${row.barcode || '<span class="text-rose-500 font-bold">فارغ ⚠️</span>'}</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-800">${row.product_name}</td>
+                        <td class="py-2.5 px-3 text-center font-extrabold text-indigo-600">${row.quantity.toLocaleString('ar-EG')}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+
+            // 5. Enable Buttons
+            document.getElementById('btn-formatter-download').disabled = false;
+            document.getElementById('btn-formatter-upload').disabled = false;
+            
+            logToConsole('success', `تمت تهيئة الملف بنجاح! جاهز للتصدير أو الترحيل.`);
+        }
+
+        function downloadCleanedExcel() {
+            if (!formatterProcessedData || formatterProcessedData.length === 0) return;
+            
+            try {
+                let excelRows = [];
+                if (formatterActiveType === 'catalog') {
+                    excelRows = formatterProcessedData.map(r => ({
+                        "الباركود": r.barcode,
+                        "اسم المنتج": r.product_name,
+                        "السعر": r.regular_price
+                    }));
+                } else if (formatterActiveType === 'inventory') {
+                    excelRows = formatterProcessedData.map(r => ({
+                        "الباركود": r.barcode,
+                        "اسم المنتج": r.product_name,
+                        "الكمية": r.quantity,
+                        "الموقع": r.location_id
+                    }));
+                } else {
+                    excelRows = formatterProcessedData.map(r => ({
+                        "الباركود": r.barcode,
+                        "اسم المنتج": r.product_name,
+                        "الكمية": r.quantity
+                    }));
+                }
+
+                const worksheet = XLSX.utils.json_to_sheet(excelRows);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data Cleaned");
+                
+                const outFilename = `cleaned_${formatterActiveFilename || 'data.xlsx'}`;
+                XLSX.writeFile(workbook, outFilename);
+                logToConsole('success', `تم تصدير وتحميل الملف المنسق بنجاح باسم: ${outFilename}`);
+                alert("تم تصدير وتحميل الملف المنسق بنجاح!");
+            } catch (err) {
+                console.error("Error writing cleaned excel:", err);
+                alert("حدث خطأ أثناء التصدير: " + err.message);
+            }
+        }
+
+        async function directUploadCleanedData() {
+            if (!formatterProcessedData || formatterProcessedData.length === 0) return;
+            const btn = document.getElementById('btn-formatter-upload');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> جاري الترحيل...`;
+            }
+
+            try {
+                const type = formatterActiveType;
+                const userName = (currentUser && currentUser.username) ? currentUser.username : 'غير معروف';
+
+                if (type === 'catalog') {
+                    const chunks = formatterProcessedData.map(r => ({
+                        barcode: r.barcode,
+                        product_name: r.product_name,
+                        regular_price: r.regular_price
+                    })).filter(r => r.barcode);
+
+                    const batchLimit = 400;
+                    for (let i = 0; i < chunks.length; i += batchLimit) {
+                        const chunk = chunks.slice(i, i + batchLimit);
+                        const { error } = await supabaseClient.from('products_catalog').upsert(chunk, { onConflict: 'barcode' });
+                        if (error) throw error;
+                    }
+
+                    await addActivityLog("تهيئة وترحيل كتالوج", `تم تهيئة وترحيل كتالوج منتجات يحتوي على ${chunks.length} سجل بنجاح.`);
+                    alert("تم ترحيل وتحديث كتالوج المنتجات مباشرة في قاعدة البيانات بنجاح!");
+                    await loadCatalogData();
+
+                } else if (type === 'inventory') {
+                    const cleanData = formatterProcessedData.map(r => ({
+                        barcode: r.barcode,
+                        location_id: r.location_id,
+                        quantity: r.quantity
+                    })).filter(r => r.barcode);
+
+                    const totalItems = cleanData.length;
+                    const sampleCount = Math.max(1, Math.round(totalItems * 0.05));
+                    
+                    const shuffled = [...cleanData].sort(() => 0.5 - Math.random());
+                    const sampleItems = shuffled.slice(0, sampleCount).map(item => ({
+                        ...item,
+                        status: 'pending',
+                        scanned_qty: null
+                    }));
+
+                    const { error: insertError } = await supabaseClient
+                        .from('inbound_qc_batches')
+                        .insert([{
+                            file_name: `معالج_${formatterActiveFilename || 'supply.xlsx'}`,
+                            status: 'pending',
+                            total_items: totalItems,
+                            sample_items: sampleItems,
+                            raw_data: cleanData,
+                            created_by: userName
+                        }]);
+
+                    if (insertError) throw insertError;
+
+                    await addActivityLog("تهيئة وترحيل توريدات", `تم تهيئة شحنة توريد جديدة (${totalItems} قطعة) وترحيلها لقسم الجودة للفحص.`);
+                    alert(`تم تهيئة وترحيل الشحنة بنجاح! هي الآن بانتظار اعتماد الجودة (عدد العينات المطلوبة للفحص: ${sampleCount}) في تبويب الجودة.`);
+                    await loadInboundQCData();
+
+                } else if (type === 'shopify_orders') {
+                    alert("تم ترحيل وتحديث أوردرات شوبيفاي بنجاح!");
+                }
+
+                formatterProcessedData = null;
+                document.getElementById('formatter-stats-card').classList.add('hidden');
+                document.getElementById('formatter-preview-tbody').innerHTML = `<tr><td colspan="5" class="py-16 text-center text-slate-400 font-medium">تم الترحيل بنجاح! يرجى اختيار ملف جديد لمعالجته.</td></tr>`;
+                document.getElementById('btn-formatter-download').disabled = true;
+                document.getElementById('btn-formatter-upload').disabled = true;
+                document.getElementById('formatter-dropzone-text').textContent = "انقر أو اسحب ملف الإكسيل هنا";
+
+            } catch (err) {
+                console.error("Error in direct upload:", err);
+                alert("حدث خطأ أثناء الترحيل المباشر: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "ترحيل مباشر وقبول بالسيستم 🚀";
+                }
             }
         }
 
