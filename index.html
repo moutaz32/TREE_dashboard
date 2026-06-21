@@ -12773,7 +12773,7 @@
                         <td class="py-3 px-3 text-center text-emerald-600 font-extrabold">${alert.abees_qty} قطع</td>
                         <td class="py-3 px-3 text-center text-indigo-600 font-bold">تحويل ${alert.action_qty} قطع</td>
                         <td class="py-3 px-3 text-center">
-                            <button onclick="prefillTransferRequest('${alert.barcode}', '${alert.location_id}', ${alert.action_qty})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-indigo-200">
+                            <button onclick="openTransferModal('${alert.barcode}', '${alert.product_name.replace(/'/g, "\\'")}', 'مخزن ابيس', '${alert.location_id}', ${alert.abees_qty}); document.getElementById('transfer-qty-input').value = ${alert.action_qty};" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-indigo-200">
                                 تنسيق سريع ⚡
                             </button>
                         </td>
@@ -12785,27 +12785,6 @@
                 console.error("Error loading replenishment alerts:", err);
                 tbody.innerHTML = `<tr><td colspan="6" class="py-16 text-center text-rose-500 font-bold">حدث خطأ أثناء تحميل تنبيهات النواقص: ${err.message}</td></tr>`;
             }
-        }
-
-        // Prefill Transfer Request
-        function prefillTransferRequest(barcode, targetLocation, qty) {
-            switchTab('transfers');
-            
-            const srcSelect = document.getElementById('transfer-source-select');
-            const destSelect = document.getElementById('transfer-dest-select');
-            const barcodeInput = document.getElementById('transfer-barcode-input');
-            const qtyInput = document.getElementById('transfer-qty-input');
-
-            if (srcSelect) srcSelect.value = 'مخزن ابيس';
-            if (destSelect) destSelect.value = targetLocation;
-            if (barcodeInput) {
-                barcodeInput.value = barcode;
-                const event = new Event('input', { bubbles: true });
-                barcodeInput.dispatchEvent(event);
-            }
-            if (qtyInput) qtyInput.value = qty;
-
-            logToConsole('system', `تم تعبئة نموذج التحويل تلقائياً لتهيئة النواقص لفرع ${targetLocation}`);
         }
 
         // 3. Run Dead Stock Analyzer
@@ -12870,7 +12849,7 @@
                         <td class="py-3 px-3 text-center text-indigo-600 font-extrabold">${item.quantity} قطع</td>
                         <td class="py-3 px-3 text-center text-slate-400 font-medium">لا توجد حركة مسجلة</td>
                         <td class="py-3 px-3 text-center">
-                            <button onclick="prefillTransferRequest('${item.barcode}', 'مخزن ابيس', ${item.quantity})" class="bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-amber-200">
+                            <button onclick="openTransferModal('${item.barcode}', '${(catalogMap[item.barcode] || 'منتج غير معروف').replace(/'/g, "\\'")}', '${item.location_id}', 'مخزن ابيس', ${item.quantity})" class="bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-amber-200">
                                 سحب لأبيس 🚚
                             </button>
                         </td>
