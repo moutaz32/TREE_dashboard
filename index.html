@@ -2668,9 +2668,25 @@
                                 </select>
                             </div>
 
-                            <div class="space-y-2">
-                                <label class="text-xs font-bold text-slate-600 block">امسح باركود القطعة المرتجعة:</label>
-                                <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود واضغط Enter..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-2 space-y-2">
+                                    <label class="text-xs font-bold text-slate-600 block">امسح باركود القطعة:</label>
+                                    <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
+                                </div>
+                                <div class="col-span-1 space-y-2">
+                                    <label class="text-xs font-bold text-slate-600 block">الكمية:</label>
+                                    <input type="number" id="seasonal-box-qty-input" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-center">
+                                </div>
+                            </div>
+
+                            <!-- Scanned Product Info Banner -->
+                            <div id="seasonal-active-product-banner" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1 text-xs">
+                                <div class="flex justify-between items-center border-b border-slate-100 pb-1.5 mb-1">
+                                    <span class="text-slate-400 font-bold text-[9px]">الصنف المكتشف</span>
+                                    <button onclick="clearSeasonalActiveProduct()" class="text-rose-500 hover:text-rose-700 font-bold text-[9px]">إلغاء ✖</button>
+                                </div>
+                                <div class="font-bold text-slate-800" id="seasonal-active-product-name">---</div>
+                                <div class="text-[10px] text-slate-400 font-mono" id="seasonal-active-product-barcode">---</div>
                             </div>
 
                             <div class="space-y-3">
@@ -13595,6 +13611,7 @@
         let activeSeasonalBoxItems = [];
         let activeSeasonalSize = 'L';
         let activeSeasonalBoxDetails = null;
+        let activeSeasonalScannedProduct = null; // Holds temporary scanned product details { barcode, product_name, category }
 
         const seasonalSizeCategories = {
             standard: ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL'],
@@ -13603,11 +13620,35 @@
         };
         let currentSeasonalSizeCategory = 'standard';
 
+        function detectSizeCategory(productName) {
+            if (!productName) return 'standard';
+            const name = productName.toLowerCase();
+            
+            // Kids keywords
+            if (name.includes('أطفال') || name.includes('اطفال') || name.includes('طفل') || name.includes('بناتي') || name.includes('بناتى') || name.includes('أولادي') || name.includes('اولادى') || name.includes('بيبي') || name.includes('بيبى') || name.includes('kids') || name.includes('child') || name.includes('baby') || name.includes('boy') || name.includes('girl')) {
+                return 'kids';
+            }
+            
+            // Pants/Jeans keywords
+            if (name.includes('بنطلون') || name.includes('جينز') || name.includes('جبردين') || name.includes('كارجو') || name.includes('شورت') || name.includes('pants') || name.includes('jeans') || name.includes('shorts') || name.includes('trouser')) {
+                return 'pants';
+            }
+            
+            return 'standard';
+        }
+
         function showCreateSeasonalBoxForm() {
             activeSeasonalBoxItems = [];
+            activeSeasonalScannedProduct = null;
             currentSeasonalSizeCategory = 'standard';
             activeSeasonalSize = 'L';
             document.getElementById('seasonal-box-barcode-input').value = '';
+            
+            const qtyInput = document.getElementById('seasonal-box-qty-input');
+            if (qtyInput) qtyInput.value = 1;
+            
+            const banner = document.getElementById('seasonal-active-product-banner');
+            if (banner) banner.classList.add('hidden');
             
             // Set size category active button highlight
             switchSeasonalSizeCategory('standard');
@@ -13630,6 +13671,30 @@
             document.getElementById('seasonal-creation-panel').classList.add('hidden');
             document.getElementById('seasonal-analytics-panel').classList.remove('hidden');
             loadSeasonalBoxes();
+        }
+
+        function clearSeasonalActiveProduct() {
+            activeSeasonalScannedProduct = null;
+            
+            const banner = document.getElementById('seasonal-active-product-banner');
+            if (banner) banner.classList.add('hidden');
+            
+            const nameEl = document.getElementById('seasonal-active-product-name');
+            if (nameEl) nameEl.textContent = '---';
+            
+            const bcEl = document.getElementById('seasonal-active-product-barcode');
+            if (bcEl) bcEl.textContent = '---';
+            
+            const barcodeInput = document.getElementById('seasonal-box-barcode-input');
+            if (barcodeInput) {
+                barcodeInput.value = '';
+                barcodeInput.focus();
+            }
+            
+            const qtyInput = document.getElementById('seasonal-box-qty-input');
+            if (qtyInput) {
+                qtyInput.value = 1;
+            }
         }
 
         function switchSeasonalSizeCategory(category) {
@@ -13687,8 +13752,25 @@
         function selectSeasonalActiveSize(size) {
             activeSeasonalSize = size;
             renderSeasonalSizeButtons();
-            const input = document.getElementById('seasonal-box-barcode-input');
-            if (input) input.focus();
+            
+            // If there is an active scanned product waiting, add it with selected size and quantity
+            if (activeSeasonalScannedProduct) {
+                const qtyInput = document.getElementById('seasonal-box-qty-input');
+                const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+                
+                addSeasonalScannedItem(
+                    activeSeasonalScannedProduct.barcode,
+                    activeSeasonalScannedProduct.product_name,
+                    size,
+                    qty
+                );
+                
+                // Clear active product scan state
+                clearSeasonalActiveProduct();
+            } else {
+                const input = document.getElementById('seasonal-box-barcode-input');
+                if (input) input.focus();
+            }
         }
 
         async function handleSeasonalBarcodeKeydown(e) {
@@ -13697,7 +13779,6 @@
                 if (!rawBarcode) return;
                 
                 const cleaned = cleanBarcode(rawBarcode);
-                e.target.value = '';
                 
                 try {
                     // Try to fetch product name from products_catalog
@@ -13712,10 +13793,39 @@
                         productName = prod.product_name;
                     }
                     
-                    addSeasonalScannedItem(cleaned, productName, activeSeasonalSize, 1);
+                    // Detect category
+                    const category = detectSizeCategory(productName);
+                    
+                    // Set scanned state
+                    activeSeasonalScannedProduct = {
+                        barcode: cleaned,
+                        product_name: productName,
+                        category: category
+                    };
+                    
+                    // Update UI banner
+                    document.getElementById('seasonal-active-product-name').textContent = productName;
+                    document.getElementById('seasonal-active-product-barcode').textContent = cleaned;
+                    document.getElementById('seasonal-active-product-banner').classList.remove('hidden');
+                    
+                    // Auto switch size category
+                    switchSeasonalSizeCategory(category);
+                    
+                    // Clear barcode input but keep focus
+                    e.target.value = '';
+                    
                 } catch (err) {
                     console.error("Error looking up barcode:", err);
-                    addSeasonalScannedItem(cleaned, "منتج غير معروف", activeSeasonalSize, 1);
+                    activeSeasonalScannedProduct = {
+                        barcode: cleaned,
+                        product_name: "منتج غير معروف",
+                        category: "standard"
+                    };
+                    document.getElementById('seasonal-active-product-name').textContent = "منتج غير معروف";
+                    document.getElementById('seasonal-active-product-barcode').textContent = cleaned;
+                    document.getElementById('seasonal-active-product-banner').classList.remove('hidden');
+                    switchSeasonalSizeCategory("standard");
+                    e.target.value = '';
                 }
             }
         }
@@ -13767,15 +13877,39 @@
                         <td class="py-2.5 px-3 font-mono text-slate-700">${item.barcode}</td>
                         <td class="py-2.5 px-3 text-slate-800 font-semibold">${item.product_name}</td>
                         <td class="py-2.5 px-3 text-center"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">${item.size}</span></td>
-                        <td class="py-2.5 px-3 text-center font-extrabold text-slate-800">${item.quantity}</td>
                         <td class="py-2.5 px-3 text-center">
-                            <button onclick="deleteSeasonalScannedItem(${index})" class="text-rose-500 hover:text-rose-700 font-bold">حذف</button>
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" onclick="adjustSeasonalItemQty(${index}, -1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded flex items-center justify-center transition">-</button>
+                                <input type="number" value="${item.quantity}" min="1" onchange="updateSeasonalItemQty(${index}, this.value)" class="w-12 text-center border border-slate-200 rounded p-0.5 font-bold font-mono text-xs">
+                                <button type="button" onclick="adjustSeasonalItemQty(${index}, 1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded flex items-center justify-center transition">+</button>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <button type="button" onclick="deleteSeasonalScannedItem(${index})" class="text-rose-500 hover:text-rose-700 font-bold">حذف</button>
                         </td>
                     </tr>
                 `;
             });
             
             badge.textContent = `${totalQty} قطعة`;
+        }
+
+        function adjustSeasonalItemQty(index, change) {
+            if (index >= 0 && index < activeSeasonalBoxItems.length) {
+                const item = activeSeasonalBoxItems[index];
+                item.quantity = Math.max(1, item.quantity + change);
+                renderSeasonalBoxScannedTable();
+                updateSeasonalBoxMatrixPreview();
+            }
+        }
+
+        function updateSeasonalItemQty(index, val) {
+            const intVal = parseInt(val);
+            if (index >= 0 && index < activeSeasonalBoxItems.length && !isNaN(intVal)) {
+                activeSeasonalBoxItems[index].quantity = Math.max(1, intVal);
+                renderSeasonalBoxScannedTable();
+                updateSeasonalBoxMatrixPreview();
+            }
         }
 
         function renderDynamicSizeMatrix(containerId, items) {
