@@ -7082,10 +7082,11 @@
             const printContainer = document.getElementById('inventory-print-container');
             const wmsContainer = document.getElementById('inventory-wms-container');
             
-            // Toggle active classes on subtab buttons
+            // Toggle active classes on subtab buttons without stripping the 'hidden' class
             [subtabStock, subtabCatalog, subtabDiscrepancy, subtabWms, subtabMap, subtabPrint].forEach(tab => {
                 if (tab) {
-                    tab.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
+                    tab.classList.remove('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                    tab.classList.add('text-slate-500', 'hover:text-brand-deep');
                 }
             });
 
@@ -7096,7 +7097,10 @@
             if (wmsContainer) wmsContainer.classList.add('hidden');
 
             if (subTabId === 'stock') {
-                if (subtabStock) subtabStock.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabStock) {
+                    subtabStock.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabStock.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "تفاصيل الأصناف والتسكين بالمواقع";
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 // Hide toggle and grid for non-catalog tabs
@@ -7113,7 +7117,10 @@
                 filterInventory();
             } 
             else if (subTabId === 'catalog') {
-                if (subtabCatalog) subtabCatalog.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabCatalog) {
+                    subtabCatalog.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabCatalog.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "كتالوج منتجات الملبوسات والصور المزامنة";
 
                 // Show grid/table toggle
@@ -7131,7 +7138,10 @@
                 setCatalogView(window.catalogViewMode);
             }
             else if (subTabId === 'discrepancy') {
-                if (subtabDiscrepancy) subtabDiscrepancy.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabDiscrepancy) {
+                    subtabDiscrepancy.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabDiscrepancy.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "كاشف فروقات ومطابقة الجرد الفيزيائي والنظامي";
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 const toggleElD = document.getElementById('catalog-view-toggle');
@@ -7147,7 +7157,10 @@
                 filterInventory();
             }
             else if (subTabId === 'map') {
-                if (subtabMap) subtabMap.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabMap) {
+                    subtabMap.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabMap.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "تمثيل الخريطة الحرارية التفاعلية لرفوف المستودع";
                 if (mapContainer) mapContainer.classList.remove('hidden');
                 
@@ -7161,7 +7174,10 @@
                 renderWarehouseMap();
             }
             else if (subTabId === 'print') {
-                if (subtabPrint) subtabPrint.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabPrint) {
+                    subtabPrint.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabPrint.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "طباعة ملصقات الباركود A4";
                 if (printContainer) printContainer.classList.remove('hidden');
                 
@@ -7173,7 +7189,10 @@
                 renderPrintItemsList();
             }
             else if (subTabId === 'wms') {
-                if (subtabWms) subtabWms.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                if (subtabWms) {
+                    subtabWms.classList.remove('text-slate-500', 'hover:text-brand-deep');
+                    subtabWms.classList.add('border-b-2', 'border-brand-accent', 'text-brand-deep');
+                }
                 subTitle.textContent = "إدارة التخزين اللوجستي بمخزن أبيس (WMS)";
                 if (wmsContainer) wmsContainer.classList.remove('hidden');
                 
