@@ -2754,9 +2754,14 @@
                             <h4 id="seasonal-details-title" class="font-bold text-slate-800 text-sm">تفاصيل كرتونة المرتجعات</h4>
                             <p id="seasonal-details-subtitle" class="text-xs text-slate-400 mt-1">معلومات كاملة وموقع التخزين الحالي</p>
                         </div>
-                        <button onclick="closeSeasonalDetails()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition">
-                            عودة للقائمة
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="printActiveSeasonalBoxLabel()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+                                <span>طباعة بيان الكرتونة 🖨️</span>
+                            </button>
+                            <button onclick="closeSeasonalDetails()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition">
+                                عودة للقائمة
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Size Matrix of returned Box -->
@@ -13838,6 +13843,341 @@
             });
         }
 
+        function printActiveSeasonalBoxLabel() {
+            if (!activeSeasonalBoxDetails) {
+                alert("لا توجد بيانات كرتونة لعرضها للطباعة!");
+                return;
+            }
+            
+            const box = activeSeasonalBoxDetails;
+            const printWindow = window.open('', '_blank', 'width=800,height=800');
+            if (!printWindow) {
+                alert("يرجى السماح بالنوافذ المنبثقة لطباعة البيان!");
+                return;
+            }
+            
+            // Calculate total quantity
+            const totalQty = box.items.reduce((sum, item) => sum + item.quantity, 0);
+            
+            // Group items by size for the size matrix
+            const sizeCounts = {};
+            box.items.forEach(item => {
+                const sz = item.size || 'غير محدد';
+                sizeCounts[sz] = (sizeCounts[sz] || 0) + (item.quantity || 0);
+            });
+            
+            // Sort sizes logically: S, M, L, XL, XXL, etc.
+            const order = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL', '6', '8', '10', '12', '14', '16', '18', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50'];
+            const allSizes = Object.keys(sizeCounts).sort((a, b) => {
+                const idxA = order.indexOf(a);
+                const idxB = order.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+            
+            // Generate Size Matrix HTML
+            let matrixHtml = `<div class="matrix-grid">`;
+            allSizes.forEach(size => {
+                matrixHtml += `
+                    <div class="matrix-card">
+                        <div class="matrix-size">${size}</div>
+                        <div class="matrix-qty">${sizeCounts[size]}</div>
+                    </div>
+                `;
+            });
+            matrixHtml += `</div>`;
+            
+            // Generate Scanned Items Table HTML
+            let itemsTableHtml = `
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>الباركود</th>
+                            <th>اسم المنتج</th>
+                            <th>المقاس</th>
+                            <th>الكمية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            box.items.forEach(item => {
+                itemsTableHtml += `
+                    <tr>
+                        <td class="font-mono">${item.barcode}</td>
+                        <td class="font-bold">${item.product_name}</td>
+                        <td class="text-center"><span class="badge-size">${item.size}</span></td>
+                        <td class="text-center font-bold">${item.quantity}</td>
+                    </tr>
+                `;
+            });
+            itemsTableHtml += `</tbody></table>`;
+            
+            // Generate modern label template
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>ملصق كرتونة مرتجعات مواسم - ${box.id}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Outfit:wght@400;600;800;900&display=swap');
+                        
+                        body {
+                            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            direction: rtl;
+                            text-align: right;
+                            padding: 20px;
+                            color: #1e293b;
+                            background-color: #fff;
+                            margin: 0;
+                        }
+                        
+                        .label-container {
+                            border: 3px solid #0f172a;
+                            border-radius: 20px;
+                            padding: 25px;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                        }
+                        
+                        .header {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            border-bottom: 3px dashed #cbd5e1;
+                            padding-bottom: 15px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .logo-section {
+                            text-align: right;
+                        }
+                        
+                        .main-title {
+                            font-size: 20px;
+                            font-weight: 900;
+                            color: #1e1b4b;
+                            margin: 0;
+                        }
+                        
+                        .subtitle {
+                            font-size: 11px;
+                            color: #64748b;
+                            font-weight: bold;
+                            margin-top: 2px;
+                        }
+                        
+                        .badge-status {
+                            background-color: #e2e8f0;
+                            color: #334155;
+                            font-size: 10px;
+                            font-weight: 800;
+                            padding: 4px 10px;
+                            border-radius: 9999px;
+                            text-transform: uppercase;
+                        }
+                        
+                        .box-info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, minmax(0, 1fr));
+                            gap: 15px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .info-card {
+                            background-color: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 12px;
+                            padding: 12px;
+                        }
+                        
+                        .info-label {
+                            font-size: 10px;
+                            font-weight: bold;
+                            color: #64748b;
+                            margin-bottom: 2px;
+                        }
+                        
+                        .info-value {
+                            font-size: 14px;
+                            font-weight: 800;
+                            color: #0f172a;
+                        }
+                        
+                        .large-qty {
+                            font-size: 24px;
+                            font-weight: 900;
+                            color: #4f46e5;
+                            margin-top: 2px;
+                            line-height: 1;
+                        }
+                        
+                        .section-title {
+                            font-size: 12px;
+                            font-weight: 800;
+                            color: #334155;
+                            border-bottom: 1px solid #e2e8f0;
+                            padding-bottom: 6px;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .matrix-grid {
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 8px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .matrix-card {
+                            background-color: #fff;
+                            border: 1.5px solid #0f172a;
+                            border-radius: 8px;
+                            padding: 8px 12px;
+                            text-align: center;
+                            min-width: 50px;
+                            flex: 1;
+                        }
+                        
+                        .matrix-size {
+                            font-size: 10px;
+                            font-weight: 900;
+                            color: #64748b;
+                        }
+                        
+                        .matrix-qty {
+                            font-size: 14px;
+                            font-weight: 900;
+                            color: #0f172a;
+                            margin-top: 2px;
+                        }
+                        
+                        .items-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 25px;
+                            font-size: 11px;
+                        }
+                        
+                        .items-table th, .items-table td {
+                            border: 1px solid #cbd5e1;
+                            padding: 8px 10px;
+                            text-align: right;
+                        }
+                        
+                        .items-table th {
+                            background-color: #f1f5f9;
+                            color: #475569;
+                            font-weight: 800;
+                        }
+                        
+                        .font-mono {
+                            font-family: 'Outfit', monospace;
+                        }
+                        
+                        .text-center {
+                            text-align: center;
+                        }
+                        
+                        .badge-size {
+                            background-color: #f1f5f9;
+                            color: #1e293b;
+                            font-weight: 800;
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                        }
+                        
+                        .footer {
+                            border-top: 2px dashed #cbd5e1;
+                            padding-top: 15px;
+                            margin-top: 20px;
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 10px;
+                            color: #64748b;
+                            font-weight: bold;
+                        }
+                        
+                        .signature-line {
+                            margin-top: 10px;
+                            border-top: 1px dashed #64748b;
+                            width: 100px;
+                            display: block;
+                            height: 1px;
+                        }
+                        
+                        @media print {
+                            body {
+                                padding: 0;
+                            }
+                            .label-container {
+                                border: 2px solid #000;
+                                box-shadow: none;
+                                max-width: 100%;
+                            }
+                        }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    <div class="label-container">
+                        <div class="header">
+                            <div class="logo-section">
+                                <h1 class="main-title">كرتونة مرتجعات مواسم</h1>
+                                <div class="subtitle">نظام إدارة مستودعات TREE WMS</div>
+                            </div>
+                            <span class="badge-status">${box.status === 'shipped' ? 'مشحونة' : box.status === 'received_sorting' ? 'تم الفرز والاستلام' : 'مخزنة في أبيس'}</span>
+                        </div>
+                        
+                        <div class="box-info-grid">
+                            <div class="info-card">
+                                <div class="info-label">رقم الكرتونة الفريد:</div>
+                                <div class="info-value font-mono">${box.id}</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">الفرع المصدر:</div>
+                                <div class="info-value">${box.source_location}</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">موسم المرتجع:</div>
+                                <div class="info-value">${box.season}</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">الكمية الإجمالية:</div>
+                                <div class="large-qty font-mono">${totalQty} قطعة</div>
+                            </div>
+                        </div>
+                        
+                        ${box.bin_location ? `
+                        <div class="info-card" style="margin-bottom: 20px; background-color: #f0fdf4; border-color: #bbf7d0;">
+                            <div class="info-label" style="color: #166534;">موقع التخزين في أبيس (Bin Location):</div>
+                            <div class="info-value font-mono" style="color: #166534; font-size: 18px;">${box.bin_location}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="section-title">بيان كارتة المقاسات (Box Size Matrix)</div>
+                        ${matrixHtml}
+                        
+                        <div class="section-title">قائمة محتويات الكرتونة بالتفصيل</div>
+                        ${itemsTableHtml}
+                        
+                        <div class="footer">
+                            <div>
+                                <span>أنشئ بواسطة: ${box.created_by || 'غير معروف'}</span><br>
+                                <span style="margin-top: 5px; display: inline-block;">تاريخ الشحن: ${box.created_at ? new Date(box.created_at).toLocaleString('ar-EG') : 'غير معروف'}</span>
+                            </div>
+                            <div style="text-align: left;">
+                                <span>توقيع أمين الفرع</span>
+                                <span class="signature-line"></span>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
         function updateSeasonalBoxMatrixPreview() {
             renderDynamicSizeMatrix('seasonal-box-matrix-preview', activeSeasonalBoxItems);
         }
@@ -13879,8 +14219,13 @@
                 
                 await addActivityLog("شحن كرتونة مواسم", `شحن كرتونة مواسم ${season} كود ${boxId} من فرع ${branchName} تحتوي على ${activeSeasonalBoxItems.reduce((s,i)=>s+i.quantity,0)} قطعة.`);
                 
-                // Print/Show Label Modal or instructions
-                alert(`تم شحن الكرتونة بنجاح كود: ${boxId}\n\nيرجى كتابة الكود بوضوح على الصندوق الخارجي!`);
+                // Set active details to current payload for printing
+                activeSeasonalBoxDetails = payload;
+                
+                alert(`تم شحن الكرتونة بنجاح كود: ${boxId}`);
+                if (confirm("هل تريد طباعة ملصق كارتة المقاسات والبيانات للكرتونة الآن؟")) {
+                    printActiveSeasonalBoxLabel();
+                }
                 hideCreateSeasonalBoxForm();
                 
             } catch (err) {
