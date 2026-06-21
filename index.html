@@ -246,11 +246,16 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="text-brand-200 text-xs font-bold block mb-1.5">اسم المستخدم / الفرع</label>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="text-brand-200 text-xs font-bold block">اسم المستخدم / البريد الإلكتروني</label>
+                            <button type="button" id="btn-toggle-login-mode" onclick="toggleLoginInputMode()" class="text-brand-accent hover:underline text-[10px] font-bold">⌨ كتابة إيميل يدوياً</button>
+                        </div>
                         <select id="login-username"
                             class="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition cursor-pointer">
                             <option value="" disabled selected>جاري تحميل الحسابات...</option>
                         </select>
+                        <input id="login-username-text" type="text" placeholder="أدخل البريد الإلكتروني أو اسم المستخدم"
+                            class="hidden w-full bg-white/10 border border-white/20 text-white placeholder-brand-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-accent focus:bg-white/15 transition">
                     </div>
                     <div>
                         <label class="text-brand-200 text-xs font-bold block mb-1.5">كلمة المرور / رمز الدخول</label>
@@ -276,7 +281,7 @@
         <div id="sidebar-scroll-container" class="flex-1 flex flex-col min-h-0 overflow-y-auto scrollbar-none">
             <!-- Header Brand -->
             <div class="px-6 py-5 flex items-center gap-3 border-b border-brand-900/55">
-                <div class="bg-white p-1.5 rounded-xl text-brand-deep flex items-center justify-center shadow-lg shadow-emerald-500/25 w-10 h-10 overflow-hidden">
+                <div id="sidebar-logo-container" class="bg-white p-1.5 rounded-xl text-brand-deep flex items-center justify-center shadow-lg shadow-emerald-500/25 w-10 h-10 overflow-hidden">
                     <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<i data-lucide=\'sprout\' class=\'w-6 h-6 text-brand-deep\'></i>'};" alt="Logo" class="max-w-full max-h-full object-contain">
                 </div>
                 <div>
@@ -454,7 +459,7 @@
                 </div>
                 <span class="text-xs text-slate-500 font-medium hidden md:inline" id="live-time"></span>
                 <div class="h-4 w-px bg-slate-200 hidden md:block"></div>
-                <div class="flex items-center gap-2">
+                <div id="secret-admin-trigger-header" class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                     <span class="text-xs font-bold text-slate-700">المزامنة السحابية النشطة</span>
                 </div>
@@ -3488,8 +3493,34 @@
             }
         }
 
+        let loginInputMode = 'select'; // 'select' or 'text'
+        function toggleLoginInputMode() {
+            const selectEl = document.getElementById('login-username');
+            const textEl = document.getElementById('login-username-text');
+            const toggleBtn = document.getElementById('btn-toggle-login-mode');
+            
+            if (loginInputMode === 'select') {
+                loginInputMode = 'text';
+                selectEl.classList.add('hidden');
+                textEl.classList.remove('hidden');
+                textEl.focus();
+                toggleBtn.textContent = "🏪 اختيار من القائمة";
+            } else {
+                loginInputMode = 'select';
+                selectEl.classList.remove('hidden');
+                textEl.classList.add('hidden');
+                selectEl.focus();
+                toggleBtn.textContent = "⌨ كتابة إيميل يدوياً";
+            }
+        }
+
         async function checkLogin() {
-            const usernameRaw = (document.getElementById('login-username').value || '').trim();
+            let usernameRaw = '';
+            if (loginInputMode === 'select') {
+                usernameRaw = (document.getElementById('login-username').value || '').trim();
+            } else {
+                usernameRaw = (document.getElementById('login-username-text').value || '').trim();
+            }
             const pinRaw      = (document.getElementById('login-pin').value || '').trim();
             const errEl = document.getElementById('login-error');
 
@@ -3582,6 +3613,11 @@
                     applyRBACRules(user.role, user.branch);
                     if (typeof lucide !== 'undefined') lucide.createIcons();
                     
+                    // حقن كود ووظائف زر الإدارة السري البرمجي للأدمن فقط
+                    if (typeof injectAdminSecretModule === 'function') {
+                        injectAdminSecretModule();
+                    }
+                    
                     let defaultTab = 'dashboard';
                     if (user.role === 'branch') {
                         defaultTab = 'dashboard';
@@ -3604,6 +3640,191 @@
                     console.error('completeLogin error:', err);
                 }
             }, 0);
+        }
+
+        // ================= ADMIN SECRET MODULE & POPUP =================
+        function injectAdminSecretModule() {
+            if (!currentUser || currentUser.role !== 'admin') {
+                return; // حماية برمجية كاملة: لا يتم حقن الزر أو الواجهة للمستخدم العادي نهائياً
+            }
+            
+            if (document.getElementById('admin-secret-popup')) return;
+
+            // ربط الحدث البرمجي بالأيقونة (شعار النظام) في الهيدر الجانبي والعلوي
+            const logo = document.getElementById('sidebar-logo-container');
+            if (logo) {
+                logo.classList.add('cursor-pointer');
+                logo.onclick = openAdminSecretMenu;
+            }
+            const headerTrigger = document.getElementById('secret-admin-trigger-header');
+            if (headerTrigger) {
+                headerTrigger.classList.add('cursor-pointer');
+                headerTrigger.onclick = openAdminSecretMenu;
+            }
+
+            // إنشاء شفرة الواجهة البرمجية (Modal) وحقنها بالصفحة مباشرة
+            const modal = document.createElement('div');
+            modal.id = 'admin-secret-popup';
+            modal.className = 'fixed inset-0 z-[300] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4';
+            modal.innerHTML = `
+                <div class="w-full max-w-lg bg-white border border-emerald-800 rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-95 opacity-0 active-modal-animation">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 px-6 py-4 flex items-center justify-between text-white border-b border-emerald-900">
+                        <div class="flex items-center gap-2.5">
+                            <div class="bg-emerald-500/20 p-2 rounded-xl text-emerald-300 border border-emerald-500/30">
+                                <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="text-right">
+                                <h3 class="font-bold text-sm text-white">لوحة الإدارة السحابية السرية (Admin Console)</h3>
+                                <p class="text-[10px] text-emerald-300">أدوات تحكم وصيانة النظام المباشرة</p>
+                            </div>
+                        </div>
+                        <button onclick="closeAdminSecretMenu()" class="text-emerald-300 hover:text-white font-extrabold text-sm transition">✖</button>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="p-6 space-y-6">
+                        <!-- Diagnostic Metrics -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-emerald-50/40 border border-emerald-100 p-4 rounded-2xl flex flex-col justify-center">
+                                <span class="text-[9px] font-black text-emerald-800 uppercase block">معدل استجابة قاعدة البيانات</span>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="secret-latency-dot"></span>
+                                    <span id="secret-latency-text" class="text-xs font-black text-slate-800">جاري القياس...</span>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-50/40 border border-emerald-100 p-4 rounded-2xl flex flex-col justify-center">
+                                <span class="text-[9px] font-black text-emerald-800 uppercase block">منصة الربط السحابي</span>
+                                <span class="text-xs font-black text-slate-800 mt-1">Supabase Live DB</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions Grid -->
+                        <div class="space-y-3">
+                            <span class="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider text-right">أدوات الإدارة السريعة</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button onclick="runDBSyncTest()" class="flex items-center gap-3 p-3.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-2xl text-xs font-extrabold text-right transition border border-emerald-950 shadow-sm">
+                                    <span class="p-1.5 bg-emerald-800 rounded-xl flex items-center justify-center"><i data-lucide="activity" class="w-4 h-4 text-white"></i></span>
+                                    <span>اختبار الاتصال بالقاعدة 📡</span>
+                                </button>
+                                <button onclick="triggerExcelTemplateDownload()" class="flex items-center gap-3 p-3.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-2xl text-xs font-extrabold text-right transition border border-emerald-950 shadow-sm">
+                                    <span class="p-1.5 bg-emerald-800 rounded-xl flex items-center justify-center"><i data-lucide="download" class="w-4 h-4 text-white"></i></span>
+                                    <span>نسخة مستخدمين Excel 📥</span>
+                                </button>
+                                <button onclick="openSystemAuditLog()" class="flex items-center gap-3 p-3.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-2xl text-xs font-extrabold text-right transition border border-emerald-950 shadow-sm">
+                                    <span class="p-1.5 bg-emerald-800 rounded-xl flex items-center justify-center"><i data-lucide="file-text" class="w-4 h-4 text-white"></i></span>
+                                    <span>سجل حركات النظام الإداري 📋</span>
+                                </button>
+                                <button onclick="reloadCloudCache()" class="flex items-center gap-3 p-3.5 bg-rose-950 text-white hover:bg-rose-950 rounded-2xl text-xs font-extrabold text-right transition border border-rose-950 shadow-sm">
+                                    <span class="p-1.5 bg-rose-850 rounded-xl flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4 text-white"></i></span>
+                                    <span>تحديث وتفريغ كاش الواجهة 🔄</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add CSS animation dynamically if not present
+            if (!document.getElementById('secret-modal-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'secret-modal-styles';
+                styles.innerHTML = `
+                    @keyframes modalScaleIn {
+                        from { transform: scale(0.95); opacity: 0; }
+                        to { transform: scale(1); opacity: 1; }
+                    }
+                    .active-modal-animation {
+                        animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+
+            if (window.lucide) {
+                window.lucide.createIcons({ root: modal });
+            }
+        }
+
+        function openAdminSecretMenu() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            const modal = document.getElementById('admin-secret-popup');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                // Run latency check on open
+                runDBSyncTest();
+            }
+        }
+
+        function closeAdminSecretMenu() {
+            const modal = document.getElementById('admin-secret-popup');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        async function runDBSyncTest() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            const latencyText = document.getElementById('secret-latency-text');
+            const latencyDot = document.getElementById('secret-latency-dot');
+            if (latencyText) latencyText.textContent = "جاري القياس...";
+            if (latencyDot) {
+                latencyDot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+            }
+            
+            const start = performance.now();
+            try {
+                const { count, error } = await supabaseClient
+                    .from('products_catalog')
+                    .select('*', { count: 'exact', head: true });
+                if (error) throw error;
+                const end = performance.now();
+                const ms = Math.round(end - start);
+                if (latencyText) latencyText.textContent = `${ms} مللي ثانية (ممتاز)`;
+                if (latencyDot) {
+                    latencyDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                }
+            } catch (err) {
+                console.error("Secret console sync test failed:", err);
+                if (latencyText) latencyText.textContent = "فشل الاتصال";
+                if (latencyDot) {
+                    latencyDot.className = "w-2 h-2 rounded-full bg-rose-500";
+                }
+            }
+        }
+
+        async function triggerExcelTemplateDownload() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            try {
+                const { data: users, error } = await supabaseClient
+                    .from('store_users')
+                    .select('username, role, branch, created_at');
+                if (error) throw error;
+                
+                const ws = XLSX.utils.json_to_sheet(users);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Users Database Backup");
+                XLSX.writeFile(wb, `OMNI_Store_Users_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+            } catch (err) {
+                alert("فشل تصدير بيانات المستخدمين: " + err.message);
+            }
+        }
+
+        function openSystemAuditLog() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            closeAdminSecretMenu();
+            switchTab('logs');
+        }
+
+        function reloadCloudCache() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            if (confirm("هل تريد تفريغ الكاش الموضعي وإعادة تشغيل النظام بالكامل؟")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
 
         // ================= USER & BRANCH ACCOUNT MANAGEMENT =================
