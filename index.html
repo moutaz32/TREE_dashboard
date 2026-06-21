@@ -6426,26 +6426,26 @@
 
                 // تنظيف اسم المنتج
                 const origNameKey = detectedKeys.product_name;
-                let rawName = origNameKey ? row[origNameKey] : 'منتج غير مسمى';
+                let rawName = (origNameKey && row[origNameKey] !== undefined && row[origNameKey] !== null) ? row[origNameKey] : 'منتج غير مسمى';
                 cleanRow.product_name = rawName.toString().trim();
 
                 // تنظيف الكمية
                 const origQtyKey = detectedKeys.quantity;
-                let rawQty = origQtyKey ? row[origQtyKey] : 0;
+                let rawQty = (origQtyKey && row[origQtyKey] !== undefined && row[origQtyKey] !== null) ? row[origQtyKey] : 0;
                 let cleanQty = parseInt(rawQty.toString().replace(/[^\d]/g, '')) || 0;
                 if (cleanQty !== Number(rawQty)) qtyFixedCount++;
                 cleanRow.quantity = cleanQty;
 
                 // تنظيف الموقع
                 const origLocKey = detectedKeys.location_id;
-                let rawLoc = origLocKey ? row[origLocKey] : 'مخزن ابيس';
-                let cleanLoc = normalizeLocationId(rawLoc);
-                if (cleanLoc !== rawLoc) namesNormalizedCount++;
+                let rawLoc = (origLocKey && row[origLocKey] !== undefined && row[origLocKey] !== null) ? row[origLocKey] : 'مخزن ابيس';
+                let cleanLoc = normalizeLocationId(rawLoc.toString());
+                if (cleanLoc !== rawLoc.toString()) namesNormalizedCount++;
                 cleanRow.location_id = cleanLoc;
 
                 // تنظيف السعر
                 const origPriceKey = detectedKeys.regular_price;
-                let rawPrice = origPriceKey ? row[origPriceKey] : 0;
+                let rawPrice = (origPriceKey && row[origPriceKey] !== undefined && row[origPriceKey] !== null) ? row[origPriceKey] : 0;
                 cleanRow.regular_price = parseFloat(rawPrice.toString().replace(/[^\d.]/g, '')) || 0;
 
                 return cleanRow;
