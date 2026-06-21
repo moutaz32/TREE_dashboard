@@ -2611,7 +2611,13 @@
                 <!-- Box List Panel -->
                 <div id="seasonal-list-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                        <h4 class="font-bold text-slate-800 text-sm">سجل الصناديق والكراتين المشحونة</h4>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <h4 class="font-bold text-slate-800 text-sm">سجل الصناديق والكراتين المشحونة</h4>
+                            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 w-full sm:w-64">
+                                <i data-lucide="scan-barcode" class="w-4 h-4 text-indigo-500"></i>
+                                <input type="text" id="seasonal-box-search-barcode-input" onkeydown="handleSeasonalBoxSearchKeydown(event)" placeholder="امسح باركود الكرتونة للبحث السريع..." class="bg-transparent text-xs font-bold text-slate-700 outline-none w-full">
+                            </div>
+                        </div>
                         
                         <!-- Filters -->
                         <div class="flex items-center gap-3 flex-wrap">
@@ -2673,15 +2679,17 @@
                                 </select>
                             </div>
 
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="col-span-2 space-y-2">
-                                    <label class="text-xs font-bold text-slate-600 block">امسح باركود القطعة:</label>
-                                    <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
-                                </div>
-                                <div class="col-span-1 space-y-2">
-                                    <label class="text-xs font-bold text-slate-600 block">الكمية:</label>
-                                    <input type="number" id="seasonal-box-qty-input" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-center">
-                                </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-600 block">رقم الكرتونة (اختياري):</label>
+                                <input type="text" id="seasonal-box-number-input" placeholder="مثال: KT-123 أو رقم مخصص..." class="w-full bg-slate-50 border border-slate-200 text-xs p-3 rounded-xl font-bold">
+                                <p class="text-[9px] text-slate-400">اتركه فارغًا للتوليد التلقائي لباركود الكرتونة.</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-600 block">امسح باركود القطعة:</label>
+                                <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
+                                <!-- Hidden input for legacy code compatibility -->
+                                <input type="number" id="seasonal-box-qty-input" value="1" class="hidden">
                             </div>
 
                             <!-- Scanned Product Info Banner -->
@@ -2702,10 +2710,14 @@
                                     <button type="button" onclick="switchSeasonalSizeCategory('kids')" id="btn-cat-kids" class="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all text-slate-600 hover:bg-white/50">أطفال (6 - 18)</button>
                                     <button type="button" onclick="switchSeasonalSizeCategory('pants')" id="btn-cat-pants" class="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all text-slate-600 hover:bg-white/50">بنطلون (30 - 50)</button>
                                 </div>
-                                <!-- Dynamically generated size buttons -->
-                                <div id="seasonal-size-buttons-container" class="grid grid-cols-4 gap-1.5 max-h-40 overflow-y-auto p-0.5">
+                                <!-- Dynamically generated size quantity cards -->
+                                <div id="seasonal-size-buttons-container" class="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto p-0.5">
                                     <!-- Populated dynamically via JS -->
                                 </div>
+                                <!-- Save sizes action button -->
+                                <button type="button" onclick="saveActiveProductSizes()" id="btn-save-active-sizes" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5" disabled>
+                                    <span>حفظ وإضافة المقاسات للكرتونة ➕</span>
+                                </button>
                             </div>
                         </div>
 
@@ -2785,6 +2797,7 @@
                             <table class="w-full text-right border-collapse text-xs">
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-2.5 px-3 text-center">الصورة</th>
                                         <th class="py-2.5 px-3">الباركود</th>
                                         <th class="py-2.5 px-3">المنتج</th>
                                         <th class="py-2.5 px-3 text-center">المقاس</th>
@@ -2792,7 +2805,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="seasonal-details-tbody" class="divide-y divide-slate-100 font-medium">
-                                    <tr><td colspan="4" class="py-8 text-center text-slate-400">لا توجد قطع مضافة بعد.</td></tr>
+                                    <tr><td colspan="5" class="py-8 text-center text-slate-400">لا توجد قطع مضافة بعد.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -14700,8 +14713,12 @@
                 const tbody = document.getElementById('seasonal-details-tbody');
                 tbody.innerHTML = '';
                 box.items.forEach(item => {
+                    const imgUrl = getProductImage(item.barcode) || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=80&auto=format&fit=crop&q=60';
                     tbody.innerHTML += `
-                        <tr class="border-b border-slate-100">
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+                            <td class="py-2 px-3 text-center">
+                                <img src="${imgUrl}" onclick="openProductBranchesModal('${item.barcode}')" class="w-10 h-10 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition duration-150 mx-auto" alt="Product Image">
+                            </td>
                             <td class="py-2.5 px-3 font-mono text-slate-600">${item.barcode}</td>
                             <td class="py-2.5 px-3 text-slate-800 font-semibold">${item.product_name}</td>
                             <td class="py-2.5 px-3 text-center"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">${item.size}</span></td>
