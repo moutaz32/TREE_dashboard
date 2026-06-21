@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام OMNI - لإدارة الفروع والمستودعات (Supabase)</title>
+    <title>نظام OMNI - لإدارة الفروع والمستودعات</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -364,10 +364,10 @@
             </nav>
         </div>
 
-        <!-- Supabase Connection Status Badge -->
+        <!-- Cloud Connection Status Badge -->
         <div class="p-4 border-t border-brand-900/55 bg-brand-900/20">
             <div class="flex items-center justify-between">
-                <span class="text-xs text-brand-300 font-semibold">اتصال Supabase</span>
+                <span class="text-xs text-brand-300 font-semibold">حالة الاتصال</span>
                 <span id="connection-badge" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                     جاري الاتصال...
@@ -1130,7 +1130,7 @@
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button id="btn-cancel-catalog" onclick="resetUploadCard('catalog')" class="text-[10px] font-bold text-slate-400 hover:text-slate-600" disabled>إلغاء</button>
-                            <button id="btn-upload-catalog" onclick="startSupabaseUpload('catalog')" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>رفع لـ Supabase</button>
+                            <button id="btn-upload-catalog" onclick="startSupabaseUpload('catalog')" class="bg-brand-deep hover:bg-brand-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>حفظ البيانات</button>
                         </div>
                     </div>
 
@@ -1165,7 +1165,7 @@
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button id="btn-cancel-shopify_images" onclick="resetUploadCard('shopify_images')" class="text-[10px] font-bold text-slate-400 hover:text-slate-600" disabled>إلغاء</button>
-                            <button id="btn-upload-shopify_images" onclick="startSupabaseUpload('shopify_images')" class="bg-pink-700 hover:bg-pink-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>رفع لـ Supabase</button>
+                            <button id="btn-upload-shopify_images" onclick="startSupabaseUpload('shopify_images')" class="bg-pink-700 hover:bg-pink-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>حفظ البيانات</button>
                         </div>
                     </div>
 
@@ -1200,7 +1200,7 @@
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button id="btn-cancel-locations" onclick="resetUploadCard('locations')" class="text-[10px] font-bold text-slate-400 hover:text-slate-600" disabled>إلغاء</button>
-                            <button id="btn-upload-locations" onclick="startSupabaseUpload('locations')" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>رفع لـ Supabase</button>
+                            <button id="btn-upload-locations" onclick="startSupabaseUpload('locations')" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>حفظ البيانات</button>
                         </div>
                     </div>
 
@@ -1235,7 +1235,7 @@
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button id="btn-cancel-inventory" onclick="resetUploadCard('inventory')" class="text-[10px] font-bold text-slate-400 hover:text-slate-600" disabled>إلغاء</button>
-                            <button id="btn-upload-inventory" onclick="startSupabaseUpload('inventory')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>رفع لـ Supabase</button>
+                            <button id="btn-upload-inventory" onclick="startSupabaseUpload('inventory')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>حفظ البيانات</button>
                         </div>
                     </div>
 
@@ -1270,7 +1270,7 @@
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                             <button id="btn-cancel-shopify_orders" onclick="resetUploadCard('shopify_orders')" class="text-[10px] font-bold text-slate-400 hover:text-slate-600" disabled>إلغاء</button>
-                            <button id="btn-upload-shopify_orders" onclick="startSupabaseUpload('shopify_orders')" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>رفع لـ Supabase</button>
+                            <button id="btn-upload-shopify_orders" onclick="startSupabaseUpload('shopify_orders')" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg disabled:opacity-40" disabled>حفظ البيانات</button>
                         </div>
                     </div>
                 </div>
@@ -1278,11 +1278,11 @@
                 <!-- Logger/Consolidated Terminal Output -->
                 <div class="bg-slate-900 rounded-2xl p-5 font-mono text-xs text-slate-300 border border-slate-800 space-y-2 shadow-inner">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">سجل معالجة ومزامنة البيانات (Supabase CLI)</span>
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">سجل معالجة ومزامنة البيانات</span>
                         <button onclick="clearLogs()" class="text-[10px] text-slate-400 hover:text-white transition-colors bg-slate-800 px-2.5 py-1 rounded-md">مسح السجل</button>
                     </div>
                     <div id="upload-console" class="space-y-1 max-h-48 overflow-y-auto pl-2 text-right">
-                        <div class="text-brand-accent">[نظام] تم تشغيل محرك معالجة نظام OMNI. جاهز للربط بـ Supabase...</div>
+                        <div class="text-brand-accent">[نظام] تم تشغيل محرك معالجة نظام OMNI. جاهز للربط بقاعدة البيانات...</div>
                     </div>
                 </div>
             </section>
@@ -3759,7 +3759,7 @@
                 await loadActiveUsersList();
             } catch (err) {
                 console.error("Failed to create user account:", err);
-                alert("فشل إنشاء الحساب! يرجى التأكد من إنشاء الجدول وتفعيل السياسات (SQL) في لوحة Supabase.");
+                alert("فشل إنشاء الحساب! يرجى التأكد من إنشاء الجدول وتفعيل السياسات (SQL) في لوحة التحكم.");
             }
         }
 
@@ -4557,24 +4557,24 @@
 
         // ================= DATABASE INITIALIZATION =================
         async function initializeDatabaseConnection() {
-            updateBadge('connecting', 'جاري الاتصال بـ Supabase...');
-            logToConsole('system', 'جاري تشغيل الاتصال بالـ Supabase...');
+            updateBadge('connecting', 'جاري الاتصال بالسحابة...');
+            logToConsole('system', 'جاري تشغيل الاتصال بالسحابة...');
 
             try {
-                // Initialize Supabase Client
+                // Initialize Database Client
                 const { createClient } = supabase;
                 supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-                updateBadge('connected', 'متصل (Supabase)');
-                logToConsole('success', `تم الاتصال بـ Supabase بنجاح.`);
+                updateBadge('connected', 'متصل سحابياً');
+                logToConsole('success', `تم الاتصال بالسحابة بنجاح.`);
                 
                 setupRealtimeListeners();
 
             } catch (error) {
-                console.error("Supabase init failed:", error);
+                console.error("Database connection failed:", error);
                 updateBadge('failed', 'فشل الاتصال');
                 logToConsole('error', `خطأ في إعدادات الاتصال: ${error.message}`);
-                alert("فشل الاتصال بـ Supabase. يرجى التحقق من المفاتيح المكتبة في الكود.");
+                alert("فشل الاتصال بقاعدة البيانات السحابية. يرجى التحقق من الإعدادات.");
             }
         }
 
@@ -6864,7 +6864,7 @@
         // ================= SUPABASE UPLOAD ENGINE =================
         async function startSupabaseUpload(type) {
             if (!supabaseClient) {
-                alert("قاعدة بيانات Supabase غير متصلة.");
+                alert("قاعدة البيانات غير متصلة.");
                 return;
             }
 
@@ -6880,7 +6880,7 @@
             const progressStatus = document.getElementById(`progress-status-${type}`);
 
             progressContainer.classList.remove('hidden');
-            progressStatus.textContent = "جاري المزامنة مع Supabase...";
+            progressStatus.textContent = "جاري المزامنة مع قاعدة البيانات...";
             progressBar.style.width = "0%";
             progressPercent.textContent = "0%";
 
@@ -6888,7 +6888,7 @@
             const batchLimit = 400; // Chunk into 400 records
             let processed = 0;
 
-            logToConsole('system', `بدء المزامنة لـ ${totalRecords} سجل في Supabase...`);
+            logToConsole('system', `بدء المزامنة لـ ${totalRecords} سجل في قاعدة البيانات...`);
 
             try {
                 if (type === 'inventory') {
@@ -7021,15 +7021,15 @@
                 await addActivityLog(logActions[type], `تم مزامنة ورفع ملف يحتوي على عدد ${processed} سجل بنجاح.`);
 
                 progressStatus.textContent = "مكتمل!";
-                logToConsole('success', `تمت المزامنة بنجاح! تم رفع ${processed}/${totalRecords} سجل إلى Supabase.`);
-                alert(`اكتمل رفع ملف ${type} بنجاح! تم مزامنة ${processed} سجل في Supabase.`);
+                logToConsole('success', `تمت المزامنة بنجاح! تم حفظ ${processed}/${totalRecords} سجل في قاعدة البيانات.`);
+                alert(`اكتمل رفع وحفظ ملف ${type} بنجاح! تم مزامنة وحفظ ${processed} سجل.`);
                 
                 resetUploadCard(type);
             } catch (err) {
-                console.error("Supabase upload error:", err);
+                console.error("Upload error:", err);
                 logToConsole('error', `فشل في رفع البيانات لـ ${type}: ${err.message || err.details}`);
                 progressStatus.textContent = "فشل الرفع";
-                alert("حدث خطأ أثناء الرفع لموقع Supabase: " + (err.message || err.details));
+                alert("حدث خطأ أثناء رفع وحفظ البيانات: " + (err.message || err.details));
             } finally {
                 isUploading[type] = false;
                 disableFormButtons(type, false);
@@ -7997,7 +7997,7 @@
                         <div class="flex-1 space-y-4">
                             <div class="space-y-1">
                                 <div class="flex items-center gap-3 flex-wrap w-full">
-                                    <span class="bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-brand-100">استعلام Supabase مباشر</span>
+                                    <span class="bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-brand-100">استعلام مخزني مباشر</span>
                                     ${discrepancyBadge}
                                     <button onclick="promptDiscrepancy('${barcode}', ${systemQty})" class="mr-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition animate-pulse">
                                         <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
@@ -8037,7 +8037,7 @@
                 resultContainer.innerHTML = `
                     <div class="text-center text-rose-500 py-8">
                         <i data-lucide="alert-octagon" class="w-12 h-12 mx-auto mb-2 text-rose-400"></i>
-                        <p class="font-bold">فشل الاستعلام من Supabase</p>
+                        <p class="font-bold">فشل الاستعلام من قاعدة البيانات</p>
                         <p class="text-xs text-slate-400 mt-1">${err.message || err.details || ''}</p>
                     </div>
                 `;
@@ -9753,7 +9753,7 @@
 
             const tableBody = document.getElementById('audit-logs-table-body');
             if (tableBody && auditLogsCurrentPage === 1 && auditLogsData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 font-semibold">جاري جلب سجل العمليات من Supabase...</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 font-semibold">جاري جلب سجل العمليات...</td></tr>';
             }
 
             try {
@@ -11264,7 +11264,7 @@
             const tbody = document.getElementById('transfers-tbody');
             if (!tbody) return;
             
-            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">جاري تحميل طلبات التحويل من Supabase...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">جاري تحميل طلبات التحويل...</td></tr>';
             
             try {
                 const { data, error } = await supabaseClient
@@ -12894,7 +12894,7 @@
                                 <td colspan="7" class="py-16 text-center text-rose-600 font-bold space-y-4">
                                     <div class="text-sm">⚠️ جدول جرد الفروع (inventory_audits) غير موجود حالياً في قاعدة البيانات.</div>
                                     <div class="text-xs text-slate-500 max-w-xl mx-auto leading-relaxed font-normal">
-                                        يرجى الانتقال للوحة التحكم في Supabase وتشغيل كود الـ SQL المرفق في خطة العمل لإنشاء الجدول وتفعيل السياسات الأمنية الخاصة به قبل البدء.
+                                        يرجى التواصل مع مدير النظام لتثبيت وتهيئة جداول قاعدة البيانات اللازمة (SQL) قبل البدء.
                                     </div>
                                 </td>
                             </tr>`;
@@ -14486,7 +14486,7 @@ CREATE TABLE IF NOT EXISTS public.seasonal_boxes (
 ALTER TABLE public.seasonal_boxes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes FOR ALL USING (true);
             `;
-            alert("⚠️ تنبيه: جدول كراتين المواسم (seasonal_boxes) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتشغيله في SQL Editor بلوحة تحكم Supabase:\n\n" + sqlQuery);
+            alert("⚠️ تنبيه: جدول كراتين المواسم (seasonal_boxes) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتمريره لمدير النظام لتشغيله في لوحة تحكم السيرفر:\n\n" + sqlQuery);
         }
 
         // Restoring the original stray download code block safely
