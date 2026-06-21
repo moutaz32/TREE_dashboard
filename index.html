@@ -456,7 +456,7 @@
                 <div class="h-4 w-px bg-slate-200 hidden md:block"></div>
                 <div class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                    <span class="text-xs font-bold text-slate-700">مزامنة Supabase النشطة</span>
+                    <span class="text-xs font-bold text-slate-700">المزامنة السحابية النشطة</span>
                 </div>
             </div>
         </header>
@@ -7770,7 +7770,7 @@
             const orderItems = order.items || [];
             if (orderItems.length === 0) return;
 
-            logToConsole('system', `جاري تحديث حالة الطلب رقم ${orderNumber} والخصم التلقائي من الرفوف في Supabase...`);
+            logToConsole('system', `جاري تحديث حالة الطلب رقم ${orderNumber} والخصم التلقائي من الرفوف...`);
 
             try {
                 const inventoryUpdates = [];
@@ -7833,12 +7833,12 @@
                 // Log activity to Supabase
                 await addActivityLog("تعبئة طلب شوبيفاي", `تم تحضير الطلب #${orderNumber} بالكامل وخصم القطع من الرفوف.`);
 
-                logToConsole('success', `تم خصم المخزن وحفظ الطلب ${orderNumber} كمكتمل بنجاح في Supabase.`);
+                logToConsole('success', `تم خصم المخزن وحفظ الطلب ${orderNumber} كمكتمل بنجاح.`);
                 alert(`تم تأكيد تحضير الطلب ${orderNumber} بنجاح، وخصم البضائع تلقائياً من الرفوف.`);
             } catch (err) {
                 console.error("Order completion update error:", err);
                 logToConsole('error', `فشل في إكمال الطلب ${orderNumber}: ${err.message || err.details}`);
-                alert("حدث خطأ أثناء إرسال إشارة إكمال الطلب والخصم من المستودع في Supabase: " + (err.message || err.details));
+                alert("حدث خطأ أثناء إرسال إشارة إكمال الطلب والخصم من المستودع: " + (err.message || err.details));
             }
         }
 
