@@ -13848,8 +13848,7 @@
                 alert("يرجى إضافة قطعة واحدة على الأقل داخل الكرتونة قبل الشحن!");
                 return;
             }
-            
-            const branchName = currentUser ? currentUser.branch : 'فرع غير معروف';
+            const branchName = (currentUser && currentUser.branch) ? currentUser.branch : 'مخزن رئيسي';
             const adminName = currentUser ? currentUser.username : 'موظف';
             const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
             const rand = Math.floor(1000 + Math.random() * 9000);
