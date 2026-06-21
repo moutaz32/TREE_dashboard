@@ -14905,6 +14905,47 @@
             }
         }
 
+        async function handleSeasonalBoxSearchKeydown(e) {
+            if (e.key === 'Enter') {
+                const queryVal = e.target.value.trim();
+                if (!queryVal) return;
+                
+                try {
+                    // Try to find the box by ID (exact match first)
+                    const { data: box, error } = await supabaseClient
+                        .from('seasonal_boxes')
+                        .select('id')
+                        .eq('id', queryVal)
+                        .maybeSingle();
+                        
+                    if (error) throw error;
+                    
+                    if (box) {
+                        e.target.value = '';
+                        viewSeasonalBoxDetails(box.id);
+                    } else {
+                        // Let's do a case insensitive/partial lookup
+                        const { data: boxLike, error: errorLike } = await supabaseClient
+                            .from('seasonal_boxes')
+                            .select('id')
+                            .ilike('id', `%${queryVal}%`)
+                            .limit(1)
+                            .maybeSingle();
+                            
+                        if (boxLike) {
+                            e.target.value = '';
+                            viewSeasonalBoxDetails(boxLike.id);
+                        } else {
+                            showTemporaryToast("الكرتونة غير موجودة!", "error");
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error searching seasonal box:", err);
+                    showTemporaryToast("خطأ أثناء البحث عن الكرتونة", "error");
+                }
+            }
+        }
+
         function closeSeasonalDetails() {
             document.getElementById('seasonal-list-panel').classList.remove('hidden');
             document.getElementById('seasonal-details-panel').classList.add('hidden');
