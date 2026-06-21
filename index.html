@@ -2690,14 +2690,17 @@
                                 <input type="text" id="seasonal-box-barcode-input" onkeydown="handleSeasonalBarcodeKeydown(event)" placeholder="امسح الباركود واضغط Enter..." class="w-full bg-slate-50 border border-slate-200 text-xs px-4 py-3 rounded-xl font-mono text-left" dir="ltr">
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <label class="text-xs font-bold text-slate-600 block">اختر مقاس القطعة الممسوحة:</label>
-                                <div class="grid grid-cols-5 gap-2">
-                                    <button type="button" onclick="selectSeasonalActiveSize('S')" id="btn-size-S" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">S</button>
-                                    <button type="button" onclick="selectSeasonalActiveSize('M')" id="btn-size-M" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">M</button>
-                                    <button type="button" onclick="selectSeasonalActiveSize('L')" id="btn-size-L" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200 font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-800">L</button>
-                                    <button type="button" onclick="selectSeasonalActiveSize('XL')" id="btn-size-XL" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">XL</button>
-                                    <button type="button" onclick="selectSeasonalActiveSize('XXL')" id="btn-size-XXL" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200">XXL</button>
+                                <!-- Categories Tab Selector -->
+                                <div class="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
+                                    <button type="button" onclick="switchSeasonalSizeCategory('standard')" id="btn-cat-standard" class="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all bg-white text-indigo-700 shadow-sm">كبار (S - 6XL)</button>
+                                    <button type="button" onclick="switchSeasonalSizeCategory('kids')" id="btn-cat-kids" class="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all text-slate-600 hover:bg-white/50">أطفال (6 - 18)</button>
+                                    <button type="button" onclick="switchSeasonalSizeCategory('pants')" id="btn-cat-pants" class="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all text-slate-600 hover:bg-white/50">بنطلون (30 - 50)</button>
+                                </div>
+                                <!-- Dynamically generated size buttons -->
+                                <div id="seasonal-size-buttons-container" class="grid grid-cols-4 gap-1.5 max-h-40 overflow-y-auto p-0.5">
+                                    <!-- Populated dynamically via JS -->
                                 </div>
                             </div>
                         </div>
@@ -2707,27 +2710,8 @@
                             <!-- Box Size Matrix Preview -->
                             <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-3">
                                 <span class="text-xs font-bold text-indigo-900 block">جدول توزيع مقاسات الصندوق الحالي (Box Size Matrix)</span>
-                                <div class="grid grid-cols-5 gap-4 text-center">
-                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                                        <div class="text-[10px] font-bold text-slate-400">S</div>
-                                        <div id="matrix-count-S" class="text-lg font-black text-indigo-700 mt-1">0</div>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                                        <div class="text-[10px] font-bold text-slate-400">M</div>
-                                        <div id="matrix-count-M" class="text-lg font-black text-indigo-700 mt-1">0</div>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                                        <div class="text-[10px] font-bold text-slate-400">L</div>
-                                        <div id="matrix-count-L" class="text-lg font-black text-indigo-700 mt-1">0</div>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                                        <div class="text-[10px] font-bold text-slate-400">XL</div>
-                                        <div id="matrix-count-XL" class="text-lg font-black text-indigo-700 mt-1">0</div>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                                        <div class="text-[10px] font-bold text-slate-400">XXL</div>
-                                        <div id="matrix-count-XXL" class="text-lg font-black text-indigo-700 mt-1">0</div>
-                                    </div>
+                                <div id="seasonal-box-matrix-preview" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+                                    <!-- Badges populated dynamically via JS -->
                                 </div>
                             </div>
 
@@ -2778,27 +2762,8 @@
                     <!-- Size Matrix of returned Box -->
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                         <span class="text-xs font-bold text-slate-700 block">جدول توزيع المقاسات للكرتونة (Box Size Matrix)</span>
-                        <div class="grid grid-cols-5 gap-4 text-center">
-                            <div class="bg-white p-3 rounded-xl border border-slate-200">
-                                <div class="text-[10px] font-bold text-slate-400">S</div>
-                                <div id="details-count-S" class="text-lg font-black text-slate-800 mt-1">0</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-slate-200">
-                                <div class="text-[10px] font-bold text-slate-400">M</div>
-                                <div id="details-count-M" class="text-lg font-black text-slate-800 mt-1">0</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-slate-200">
-                                <div class="text-[10px] font-bold text-slate-400">L</div>
-                                <div id="details-count-L" class="text-lg font-black text-slate-800 mt-1">0</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-slate-200">
-                                <div class="text-[10px] font-bold text-slate-400">XL</div>
-                                <div id="details-count-XL" class="text-lg font-black text-slate-800 mt-1">0</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-slate-200">
-                                <div class="text-[10px] font-bold text-slate-400">XXL</div>
-                                <div id="details-count-XXL" class="text-lg font-black text-slate-800 mt-1">0</div>
-                            </div>
+                        <div id="seasonal-details-matrix-preview" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+                            <!-- Badges populated dynamically via JS -->
                         </div>
                     </div>
 
@@ -13652,13 +13617,21 @@
         let activeSeasonalSize = 'L';
         let activeSeasonalBoxDetails = null;
 
+        const seasonalSizeCategories = {
+            standard: ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL'],
+            kids: ['6', '8', '10', '12', '14', '16', '18'],
+            pants: ['30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50']
+        };
+        let currentSeasonalSizeCategory = 'standard';
+
         function showCreateSeasonalBoxForm() {
             activeSeasonalBoxItems = [];
+            currentSeasonalSizeCategory = 'standard';
             activeSeasonalSize = 'L';
             document.getElementById('seasonal-box-barcode-input').value = '';
             
-            // Set size button highlight
-            selectSeasonalActiveSize('L');
+            // Set size category active button highlight
+            switchSeasonalSizeCategory('standard');
             renderSeasonalBoxScannedTable();
             updateSeasonalBoxMatrixPreview();
             
@@ -13680,19 +13653,61 @@
             loadSeasonalBoxes();
         }
 
-        function selectSeasonalActiveSize(size) {
-            activeSeasonalSize = size;
-            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            sizes.forEach(s => {
-                const btn = document.getElementById(`btn-size-${s}`);
+        function switchSeasonalSizeCategory(category) {
+            currentSeasonalSizeCategory = category;
+            
+            // Toggle active tab classes
+            const tabs = ['standard', 'kids', 'pants'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('btn-cat-' + t);
                 if (btn) {
-                    if (s === size) {
-                        btn.className = "py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-extrabold rounded-lg text-xs transition border-2 border-indigo-600 shadow-sm";
+                    if (t === category) {
+                        btn.className = "flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all bg-white text-indigo-700 shadow-sm";
                     } else {
-                        btn.className = "py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200";
+                        btn.className = "flex-1 text-center py-1.5 rounded-lg text-[9px] font-black transition-all text-slate-600 hover:bg-white/50";
                     }
                 }
             });
+
+            // Auto-select first size in the new category
+            const sizes = seasonalSizeCategories[category] || [];
+            if (sizes.length > 0) {
+                activeSeasonalSize = sizes[0];
+            }
+            renderSeasonalSizeButtons();
+            
+            const input = document.getElementById('seasonal-box-barcode-input');
+            if (input) input.focus();
+        }
+
+        function renderSeasonalSizeButtons() {
+            const container = document.getElementById('seasonal-size-buttons-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            const sizes = seasonalSizeCategories[currentSeasonalSizeCategory] || [];
+            
+            sizes.forEach(sz => {
+                const isSelected = (sz === activeSeasonalSize);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => selectSeasonalActiveSize(sz);
+                btn.id = 'btn-size-' + sz;
+                
+                let baseClass = "py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-xs transition border border-slate-200";
+                if (isSelected) {
+                    baseClass = "py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-extrabold rounded-lg text-xs transition border-2 border-indigo-600";
+                }
+                btn.className = baseClass;
+                btn.textContent = sz;
+                
+                container.appendChild(btn);
+            });
+        }
+
+        function selectSeasonalActiveSize(size) {
+            activeSeasonalSize = size;
+            renderSeasonalSizeButtons();
             const input = document.getElementById('seasonal-box-barcode-input');
             if (input) input.focus();
         }
@@ -13784,15 +13799,47 @@
             badge.textContent = `${totalQty} قطعة`;
         }
 
-        function updateSeasonalBoxMatrixPreview() {
-            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            sizes.forEach(size => {
-                const count = activeSeasonalBoxItems
-                    .filter(item => item.size === size)
-                    .reduce((sum, item) => sum + item.quantity, 0);
-                    
-                document.getElementById(`matrix-count-${size}`).textContent = count;
+        function renderDynamicSizeMatrix(containerId, items) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            // Group items by size
+            const sizeCounts = {};
+            items.forEach(item => {
+                const sz = item.size || 'غير محدد';
+                sizeCounts[sz] = (sizeCounts[sz] || 0) + (item.quantity || 0);
             });
+            
+            // Sort sizes logically: S, M, L, XL, XXL, etc.
+            const allSizes = Object.keys(sizeCounts).sort((a, b) => {
+                const order = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL'];
+                const idxA = order.indexOf(a);
+                const idxB = order.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+            
+            if (allSizes.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400 font-medium">لا توجد قطع مضافة بعد لتوزيع المقاسات.</span>`;
+                return;
+            }
+            
+            allSizes.forEach(size => {
+                const count = sizeCounts[size];
+                container.innerHTML += `
+                    <div class="bg-white p-2.5 rounded-xl border border-indigo-100/80 shadow-sm flex flex-col items-center min-w-[55px]">
+                        <div class="text-[9px] font-black text-slate-400 block uppercase">${size}</div>
+                        <div class="text-xs font-black text-indigo-700 mt-0.5">${count}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateSeasonalBoxMatrixPreview() {
+            renderDynamicSizeMatrix('seasonal-box-matrix-preview', activeSeasonalBoxItems);
         }
 
         async function shipSeasonalBox() {
@@ -13945,15 +13992,8 @@
                 document.getElementById('seasonal-details-title').textContent = `كرتونة مرتجعات مواسم: ${box.id}`;
                 document.getElementById('seasonal-details-subtitle').textContent = `الفرع المصدر: ${box.source_location} | الموسم: ${box.season} | الحالة: ${box.status}`;
                 
-                // Populate size matrix
-                const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-                sizes.forEach(size => {
-                    const count = box.items
-                        .filter(item => item.size === size)
-                        .reduce((sum, item) => sum + item.quantity, 0);
-                        
-                    document.getElementById(`details-count-${size}`).textContent = count;
-                });
+                // Populate size matrix dynamically
+                renderDynamicSizeMatrix('seasonal-details-matrix-preview', box.items);
                 
                 // Populate items table
                 const tbody = document.getElementById('seasonal-details-tbody');
