@@ -265,24 +265,7 @@
                     </button>
                 </div>
 
-                <!-- Role hints -->
-                <div class="mt-5 pt-4 border-t border-white/10 space-y-2">
-                    <p class="text-brand-300 text-[10px] font-bold uppercase tracking-wider text-center mb-2">كلمات المرور الافتراضية للأدوار</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="bg-white/5 rounded-lg p-2 text-center">
-                            <p class="text-white text-xs font-bold">الإدارة</p>
-                            <p class="text-brand-300 text-[10px] font-mono select-all">TREE123</p>
-                        </div>
-                        <div class="bg-white/5 rounded-lg p-2 text-center">
-                            <p class="text-white text-xs font-bold">الأونلاين</p>
-                            <p class="text-brand-300 text-[10px] font-mono select-all">ONLINE123</p>
-                        </div>
-                        <div class="bg-white/5 rounded-lg p-2 text-center">
-                            <p class="text-white text-xs font-bold">الفروع</p>
-                            <p class="text-brand-300 text-[10px] font-mono select-all">21587</p>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>
@@ -3356,12 +3339,7 @@
         let topStockChart = null;
 
         // ================= RBAC CONFIG =================
-        const USERS = [
-            { username: 'admin',  passwordHash: '5fa57ac11e7e39bf2bf84aa917a9bc01f4386fcd77357397269aa6e783076d02', role: 'admin',  branch: null },
-            { username: 'online', passwordHash: 'd6aedd0cd0425da42620e10ff8709850df09bf1d7e349a873db5adc3757f1e24', role: 'online', branch: null },
-            { username: 'branch', passwordHash: '0bfefda5d962724d1bfefa5c5ff995f5e66f834298dd7a2ab6e20aad81ab526e', role: 'branch', branch: null },
-            { username: 'quality', passwordHash: '272776a0df04c4c5e20f12bfd4b6d2bca6d00cc852263f607351eee0b7d09eea', role: 'quality', branch: null }
-        ];
+        const USERS = [];
 
         let currentUser = null;
 
@@ -3508,70 +3486,67 @@
 
             const username = usernameRaw.toLowerCase();
             const pin      = normalize(pinRaw);
-            const pinHash  = sha256(pin.toUpperCase());
 
-            let user = null;
+            if (!username || !pin) {
+                alert("يرجى اختيار اسم المستخدم وإدخال كلمة المرور!");
+                return;
+            }
+
+            // Build the email for Supabase Auth
+            let email = username.includes('@') ? username : `${username}@tree.com`;
+            if (username === 'الهرم') email = 'elharam@tree.com';
+            else if (username === 'ادارة الجودة' || username === 'إدارة الجودة') email = 'quality@tree.com';
+            else if (username === 'مخزن ابيس') email = 'abees@tree.com';
+            else if (username === 'ادارة الفرز والتعبئه' || username === 'ادارة الفرز والتعبئة' || username === 'الفرز والتعبئة واللوجستيات' || username === 'ادارة الفرز والتعبئة واللوجستيات') email = 'sorting@tree.com';
 
             try {
                 if (!supabaseClient) {
                     const { createClient } = supabase;
                     supabaseClient = createClient(supabaseUrl, supabaseKey);
                 }
-                
-                // Query user record
-                const { data, error } = await supabaseClient
-                    .from('store_users')
-                    .select('*')
-                    .eq('username', username)
-                    .maybeSingle();
+
+                // Authenticate with Supabase Auth
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: pin
+                });
 
                 if (error) throw error;
 
-                if (data) {
-                    if (data.password_hash === pinHash) {
-                        user = {
-                            username: data.username,
-                            passwordHash: data.password_hash,
-                            role: data.role,
-                            branch: data.branch
-                        };
-                    }
+                if (data && data.user) {
+                    const user = data.user;
+                    const role = user.user_metadata.role || 'branch';
+                    const branch = user.user_metadata.branch || '';
+                    
+                    const loggedInUser = {
+                        username: username,
+                        role: role,
+                        branch: branch,
+                        id: user.id
+                    };
+                    
+                    completeLogin(loggedInUser);
+                } else {
+                    throw new Error("فشل الحصول على بيانات الجلسة");
                 }
-            } catch (dbErr) {
-                console.warn("Database auth failed, trying local fallback:", dbErr);
-            }
-
-            // Fallback Local Login (so admin doesn't get locked out if offline)
-            if (!user) {
-                const fallbackUser = USERS.find(u =>
-                    u.username.trim().toLowerCase() === username &&
-                    u.passwordHash === pinHash
-                );
-                if (fallbackUser) {
-                    user = { ...fallbackUser };
-                    if (user.role === 'branch' && !user.branch) {
-                        user.branch = 'أكتوبر'; // default fallback branch
-                    }
+            } catch (authErr) {
+                console.error("Supabase authentication failed:", authErr);
+                if (errEl) {
+                    errEl.textContent = "اسم المستخدم أو كلمة المرور غير صحيحة.";
+                    errEl.classList.remove('hidden');
                 }
-            }
-
-            if (!user) {
-                if (errEl) { errEl.classList.remove('hidden'); }
                 document.getElementById('login-pin').value = '';
                 setTimeout(() => { if (errEl) errEl.classList.add('hidden'); }, 3000);
-                return;
             }
-
-            completeLogin(user);
         }
 
         function completeLogin(user) {
             currentUser = user;
             try {
-                // توقيع الجلسة لمنع التلاعب ببيانات الـ LocalStorage للحصول على صلاحيات أدمن
-                const sig = sha256(user.username + user.role + (user.branch || '') + user.passwordHash);
+                // We still save basic user details in tree_session for fast visual restore,
+                // but real security is enforced by Supabase Auth state which is handled by Supabase SDK.
                 localStorage.setItem('tree_session', JSON.stringify({
-                    username: user.username, role: user.role, branch: user.branch, ts: Date.now(), sig: sig
+                    username: user.username, role: user.role, branch: user.branch, ts: Date.now()
                 }));
             } catch (e) {
                 console.warn("localStorage set failed:", e);
@@ -3744,10 +3719,31 @@
                     return;
                 }
 
+                // Register the user in Supabase Auth first
+                let email = username.includes('@') ? username : `${username}@tree.com`;
+                if (username === 'الهرم') email = 'elharam@tree.com';
+                else if (username === 'ادارة الجودة' || username === 'إدارة الجودة') email = 'quality@tree.com';
+                else if (username === 'مخزن ابيس') email = 'abees@tree.com';
+                else if (username === 'ادارة الفرز والتعبئه' || username === 'ادارة الفرز والتعبئة' || username === 'الفرز والتعبئة واللوجستيات' || username === 'ادارة الفرز والتعبئة واللوجستيات') email = 'sorting@tree.com';
+
+                const { data: signUpData, error: signUpErr } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            role: role,
+                            branch: branch
+                        }
+                    }
+                });
+
+                if (signUpErr) throw signUpErr;
+
                 // Insert new user
                 const { error: insertErr } = await supabaseClient
                     .from('store_users')
                     .insert([{
+                        id: signUpData.user ? signUpData.user.id : undefined,
                         username: username,
                         password_hash: passwordHash,
                         role: role,
@@ -3969,12 +3965,15 @@
             }
         }
 
-        function logoutUser() {
+        async function logoutUser() {
             if (confirm('هل تريد تسجيل الخروج؟')) {
                 try {
+                    if (supabaseClient) {
+                        await supabaseClient.auth.signOut();
+                    }
                     localStorage.removeItem('tree_session');
                 } catch (e) {
-                    console.warn("localStorage remove failed:", e);
+                    console.warn("logout failed:", e);
                 }
                 location.reload();
             }
@@ -4486,7 +4485,7 @@
         }
 
         // DOM Initializations - RBAC Aware
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             updateClock();
             setInterval(updateClock, 1000);
@@ -4513,37 +4512,33 @@
                 Chart.defaults.borderColor = 'rgba(6, 78, 59, 0.04)';
             }
 
-            // تحقق من وجود جلسة محفوظة (صالحة 24 ساعة مع التحقق من توقيع الأمان)
-            let saved = null;
+            // تحقق من وجود جلسة محفوظة (صلاحية وحساب نشط في Supabase)
+            let session = null;
             try {
-                saved = localStorage.getItem('tree_session');
+                if (!supabaseClient) {
+                    const { createClient } = supabase;
+                    supabaseClient = createClient(supabaseUrl, supabaseKey);
+                }
+                const { data, error } = await supabaseClient.auth.getSession();
+                if (!error && data && data.session) {
+                    session = data.session;
+                }
             } catch (e) {
-                console.warn("localStorage get failed:", e);
+                console.warn("Failed to retrieve Supabase session on load:", e);
             }
 
-            if (saved) {
-                try {
-                    const session = JSON.parse(saved);
-                    const ageHours = (Date.now() - session.ts) / 3600000;
-                    if (ageHours < 24 && session.role) {
-                        const user = USERS.find(u => u.username === session.username);
-                        if (user) {
-                            const dataToSign = session.username + session.role + (session.branch || '') + user.passwordHash;
-                            const expectedSig = sha256(dataToSign);
-                            if (session.sig === expectedSig) {
-                                const restoredUser = { ...user, branch: session.branch };
-                                completeLogin(restoredUser);
-                                return;
-                            } else {
-                                try { localStorage.removeItem('tree_session'); } catch (_) {}
-                                location.reload();
-                                return;
-                            }
-                        }
-                    }
-                } catch(e) { 
-                    try { localStorage.removeItem('tree_session'); } catch (_) {}
-                }
+            if (session && session.user) {
+                const user = session.user;
+                const role = user.user_metadata.role || 'branch';
+                const branch = user.user_metadata.branch || '';
+                const restoredUser = {
+                    username: user.email.split('@')[0],
+                    role: role,
+                    branch: branch,
+                    id: user.id
+                };
+                completeLogin(restoredUser);
+                return;
             }
             // لا توجد جلسة - شاشة الدخول تبقى ظاهرة
         });
