@@ -8167,7 +8167,7 @@
                         <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex flex-wrap items-center gap-3">
                                 <span class="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 uppercase tracking-wider">الطلب رقم:</span>
-                                <h4 class="text-lg font-black text-brand-deep font-mono">${orderNo}</h4>
+                                <h4 class="text-lg font-black text-brand-deep font-mono">${order.order_number || orderNo}</h4>
                                 <span class="inline-flex items-center gap-1 text-xs font-bold text-slate-700 bg-slate-200/60 px-2.5 py-1 rounded-lg">
                                     <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>
                                     العميل: ${customer}
@@ -12469,8 +12469,9 @@
             
             const order = liveOrdersData.find(o => {
                 const oId = String(o.order_id).replace('#', '').trim();
+                const oNum = o.order_number ? String(o.order_number).replace('#', '').trim() : '';
                 const iId = inputVal.replace('#', '').trim();
-                return oId === iId;
+                return oId === iId || oNum === iId;
             });
             
             const container = document.getElementById('returns-result-container');
@@ -12485,7 +12486,7 @@
                 return;
             }
             
-            labelOrderId.textContent = order.order_id;
+            labelOrderId.textContent = order.order_number || order.order_id;
             labelCustomer.textContent = order.customer_name || 'عميل شوبيفاي';
             const dateStr = (order.created_at || order.timestamp) ? new Date(order.created_at || order.timestamp).toLocaleString('ar-EG') : '-';
             labelDate.textContent = "تاريخ الطلب: " + dateStr;
