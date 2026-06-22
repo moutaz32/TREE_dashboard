@@ -6442,6 +6442,41 @@
             return cat;
         }
 
+        function getProductAisle(barcode) {
+            if (!barcode) return "E";
+            const clean = cleanBarcode(barcode);
+            const catalogItem = getProductCatalogItem(clean);
+            if (!catalogItem || !catalogItem.product_name) return "E";
+
+            const name = catalogItem.product_name.toLowerCase()
+                .replace(/\s+/g, '')
+                .replace(/ة\b/g, 'ه')
+                .replace(/أ|إ|آ/g, 'ا')
+                .replace(/ى\b/g, 'ي');
+
+            // 1. Shoes -> Aisle D
+            const shoesKeywords = ['شوز', 'حذاء', 'سنيكر', 'shoes', 'sneaker', 'boot'];
+            if (shoesKeywords.some(kw => name.includes(kw))) return "D";
+
+            // 2. Women's Homewear / Pajamas / Abayas -> Aisle C
+            const isMen = name.includes('رجالي') || name.includes('رجالى') || name.includes('men') || name.includes('man') || name.includes('gents') || name.includes('اولادي') || name.includes('اولادى') || name.includes('boys') || name.includes('boy');
+            const homewearKeywords = ['بيجامه', 'بيجامة', 'ترنج', 'ترينج', 'كاش', 'روب', 'عبايه', 'فستان', 'lounge', 'nightgown', 'هوموير', 'هوم وير', 'homewear', 'pajama'];
+            if (homewearKeywords.some(kw => name.includes(kw)) && !isMen) {
+                return "C";
+            }
+
+            // 3. Tops -> Aisle A
+            const topsKeywords = ['تيشرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat', 'top', 'tops'];
+            if (topsKeywords.some(kw => name.includes(kw))) return "A";
+
+            // 4. Bottoms -> Aisle B
+            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'pants', 'jeans', 'shorts', 'skirt', 'bottom', 'bottoms'];
+            if (bottomsKeywords.some(kw => name.includes(kw))) return "B";
+
+            // 5. Everything else -> Aisle E (Accessories, Socks, Underwear, Men's Underwear, Bags, Belts)
+            return "E";
+        }
+
         // ===== helper: get category readable name =====
         function getCategoryName(cat) {
             switch(cat) {
@@ -10769,48 +10804,86 @@
             // Draw level by level: from Level 5 down to 1 (WMS shelves are high!)
             // Inside the column: 1 to 8
             let gridHtml = '';
+            
+            // Determine Aisle icon for design decoration
+            let aisleIcon = 'box';
+            if (selectedAisle === 'A') aisleIcon = 'shirt';
+            else if (selectedAisle === 'B') aisleIcon = 'layers';
+            else if (selectedAisle === 'C') aisleIcon = 'heart';
+            else if (selectedAisle === 'D') aisleIcon = 'shopping-bag';
+            else if (selectedAisle === 'E') aisleIcon = 'package';
+
             for (let level = 5; level >= 1; level--) {
                 for (let col = 1; col <= 8; col++) {
                     const binId = `${selectedAisle}-${String(col).padStart(2, '0')}-${String(level).padStart(2, '0')}`;
                     const qty = binTotalsMap[binId] || 0;
                     const items = binItemsMap[binId] || [];
 
-                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100';
-                    let badgeClass = 'bg-slate-200 text-slate-600';
-                    if (qty > 0) {
+                    if (qty === 0) {
+                        gridHtml += `
+                            <button onclick="openWMSBinModal('${binId}')" 
+                                    class="group flex flex-col justify-between p-3.5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 text-slate-400 hover:bg-slate-50 hover:border-slate-300 hover:scale-[1.03] hover:shadow-md transition-all duration-200 text-right min-h-[105px]">
+                                <div class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400">
+                                    <span>العمود ${col}</span>
+                                    <span>مستوى ${level}</span>
+                                </div>
+                                <div class="my-1 font-mono text-[11px] font-bold tracking-wider text-slate-400">${binId}</div>
+                                <div class="flex items-center justify-between w-full text-[9px]">
+                                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 font-bold border border-slate-200/50">فارغ</span>
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors"></i>
+                                </div>
+                            </button>
+                        `;
+                    } else {
+                        let colorClass = '';
+                        let badgeClass = '';
+                        let itemsLabelClass = 'text-slate-500';
+                        
                         if (qty <= 100) {
-                            colorClass = 'bg-emerald-50/50 border-emerald-200 text-emerald-800 hover:bg-emerald-100';
-                            badgeClass = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                            colorClass = 'bg-emerald-50/40 border-emerald-200/80 text-emerald-800 hover:bg-emerald-50 hover:shadow-emerald-100/50';
+                            badgeClass = 'bg-emerald-100 text-emerald-800 border border-emerald-200/50';
+                            itemsLabelClass = 'text-emerald-600/80';
                         } else if (qty <= 300) {
-                            colorClass = 'bg-emerald-200/40 border-emerald-300 text-emerald-900 hover:bg-emerald-200/60';
-                            badgeClass = 'bg-emerald-200 text-emerald-900 border border-emerald-300';
+                            colorClass = 'bg-gradient-to-br from-emerald-600 to-teal-600 border-emerald-700 text-white hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-200/40';
+                            badgeClass = 'bg-white/20 text-white border border-white/30';
+                            itemsLabelClass = 'text-emerald-100/80';
                         } else {
-                            colorClass = 'bg-brand-deep border-brand-800 text-white hover:bg-brand-700';
-                            badgeClass = 'bg-brand-accent text-brand-deep font-black';
+                            colorClass = 'bg-gradient-to-br from-brand-deep to-slate-900 border-brand-900 text-white hover:from-brand-800 hover:to-slate-800 hover:shadow-slate-300/40';
+                            badgeClass = 'bg-amber-400 text-brand-deep font-black';
+                            itemsLabelClass = 'text-amber-200/90';
                         }
-                    }
 
-                    gridHtml += `
-                        <button onclick="openWMSBinModal('${binId}')" class="flex flex-col items-center justify-between p-3.5 rounded-xl border text-center transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03] min-h-[95px]">
-                            <div class="flex items-center justify-between w-full">
-                                <span class="text-[10px] font-bold opacity-75">${selectedAisle} - م ${col}</span>
-                                <span class="text-[9px] font-semibold opacity-70">مست ${level}</span>
-                            </div>
-                            <div class="my-1.5 font-mono text-[10px] font-black tracking-wider">${binId}</div>
-                            <div class="flex items-center justify-between w-full mt-1">
-                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">
-                                    ${qty.toLocaleString('ar-EG')} ق
-                                </span>
-                                <span class="text-[8px] font-medium opacity-70">
-                                    ${items.length} أصناف
-                                </span>
-                            </div>
-                        </button>
-                    `;
+                        gridHtml += `
+                            <button onclick="openWMSBinModal('${binId}')" 
+                                    class="group flex flex-col justify-between p-3.5 rounded-2xl border text-right transition-all duration-200 hover:scale-[1.03] hover:shadow-lg min-h-[105px] relative overflow-hidden ${colorClass}">
+                                <!-- Background Aisle Icon for Premium Visuals -->
+                                <div class="absolute -right-3 -bottom-3 opacity-[0.08] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
+                                    <i data-lucide="${aisleIcon}" class="w-16 h-16"></i>
+                                </div>
+                                <div class="flex items-center justify-between w-full text-[9px] font-bold z-10 opacity-80">
+                                    <span>العمود ${col}</span>
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="${aisleIcon}" class="w-3 h-3"></i>
+                                        مستوى ${level}
+                                    </span>
+                                </div>
+                                <div class="my-1 font-mono text-[11px] font-black tracking-widest z-10">${binId}</div>
+                                <div class="flex items-center justify-between w-full z-10">
+                                    <span class="text-[9.5px] font-black px-2 py-0.5 rounded-lg shadow-sm ${badgeClass}">
+                                        ${qty.toLocaleString('ar-EG')} ق
+                                    </span>
+                                    <span class="text-[8.5px] font-extrabold ${itemsLabelClass}">
+                                        ${items.length} أصناف
+                                    </span>
+                                </div>
+                            </button>
+                        `;
+                    }
                 }
             }
 
             gridMatrix.innerHTML = gridHtml;
+            if (window.lucide) window.lucide.createIcons();
         }
 
         function openWMSBinModal(binLocation) {
@@ -11100,35 +11173,38 @@
                 const { error: deleteErr } = await supabaseClient.from('abeese_wms_storage').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                 if (deleteErr) throw deleteErr;
 
-                // 3. Generate all available 200 bins
+                // 3. Generate and shuffle bins for each aisle separately
                 const aisles = ['A', 'B', 'C', 'D', 'E'];
                 const cols = 8;
                 const levels = 5;
-                const binsList = [];
+                const binsMap = { 'A': [], 'B': [], 'C': [], 'D': [], 'E': [] };
                 aisles.forEach(a => {
                     for (let c = 1; c <= cols; c++) {
                         for (let l = 1; l <= levels; l++) {
-                            binsList.push(`${a}-${String(c).padStart(2, '0')}-${String(l).padStart(2, '0')}`);
+                            binsMap[a].push(`${a}-${String(c).padStart(2, '0')}-${String(l).padStart(2, '0')}`);
                         }
+                    }
+                    // Shuffle this aisle's bins
+                    for (let i = binsMap[a].length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [binsMap[a][i], binsMap[a][j]] = [binsMap[a][j], binsMap[a][i]];
                     }
                 });
 
-                // Helper to shuffle bins list to make the heatmap look natural and beautiful!
-                for (let i = binsList.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [binsList[i], binsList[j]] = [binsList[j], binsList[i]];
-                }
-
-                // 4. Distribute stock
+                // 4. Distribute stock based on logical product aisles
                 const wmsRows = [];
-                let binIndex = 0;
+                const binIndices = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0 };
 
                 abeesInventory.forEach(item => {
+                    const targetAisle = getProductAisle(item.barcode);
+                    const targetBins = binsMap[targetAisle];
                     let qty = Number(item.quantity);
+
                     // Split large quantities to avoid overloading single bins
                     while (qty > 0) {
                         const batchQty = Math.min(qty, Math.floor(Math.random() * 40) + 10); // 10 to 50 items per bin
-                        const bin = binsList[binIndex % binsList.length];
+                        const binIndex = binIndices[targetAisle];
+                        const bin = targetBins[binIndex % targetBins.length];
                         
                         wmsRows.push({
                             barcode: item.barcode,
@@ -11138,7 +11214,7 @@
                         });
 
                         qty -= batchQty;
-                        binIndex++;
+                        binIndices[targetAisle]++;
                     }
                 });
 
