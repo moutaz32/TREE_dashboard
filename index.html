@@ -4215,7 +4215,7 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'upload', 'logs', 'branch-returns', 'branch-orders', 'audits', 'seasonal'];
+                hiddenTabs = ['executive', 'logs', 'branch-returns', 'branch-orders', 'audits', 'seasonal'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
@@ -4231,6 +4231,7 @@
                 roleLabel = '📦 إدارة الفرز والتعبئة';
                 roleClass = 'bg-teal-100 text-teal-700 border-teal-200';
             } else { // admin
+                hiddenTabs = ['picker', 'returns'];
                 roleLabel = '👑 مدير النظام';
                 roleClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
             }
@@ -4253,19 +4254,19 @@
                 }
             }
 
-            // إظهار أو إخفاء جدول وكارت طلبات شوبيفاي المباشرة والمعلقة بناءً على الدور
+            // إظهار أو إخفاء جدول وكارت طلبات شوبيفاي المباشرة والمعلقة بناءً على الدور (للأونلاين فقط)
             const shopifyPanel = document.getElementById('dashboard-orders-panel');
             if (shopifyPanel) {
-                if (role === 'branch' || role === 'quality') {
-                    shopifyPanel.style.display = 'none';
-                } else {
+                if (role === 'online') {
                     shopifyPanel.style.display = 'block';
+                } else {
+                    shopifyPanel.style.display = 'none';
                 }
             }
 
             const shopifyStatCard = document.getElementById('dashboard-stat-orders-card');
             if (shopifyStatCard) {
-                if (role === 'admin' || role === 'online') {
+                if (role === 'online') {
                     shopifyStatCard.style.display = 'flex';
                 } else {
                     shopifyStatCard.style.display = 'none';
@@ -4278,8 +4279,28 @@
             const dashLogs   = document.getElementById('btn-dashboard-logs');
 
             if (dashUpload) dashUpload.style.display = (role === 'admin') ? 'flex' : 'none';
-            if (dashPicker) dashPicker.style.display = (role === 'admin' || role === 'online') ? 'flex' : 'none';
+            if (dashPicker) dashPicker.style.display = (role === 'online') ? 'flex' : 'none';
             if (dashLogs)   dashLogs.style.display   = (role === 'admin') ? 'flex' : 'none';
+
+            // تصفية كروت تبويب الرفع بناءً على الدور (أدمن يرفع الكتالوج والمخزون، أونلاين يرفع شوبيفاي)
+            const uploadTypes = ['catalog', 'shopify_images', 'locations', 'inventory', 'shopify_orders'];
+            uploadTypes.forEach(t => {
+                const mobBtn = document.getElementById('btn-upload-tab-' + t);
+                let visible = false;
+                if (role === 'online') {
+                    visible = (t === 'shopify_images' || t === 'shopify_orders');
+                } else if (role === 'admin') {
+                    visible = (t !== 'shopify_images' && t !== 'shopify_orders');
+                }
+                if (mobBtn) mobBtn.style.display = visible ? 'inline-block' : 'none';
+            });
+
+            if (role === 'online') {
+                activeMobileUploadCard = 'shopify_orders';
+            } else {
+                activeMobileUploadCard = 'catalog';
+            }
+            updateUploadCardsResponsiveState();
 
             if (role === 'branch' && branch) {
                 const normBranch = normalizeLocationId(branch);
@@ -6434,14 +6455,14 @@
 
         const demographicCacheMap = new Map();
         function getProductDemographic(barcode) {
-            if (!barcode) return "U";
+            if (!barcode) return "A";
             const clean = cleanBarcode(barcode);
             if (demographicCacheMap.has(clean)) return demographicCacheMap.get(clean);
 
             const catalogItem = getProductCatalogItem(clean);
             if (!catalogItem || !catalogItem.product_name) {
-                demographicCacheMap.set(clean, "U");
-                return "U";
+                demographicCacheMap.set(clean, "A");
+                return "A";
             }
 
             const name = catalogItem.product_name.toLowerCase()
@@ -6450,12 +6471,14 @@
                 .replace(/أ|إ|آ/g, 'ا')
                 .replace(/ى\b/g, 'ي');
 
-            const menKeywords = ['رجالي', 'رجالى', 'بوكسر', 'boxer', 'men'];
-            const womenKeywords = ['حريمي', 'حريمى', 'بناتي', 'بناتى', 'فستان', 'عبايه', 'lounge', 'women', 'girl', 'هوموير', 'هوم وير', 'homewear', 'بيجامه', 'بيجامة', 'ترنج', 'كاش', 'روب'];
-            const kidsKeywords = ['اطفالي', 'اطفالى', 'اولادي', 'اولادى', 'بيبي', 'baby', 'kids', 'child'];
+            const girlsKeywords = ['بناتي', 'بناتى', 'بنت', 'girls', 'girl'];
+            const boysKeywords = ['اولادي', 'اولادى', 'ولد', 'صبيان', 'boys', 'boy', 'اطفالي', 'اطفالى', 'طفل', 'اطفال', 'kids', 'child', 'بيبي', 'baby'];
+            const menKeywords = ['رجالي', 'رجالى', 'men', 'man', 'gents'];
+            const womenKeywords = ['حريمي', 'حريمى', 'نساء', 'نسائي', 'women', 'lady', 'ladies', 'عبايه', 'كاش', 'روب', 'فستان'];
 
-            let cat = "U";
-            if (kidsKeywords.some(kw => name.includes(kw))) cat = "K";
+            let cat = "A";
+            if (girlsKeywords.some(kw => name.includes(kw))) cat = "G";
+            else if (boysKeywords.some(kw => name.includes(kw))) cat = "B";
             else if (menKeywords.some(kw => name.includes(kw))) cat = "M";
             else if (womenKeywords.some(kw => name.includes(kw))) cat = "W";
 
@@ -6467,8 +6490,9 @@
             switch(cat) {
                 case 'M': return 'قسم الرجالي (Men)';
                 case 'W': return 'قسم الحريمي (Women)';
-                case 'K': return 'قسم الأطفالي (Kids)';
-                default: return 'قسم المشترك والمنوع';
+                case 'G': return 'قسم البناتي (Girls)';
+                case 'B': return 'قسم الأولادي (Boys)';
+                default: return 'قسم الإكسسوارات (Accessories)';
             }
         }
 
@@ -8604,21 +8628,40 @@
         function updateUploadCardsResponsiveState() {
             const isMobile = window.innerWidth < 768;
             const types = ['catalog', 'shopify_images', 'locations', 'inventory', 'shopify_orders'];
+            const role = currentUser ? currentUser.role : 'admin';
+            
             types.forEach(t => {
                 const card = document.getElementById(`upload-card-${t}`);
                 if (!card) return;
+                
+                let isAllowed = false;
+                if (role === 'online') {
+                    isAllowed = (t === 'shopify_images' || t === 'shopify_orders');
+                } else if (role === 'admin') {
+                    isAllowed = (t !== 'shopify_images' && t !== 'shopify_orders');
+                }
+                
+                if (!isAllowed) {
+                    card.classList.add('hidden');
+                    card.classList.remove('flex');
+                    card.style.display = 'none';
+                    return;
+                }
                 
                 if (isMobile) {
                     if (t === activeMobileUploadCard) {
                         card.classList.remove('hidden');
                         card.classList.add('flex');
+                        card.style.display = 'flex';
                     } else {
                         card.classList.add('hidden');
                         card.classList.remove('flex');
+                        card.style.display = 'none';
                     }
                 } else {
                     card.classList.remove('hidden');
                     card.classList.add('flex');
+                    card.style.display = 'flex';
                 }
             });
         }
@@ -12192,7 +12235,7 @@
                         }
                     });
                 } else if (activeHeatmapPerspective === 'demographic') {
-                    const categories = ["M", "W", "K", "U"];
+                    const categories = ["M", "W", "G", "B", "A"];
                     categories.forEach(c => branchDensity[getDemographicName(c)] = 0);
                     currentInventory.forEach(item => {
                         const cat = getProductDemographic(item.barcode);
@@ -12321,8 +12364,9 @@
                     } else if (activeHeatmapPerspective === 'demographic') {
                         if (zone.includes('رجالي')) iconName = 'user';
                         else if (zone.includes('حريمي')) iconName = 'heart';
-                        else if (zone.includes('أطفالي')) iconName = 'smile';
-                        else iconName = 'users';
+                        else if (zone.includes('بناتي')) iconName = 'smile';
+                        else if (zone.includes('أولادي')) iconName = 'users';
+                        else iconName = 'shopping-bag';
                     } else if (activeHeatmapPerspective === 'velocity') {
                         if (zone.includes('فئة A')) iconName = 'zap';
                         else if (zone.includes('فئة B')) iconName = 'trending-up';
