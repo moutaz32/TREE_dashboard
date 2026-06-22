@@ -1011,6 +1011,12 @@
                             </div>
 
                             <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">البريد الإلكتروني (Email)</label>
+                                <input type="email" id="new-user-email" placeholder="مثال: loran@tree.com"
+                                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
+                            </div>
+
+                            <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">كلمة المرور (Password)</label>
                                 <input type="password" id="new-user-password" placeholder="أدخل كلمة المرور"
                                     class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
@@ -1060,6 +1066,7 @@
                                     <thead>
                                         <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
                                             <th class="py-2.5 px-3">اسم المستخدم</th>
+                                            <th class="py-2.5 px-3">البريد الإلكتروني</th>
                                             <th class="py-2.5 px-3">الصلاحية</th>
                                             <th class="py-2.5 px-3">الفرع</th>
                                             <th class="py-2.5 px-3 text-center">التحكم</th>
@@ -1068,7 +1075,7 @@
                                     <tbody id="active-users-table-body" class="divide-y divide-slate-100 text-slate-700">
                                         <!-- Users will be populated dynamically -->
                                         <tr>
-                                            <td colspan="4" class="py-8 text-center text-slate-400 font-medium">جاري تحميل حسابات الموظفين...</td>
+                                            <td colspan="5" class="py-8 text-center text-slate-400 font-medium">جاري تحميل حسابات الموظفين...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -3552,17 +3559,27 @@
                 return;
             }
 
-            // Build the email for Supabase Auth
-            let email = username.includes('@') ? username : `${username}@tree.com`;
-            if (username === 'الهرم') email = 'elharam@tree.com';
-            else if (username === 'ادارة الجودة' || username === 'إدارة الجودة') email = 'quality@tree.com';
-            else if (username === 'مخزن ابيس') email = 'abees@tree.com';
-            else if (username === 'ادارة الفرز والتعبئه' || username === 'ادارة الفرز والتعبئة' || username === 'الفرز والتعبئة واللوجستيات' || username === 'ادارة الفرز والتعبئة واللوجستيات') email = 'sorting@tree.com';
-
             try {
                 if (!supabaseClient) {
                     const { createClient } = supabase;
                     supabaseClient = createClient(supabaseUrl, supabaseKey);
+                }
+
+                const { data: dbUser, error: dbErr } = await supabaseClient
+                    .from('store_users')
+                    .select('*')
+                    .eq('username', username)
+                    .maybeSingle();
+
+                let email = '';
+                if (dbUser && dbUser.email) {
+                    email = dbUser.email;
+                } else {
+                    email = username.includes('@') ? username : `${username}@tree.com`;
+                    if (username === 'الهرم') email = 'elharam@tree.com';
+                    else if (username === 'ادارة الجودة' || username === 'إدارة الجودة') email = 'quality@tree.com';
+                    else if (username === 'مخزن ابيس') email = 'abees@tree.com';
+                    else if (username === 'ادارة الفرز والتعبئه' || username === 'ادارة الفرز والتعبئة' || username === 'الفرز والتعبئة واللوجستيات' || username === 'ادارة الفرز والتعبئة واللوجستيات') email = 'sorting@tree.com';
                 }
 
                 // Authenticate with Supabase Auth
@@ -3575,8 +3592,23 @@
 
                 if (data && data.user) {
                     const user = data.user;
-                    const role = user.user_metadata.role || 'branch';
-                    const branch = user.user_metadata.branch || '';
+                    let role = user.user_metadata.role || 'branch';
+                    let branch = user.user_metadata.branch || '';
+
+                    // Sync metadata if mismatch with DB record
+                    if (dbUser) {
+                        if (dbUser.role !== role || dbUser.branch !== branch) {
+                            role = dbUser.role;
+                            branch = dbUser.branch || '';
+                            try {
+                                await supabaseClient.auth.updateUser({
+                                    data: { role: role, branch: branch }
+                                });
+                            } catch (metaErr) {
+                                console.warn("Failed to sync user metadata to auth user:", metaErr);
+                            }
+                        }
+                    }
                     
                     const loggedInUser = {
                         username: username,
@@ -3889,7 +3921,7 @@
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 font-medium">لا توجد حسابات مسجلة حالياً.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">لا توجد حسابات مسجلة حالياً.</td></tr>`;
                     return;
                 }
 
@@ -3898,21 +3930,29 @@
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition';
 
-                    const roleText = user.role === 'admin' ? '👑 مدير النظام' : (user.role === 'online' ? '💻 قسم الأونلاين' : (user.role === 'quality' ? '🔍 إدارة الجودة' : '🏪 موظف فرع'));
+                    const roleText = user.role === 'admin' ? '👑 مدير النظام' : (user.role === 'online' ? '💻 قسم الأونلاين' : (user.role === 'quality' ? '🔍 إدارة الجودة' : (user.role === 'sorting' ? '📦 قسم الفرز والتعبئة' : '🏪 موظف فرع')));
                     const branchText = user.branch || '-';
                     const isProtected = user.username === 'admin' || user.username === 'online' || (currentUser && currentUser.username === user.username);
 
-                    const deleteBtn = isProtected 
-                        ? `<span class="text-slate-400 text-xs font-semibold">محمي</span>`
-                        : `<button onclick="deleteUserAccount('${user.id}', '${user.username}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 mx-auto">
-                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> حذف
-                           </button>`;
+                    const editBtn = `<button onclick="openEditUserModal('${user.id}', '${user.username}', '${user.email || ''}', '${user.role}', '${user.branch || ''}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1">
+                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> تعديل
+                       </button>`;
+
+                    const actionsHtml = isProtected 
+                        ? `<div class="flex items-center justify-center gap-2">${editBtn} <span class="text-slate-400 text-xs font-semibold">محمي</span></div>`
+                        : `<div class="flex items-center justify-center gap-2">
+                             ${editBtn}
+                             <button onclick="deleteUserAccount('${user.id}', '${user.username}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1">
+                               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> حذف
+                             </button>
+                           </div>`;
 
                     tr.innerHTML = `
                         <td class="py-3 px-3 font-semibold text-slate-800">${user.username}</td>
+                        <td class="py-3 px-3 text-slate-500 font-mono">${user.email || '-'}</td>
                         <td class="py-3 px-3">${roleText}</td>
                         <td class="py-3 px-3 font-medium text-slate-600">${branchText}</td>
-                        <td class="py-3 px-3 text-center">${deleteBtn}</td>
+                        <td class="py-3 px-3 text-center">${actionsHtml}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -3920,7 +3960,7 @@
                 if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
             } catch (err) {
                 console.error("Failed to load active users list:", err);
-                tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-rose-500 font-semibold">حدث خطأ أثناء تحميل الحسابات من السحابة. تأكد من تشغيل كود SQL أولاً.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-rose-500 font-semibold">حدث خطأ أثناء تحميل الحسابات من السحابة. تأكد من تشغيل كود SQL أولاً.</td></tr>`;
             }
         }
 
@@ -3997,7 +4037,8 @@
                         username: username,
                         password_hash: passwordHash,
                         role: role,
-                        branch: branch
+                        branch: branch,
+                        email: email
                     }]);
 
                 if (insertErr) throw insertErr;
@@ -4034,6 +4075,117 @@
             } catch (err) {
                 console.error("Failed to delete user account:", err);
                 alert("فشل حذف الحساب من السحابة!");
+            }
+        }
+
+        function openEditUserModal(id, username, email, role, branch) {
+            document.getElementById('edit-user-id').value = id;
+            document.getElementById('edit-user-username').value = username;
+            document.getElementById('edit-user-email').value = email;
+            document.getElementById('edit-user-role').value = role;
+
+            const select = document.getElementById('edit-user-branch-select');
+            if (select) {
+                const branchSet = new Set();
+                liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+                liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
+                const branches = Array.from(branchSet).sort();
+                
+                select.innerHTML = '';
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    select.appendChild(opt);
+                });
+                
+                if (branch) {
+                    select.value = branch;
+                }
+            }
+
+            onEditUserRoleChange(role);
+            document.getElementById('edit-user-modal').classList.remove('hidden');
+        }
+
+        function closeEditUserModal() {
+            document.getElementById('edit-user-modal').classList.add('hidden');
+        }
+
+        function onEditUserRoleChange(role) {
+            const branchDiv = document.getElementById('edit-user-branch-div');
+            if (branchDiv) {
+                if (role === 'branch') {
+                    branchDiv.style.display = 'block';
+                } else {
+                    branchDiv.style.display = 'none';
+                }
+            }
+        }
+
+        async function saveUserAccountEdits() {
+            const id = document.getElementById('edit-user-id').value;
+            const usernameInput = document.getElementById('edit-user-username');
+            const emailInput = document.getElementById('edit-user-email');
+            const roleInput = document.getElementById('edit-user-role');
+            const branchSelect = document.getElementById('edit-user-branch-select');
+
+            if (!id || !usernameInput || !roleInput) return;
+
+            const username = usernameInput.value.trim().toLowerCase();
+            const email = emailInput.value.trim().toLowerCase();
+            const role = roleInput.value;
+            const branch = role === 'branch' && branchSelect ? branchSelect.value : null;
+
+            if (!username || !email) {
+                alert("يرجى إدخال اسم المستخدم والبريد الإلكتروني!");
+                return;
+            }
+
+            if (username.length < 3) {
+                alert("اسم المستخدم يجب أن يكون 3 أحرف على الأقل!");
+                return;
+            }
+
+            try {
+                if (!supabaseClient) {
+                    const { createClient } = supabase;
+                    supabaseClient = createClient(supabaseUrl, supabaseKey);
+                }
+
+                // Check if username is taken by another user
+                const { data: existing, error: checkErr } = await supabaseClient
+                    .from('store_users')
+                    .select('id')
+                    .eq('username', username)
+                    .neq('id', id)
+                    .maybeSingle();
+
+                if (checkErr) throw checkErr;
+                if (existing) {
+                    alert("اسم المستخدم مسجل بالفعل لحساب آخر! يرجى اختيار اسم آخر.");
+                    return;
+                }
+
+                // Update store_users table
+                const { error: updateErr } = await supabaseClient
+                    .from('store_users')
+                    .update({
+                        username: username,
+                        email: email,
+                        role: role,
+                        branch: branch
+                    })
+                    .eq('id', id);
+
+                if (updateErr) throw updateErr;
+
+                alert("تم تحديث بيانات الحساب بنجاح في السحابة!");
+                closeEditUserModal();
+                await loadActiveUsersList();
+            } catch (err) {
+                console.error("Failed to update user account:", err);
+                alert("فشل تحديث الحساب! يرجى المحاولة مرة أخرى.");
             }
         }
 
@@ -15556,6 +15708,71 @@ CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes 
             <div class="border-t border-slate-100 pt-4 mt-4 flex justify-end">
                 <button onclick="closeBranchOrderModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl transition">
                     إغلاق النافذة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl border border-slate-200 w-full max-w-md p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200 text-right" dir="rtl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <h4 class="text-base font-black text-slate-800 flex items-center gap-2">
+                    <i data-lucide="user-cog" class="w-5 h-5 text-emerald-600"></i>
+                    تعديل بيانات الحساب
+                </h4>
+                <button onclick="closeEditUserModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="hidden" id="edit-user-id">
+                
+                <div>
+                     <label class="text-xs font-bold text-slate-600 block mb-1">اسم المستخدم / الفرع (Username)</label>
+                     <input type="text" id="edit-user-username"
+                         class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
+                </div>
+                
+                <div>
+                     <label class="text-xs font-bold text-slate-600 block mb-1">البريد الإلكتروني (Email)</label>
+                     <input type="email" id="edit-user-email"
+                         class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
+                </div>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 font-medium">
+                     ⚠️ لتغيير كلمة مرور الحساب، يرجى حذف الحساب وإعادة إنشائه بكلمة المرور الجديدة.
+                </div>
+                
+                <div>
+                     <label class="text-xs font-bold text-slate-600 block mb-1">الدور والصلاحية (Role)</label>
+                     <select id="edit-user-role" onchange="onEditUserRoleChange(this.value)"
+                         class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
+                         <option value="branch">🏪 موظف فرع (Branch)</option>
+                         <option value="online">💻 قسم الأونلاين (Online)</option>
+                         <option value="quality">🔍 قسم إدارة الجودة (Quality)</option>
+                         <option value="sorting">📦 قسم الفرز والتعبئة (Sorting)</option>
+                         <option value="admin">👑 مدير النظام (Admin)</option>
+                     </select>
+                </div>
+                
+                <div id="edit-user-branch-div">
+                     <label class="text-xs font-bold text-slate-600 block mb-1">الفرع المربوط (Branch Location)</label>
+                     <select id="edit-user-branch-select"
+                         class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
+                         <!-- Populated dynamically -->
+                     </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                <button onclick="closeEditUserModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition">
+                    إلغاء
+                </button>
+                <button onclick="saveUserAccountEdits()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    حفظ التعديلات
                 </button>
             </div>
         </div>
