@@ -1035,7 +1035,7 @@
                             </div>
 
                             <div id="new-user-branch-div">
-                                <label class="text-xs font-bold text-slate-600 block mb-1">الفرع المربوط (Branch Location)</label>
+                                <label id="new-user-branch-label" class="text-xs font-bold text-slate-600 block mb-1">الفرع المربوط (Branch Location)</label>
                                 <select id="new-user-branch-select"
                                     class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
                                     <!-- Populated dynamically -->
@@ -3894,6 +3894,11 @@
             liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
             const branches = Array.from(branchSet).sort();
             
+            const label = document.getElementById('new-user-branch-label');
+            if (label) {
+                label.textContent = `الفرع المربوط (متاح ${branches.length} فرع)`;
+            }
+            
             select.innerHTML = '';
             branches.forEach(b => {
                 const opt = document.createElement('option');
@@ -4090,6 +4095,11 @@
                 liveInventoryData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
                 liveLocationsData.forEach(r => { if (r.location_id) branchSet.add(r.location_id); });
                 const branches = Array.from(branchSet).sort();
+                
+                const label = document.getElementById('edit-user-branch-label');
+                if (label) {
+                    label.textContent = `الفرع المربوط (متاح ${branches.length} فرع)`;
+                }
                 
                 select.innerHTML = '';
                 branches.forEach(b => {
@@ -15758,7 +15768,7 @@ CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes 
                 </div>
                 
                 <div id="edit-user-branch-div">
-                     <label class="text-xs font-bold text-slate-600 block mb-1">الفرع المربوط (Branch Location)</label>
+                     <label id="edit-user-branch-label" class="text-xs font-bold text-slate-600 block mb-1">الفرع المربوط (Branch Location)</label>
                      <select id="edit-user-branch-select"
                          class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition">
                          <!-- Populated dynamically -->
