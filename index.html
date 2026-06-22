@@ -12571,11 +12571,13 @@
             try {
                 if (condition === 'GOOD') {
                     const cleanSKU = cleanBarcode(sku);
+                    
+                    // 1. Update overall branch inventory for Online Store (البيع الالكتروني)
                     const { data: invRecords, error: invErr } = await supabaseClient
                         .from('warehouse_inventory')
                         .select('*')
                         .eq('barcode', cleanSKU)
-                        .eq('location_id', shelf);
+                        .eq('location_id', 'البيع الالكتروني');
 
                     if (invErr) throw invErr;
 
@@ -12589,8 +12591,36 @@
                     } else {
                         const { error: insErr } = await supabaseClient
                             .from('warehouse_inventory')
-                            .insert([{ barcode: cleanSKU, location_id: shelf, quantity: qty }]);
+                            .insert([{ barcode: cleanSKU, location_id: 'البيع الالكتروني', quantity: qty }]);
                         if (insErr) throw insErr;
+                    }
+
+                    // 2. Update specific shelf in Abees WMS storage (abeese_wms_storage)
+                    const { data: wmsRecords, error: wmsFetchErr } = await supabaseClient
+                        .from('abeese_wms_storage')
+                        .select('*')
+                        .eq('barcode', sku)
+                        .eq('bin_location', shelf);
+
+                    if (wmsFetchErr) throw wmsFetchErr;
+
+                    if (wmsRecords && wmsRecords.length > 0) {
+                        const newWmsQty = Number(wmsRecords[0].quantity || 0) + qty;
+                        const { error: wmsUpdErr } = await supabaseClient
+                            .from('abeese_wms_storage')
+                            .update({ quantity: newWmsQty, updated_at: new Date().toISOString() })
+                            .eq('id', wmsRecords[0].id);
+                        if (wmsUpdErr) throw wmsUpdErr;
+                    } else {
+                        const { error: wmsInsErr } = await supabaseClient
+                            .from('abeese_wms_storage')
+                            .insert([{
+                                bin_location: shelf,
+                                barcode: sku,
+                                quantity: qty,
+                                updated_at: new Date().toISOString()
+                            }]);
+                        if (wmsInsErr) throw wmsInsErr;
                     }
                 }
 
@@ -12614,6 +12644,7 @@
                 alert("تم تسجيل المرتجع بنجاح وتحديث كمية الرف " + shelf + " في المستودع.");
                 
                 await loadInventoryData();
+                await loadWMSStorageData();
                 searchOrderForReturn();
             } catch (err) {
                 console.error("Return process failed:", err);
