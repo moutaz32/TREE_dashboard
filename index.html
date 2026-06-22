@@ -6427,10 +6427,10 @@
                 .replace(/ى\b/g, 'ي');
             
             // Keywords
-            const topsKeywords = ['تيشرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat'];
-            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'pants', 'jeans', 'shorts', 'skirt'];
-            const underwearKeywords = ['داخلي', 'بيجامه', 'ترينج', 'شراب', 'جوارب', 'بوكسر', 'فانله', 'كيلوت', 'socks', 'underwear', 'pajama', 'boxer'];
-            const accessoriesKeywords = ['شوز', 'حذاء', 'سنيكر', 'شنطه', 'حقيبه', 'حزام', 'كاب', 'نظاره', 'محفظه', 'shoes', 'bag', 'belt', 'cap', 'wallet'];
+            const topsKeywords = ['تيشرت', 'تيشيرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat', 'top', 'tops', 'هودى'];
+            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'بانت', 'بانتس', 'بانس', 'pants', 'jeans', 'shorts', 'skirt', 'pant', 'bottom', 'bottoms', 'سروال'];
+            const underwearKeywords = ['داخلي', 'بيجامه', 'بيجامة', 'ترنج', 'ترينج', 'شراب', 'جوارب', 'بوكسر', 'فانله', 'كيلوت', 'كاش', 'روب', 'داخلى', 'socks', 'underwear', 'pajama', 'boxer'];
+            const accessoriesKeywords = ['شوز', 'حذاء', 'سنيكر', 'شنطه', 'حقيبه', 'حزام', 'كاب', 'نظاره', 'محفظه', 'shoes', 'bag', 'belt', 'cap', 'wallet', 'كوتشي', 'كوتشى', 'sneaker', 'boot'];
 
             let cat = "E";
             if (topsKeywords.some(kw => name.includes(kw))) cat = "A";
@@ -6455,7 +6455,7 @@
                 .replace(/ى\b/g, 'ي');
 
             // 1. Shoes -> Aisle D
-            const shoesKeywords = ['شوز', 'حذاء', 'سنيكر', 'shoes', 'sneaker', 'boot'];
+            const shoesKeywords = ['شوز', 'حذاء', 'سنيكر', 'shoes', 'sneaker', 'boot', 'كوتشي', 'كوتشى'];
             if (shoesKeywords.some(kw => name.includes(kw))) return "D";
 
             // 2. Women's Homewear / Pajamas / Abayas -> Aisle C
@@ -6466,11 +6466,11 @@
             }
 
             // 3. Tops -> Aisle A
-            const topsKeywords = ['تيشرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat', 'top', 'tops'];
+            const topsKeywords = ['تيشرت', 'تيشيرت', 'قميص', 'هودي', 'سويت', 'جاكيت', 'بلوفر', 'بلوزه', 'كارديجان', 'تونيك', 'vest', 'jacket', 'shirt', 'hoodie', 'sweat', 'top', 'tops', 'هودى'];
             if (topsKeywords.some(kw => name.includes(kw))) return "A";
 
             // 4. Bottoms -> Aisle B
-            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'pants', 'jeans', 'shorts', 'skirt', 'bottom', 'bottoms'];
+            const bottomsKeywords = ['بنطلون', 'شورت', 'جينز', 'تنوره', 'جيب', 'ليجن', 'بانت', 'بانتس', 'بانس', 'pants', 'jeans', 'shorts', 'skirt', 'pant', 'bottom', 'bottoms', 'سروال'];
             if (bottomsKeywords.some(kw => name.includes(kw))) return "B";
 
             // 5. Everything else -> Aisle E (Accessories, Socks, Underwear, Men's Underwear, Bags, Belts)
