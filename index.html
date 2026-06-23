@@ -1354,10 +1354,32 @@
                 <div id="inventory-table-container" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
                     <!-- Table Header Tools -->
                     <div class="p-4 bg-slate-50/50 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
-                        <div class="relative w-full md:w-80">
-                            <i data-lucide="search" class="w-4 h-4 absolute right-3 top-3.5 text-slate-400"></i>
-                            <input type="text" id="inventory-search" oninput="filterInventory()" placeholder="ابحث بالباركود، الاسم أو الموقع..." 
-                                   class="w-full pr-9 pl-4 py-2 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent rounded-xl text-sm transition">
+                        <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-grow">
+                            <div class="relative w-full sm:w-64">
+                                <i data-lucide="search" class="w-4 h-4 absolute right-3 top-3.5 text-slate-400"></i>
+                                <input type="text" id="inventory-search" oninput="filterInventory()" placeholder="ابحث بالباركود، الاسم أو الموقع..." 
+                                       class="w-full pr-9 pl-4 py-2 border border-slate-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent rounded-xl text-sm transition">
+                            </div>
+                            <!-- Brand, Season, Collection Filters for Product Catalog -->
+                            <div id="catalog-advanced-filters" class="hidden items-center gap-2 flex-wrap w-full sm:w-auto">
+                                <select id="catalog-brand-filter" onchange="filterInventory()" class="border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-brand-accent/30 focus:outline-none cursor-pointer">
+                                    <option value="all">كل البراندات</option>
+                                    <option value="tree">براند TREE</option>
+                                </select>
+                                <select id="catalog-season-filter" onchange="filterInventory()" class="border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-brand-accent/30 focus:outline-none cursor-pointer">
+                                    <option value="all">كل الفصول</option>
+                                    <option value="summer">صيفي ☀️</option>
+                                    <option value="winter">شتوي ❄️</option>
+                                </select>
+                                <select id="catalog-collection-filter" onchange="filterInventory()" class="border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-brand-accent/30 focus:outline-none cursor-pointer">
+                                    <option value="all">كل التصنيفات</option>
+                                    <option value="hoodie">هوديز / سويت شيرت</option>
+                                    <option value="pants">بناطيل</option>
+                                    <option value="shirt">قمصان</option>
+                                    <option value="jacket">جاكيت / بليزر</option>
+                                    <option value="tshirt">تي شيرت</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <!-- Grid / Table Toggle (shows only in catalog mode) -->
@@ -2546,7 +2568,7 @@
                     </div>
 
                     <!-- Discrepancies statistics grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between text-emerald-800">
                             <div>
                                 <span class="text-[10px] font-bold block uppercase">القطع المتطابقة تماماً</span>
@@ -2568,15 +2590,27 @@
                             </div>
                             <i data-lucide="plus-circle" class="w-8 h-8 opacity-40"></i>
                         </div>
+                        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between text-indigo-800">
+                            <div>
+                                <span class="text-[10px] font-bold block uppercase">دقة مطابقة المخزون</span>
+                                <h4 id="audit-stat-accuracy" class="text-2xl font-black mt-1">100%</h4>
+                            </div>
+                            <i data-lucide="gauge" class="w-8 h-8 opacity-40"></i>
+                        </div>
                     </div>
 
                     <!-- Tabs Selector inside Details -->
-                    <div class="flex items-center gap-2 border-b border-slate-200 pb-px">
-                        <button id="btn-audit-tab-discrepancies" onclick="switchAuditDetailsTab('discrepancies')" class="px-4 py-2.5 text-xs font-bold text-amber-700 border-b-2 border-amber-600">
-                            تقرير الفروقات (عجز وزيادة) 🚨
-                        </button>
-                        <button id="btn-audit-tab-all" onclick="switchAuditDetailsTab('all')" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
-                            جميع القطع الممسوحة 📋
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-px gap-2">
+                        <div class="flex items-center gap-2">
+                            <button id="btn-audit-tab-discrepancies" onclick="switchAuditDetailsTab('discrepancies')" class="px-4 py-2.5 text-xs font-bold text-amber-700 border-b-2 border-amber-600">
+                                تقرير الفروقات (عجز وزيادة) 🚨
+                            </button>
+                            <button id="btn-audit-tab-all" onclick="switchAuditDetailsTab('all')" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
+                                جميع القطع الممسوحة 📋
+                            </button>
+                        </div>
+                        <button id="btn-audit-export-excel" onclick="exportAdjustedAuditDiscrepancies()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 self-end mb-1">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i> تصدير الاختلافات المحدثة إكسيل
                         </button>
                     </div>
 
@@ -7665,6 +7699,18 @@
                 
                 renderWMSStorageGrid();
             }
+
+            // Toggle Catalog Advanced Filters
+            const advFilters = document.getElementById('catalog-advanced-filters');
+            if (advFilters) {
+                if (subTabId === 'catalog') {
+                    advFilters.classList.remove('hidden');
+                    advFilters.classList.add('flex');
+                } else {
+                    advFilters.classList.add('hidden');
+                    advFilters.classList.remove('flex');
+                }
+            }
         }
 
         // Helper to compile discrepant items (optimized with Map index O(1))
@@ -7729,14 +7775,51 @@
             } 
             else if (activeInventorySubTab === 'catalog') {
                 const baseCatalog = getBranchFilteredCatalog();
-                if (!query) {
-                    filteredTableData = [...baseCatalog];
-                } else {
-                    filteredTableData = baseCatalog.filter(item => 
+                
+                const brandFilter = document.getElementById('catalog-brand-filter') ? document.getElementById('catalog-brand-filter').value : 'all';
+                const seasonFilter = document.getElementById('catalog-season-filter') ? document.getElementById('catalog-season-filter').value : 'all';
+                const collectionFilter = document.getElementById('catalog-collection-filter') ? document.getElementById('catalog-collection-filter').value : 'all';
+
+                const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
+                const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
+                
+                const categoryKeywords = {
+                    hoodie: ['هوديز', 'هودى', 'هودي', 'سويت شيرت', 'سويت شيرت رجالي', 'سويت شيرت رجالى', 'hoodie', 'sweatshirt', 'sweat'],
+                    pants: ['بناطيل', 'بنطلون', 'سروال', 'pants', 'trouser', 'pant', 'بانت', 'سوت بانتس'],
+                    shirt: ['قمصان', 'قميص', 'shirt'],
+                    jacket: ['جاكيت', 'بليزر', 'معطف', 'jacket', 'coat', 'blazer', 'overshirt'],
+                    tshirt: ['تي شيرت', 'تيشيرت', 't-shirt', 't shirt']
+                };
+
+                let filtered = baseCatalog;
+
+                // Apply search query
+                if (query) {
+                    filtered = filtered.filter(item => 
                         item.barcode.toLowerCase().includes(query) || 
                         (item.product_name && item.product_name.toLowerCase().includes(query))
                     );
                 }
+
+                // Apply Brand filter
+                if (brandFilter === 'tree') {
+                    filtered = filtered.filter(item => (item.product_name || '').toLowerCase().includes('tree'));
+                }
+
+                // Apply Season filter
+                if (seasonFilter === 'winter') {
+                    filtered = filtered.filter(item => winterKeywords.some(kw => (item.product_name || '').toLowerCase().includes(kw)));
+                } else if (seasonFilter === 'summer') {
+                    filtered = filtered.filter(item => summerKeywords.some(kw => (item.product_name || '').toLowerCase().includes(kw)));
+                }
+
+                // Apply Collection filter
+                if (collectionFilter !== 'all') {
+                    const kws = categoryKeywords[collectionFilter] || [];
+                    filtered = filtered.filter(item => kws.some(kw => (item.product_name || '').toLowerCase().includes(kw)));
+                }
+
+                filteredTableData = filtered;
             }
             else if (activeInventorySubTab === 'discrepancy') {
                 const discrepancies = getDiscrepantItems();
@@ -7776,21 +7859,13 @@
                 if (gridContainer) gridContainer.classList.remove('hidden');
                 if (btnGrid) { btnGrid.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep text-white text-xs font-bold transition-all'; }
                 if (btnTable) { btnTable.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-600 text-xs font-bold transition-all hover:bg-white'; }
-                window.catalogGridPage = 1;
-                // Refresh filtered data for catalog
-                const baseCatalog = getBranchFilteredCatalog();
-                const query = (document.getElementById('inventory-search')?.value || '').trim().toLowerCase();
-                filteredTableData = query
-                    ? baseCatalog.filter(item => (item.barcode || '').toLowerCase().includes(query) || (item.product_name || '').toLowerCase().includes(query))
-                    : [...baseCatalog];
-                renderCatalogGrid();
             } else {
                 if (tableContainer) tableContainer.classList.remove('hidden');
                 if (gridContainer) gridContainer.classList.add('hidden');
                 if (btnGrid) { btnGrid.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg text-slate-600 text-xs font-bold transition-all hover:bg-white'; }
                 if (btnTable) { btnTable.className = 'flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep text-white text-xs font-bold transition-all'; }
-                filterInventory();
             }
+            filterInventory();
         }
 
         function renderCatalogGrid() {
@@ -9722,14 +9797,22 @@
                     }
                 }
 
+                const abeesStock = abeesQtyMap.get(item.barcode) || 0;
+                const isAbeesEmpty = abeesStock <= 0;
+                const checkboxHtml = isAbeesEmpty
+                    ? `<input type="checkbox" disabled class="low-stock-checkbox w-4 h-4 rounded text-slate-300 border-slate-200 cursor-not-allowed">`
+                    : `<input type="checkbox" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" checked class="low-stock-checkbox w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer">`;
+                const labelAbeesEmpty = isAbeesEmpty ? `<span class="text-[9px] text-rose-600 font-black block mt-0.5">[رصيد أبيس 0 - لا يمكن الطلب]</span>` : '';
+
                 html += `
-                    <div class="flex flex-col p-3 bg-rose-50/50 hover:bg-rose-50 border border-rose-100 rounded-xl transition">
+                    <div class="flex flex-col p-3 ${isAbeesEmpty ? 'bg-slate-50 border-slate-200 opacity-75' : 'bg-rose-50/50 hover:bg-rose-50 border border-rose-100'} rounded-xl transition">
                         <div class="flex items-center gap-3 w-full">
-                            <input type="checkbox" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" checked class="low-stock-checkbox w-4 h-4 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer">
+                            ${checkboxHtml}
                             ${imgHtml}
                             <div class="flex-1 min-w-0">
                                 <h5 class="text-[11px] font-bold text-slate-800 truncate">${item.name}</h5>
                                 <p class="text-[9px] text-slate-400 font-mono truncate">باركد: ${item.barcode}</p>
+                                ${labelAbeesEmpty}
                             </div>
                             <div class="text-left">
                                 <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 font-mono">
@@ -10635,9 +10718,8 @@
                 }
 
                 let selectorHtml = '';
-                const isQcOrAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'quality'));
-                const isAbees = (currentUser && normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
-                if (isQcOrAdmin || isAbees) {
+                const canViewAll = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'quality' || currentUser.role === 'online' || normalizeLocationId(currentUser.branch) === 'مخزن ابيس'));
+                if (canViewAll) {
                     selectorHtml += `
                         <button onclick="onBranchFilterChange('all')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition duration-200 flex items-center gap-1.5 ml-3">
                             <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-rose-500"></i>
@@ -13950,6 +14032,10 @@
                 document.getElementById('audit-stat-deficit').textContent = (disc.deficit ? disc.deficit.length : 0).toLocaleString('ar-EG');
                 document.getElementById('audit-stat-excess').textContent = (disc.excess ? disc.excess.length : 0).toLocaleString('ar-EG');
 
+                const totalBc = (disc.matched_count || 0) + (disc.deficit ? disc.deficit.length : 0) + (disc.excess ? disc.excess.length : 0);
+                const accuracy = totalBc > 0 ? Math.round(((disc.matched_count || 0) / totalBc) * 100) : 100;
+                document.getElementById('audit-stat-accuracy').textContent = accuracy + "%";
+
                 const actionBar = document.getElementById('audit-reconciliation-action-bar');
                 if (currentUser && currentUser.role === 'admin' && audit.status === 'submitted') {
                     actionBar.classList.remove('hidden');
@@ -14058,18 +14144,44 @@
             if (!container || !activeAuditDetails) return;
 
             const scanned = activeAuditDetails.scanned_items || [];
+            const isAdminSubmitted = (currentUser && currentUser.role === 'admin' && activeAuditDetails.status === 'submitted');
+
+            let html = '';
+
+            // Add manual entry form
+            if (isAdminSubmitted) {
+                html += `
+                    <div class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row items-center gap-3">
+                        <div class="flex-1 w-full space-y-1">
+                            <span class="text-[10px] font-bold text-slate-500 block">إضافة صنف جديد يدوياً إلى الجرد:</span>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="admin-add-audit-barcode" placeholder="امسح أو اكتب الباركود..." 
+                                       class="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-xs font-mono font-bold text-slate-800 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                                <input type="number" id="admin-add-audit-qty" value="1" min="1" 
+                                       class="w-16 text-center border border-slate-200 rounded px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="adminAddAuditItemSubmit()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow flex items-center justify-center gap-1.5 self-end">
+                            <i data-lucide="plus" class="w-4 h-4"></i> إضافة
+                        </button>
+                    </div>
+                `;
+            }
+
             if (scanned.length === 0) {
-                container.innerHTML = `<div class="py-16 text-center text-slate-400 font-medium">لم يتم مسح أي قطع في هذا الجرد.</div>`;
+                container.innerHTML = html + `<div class="py-16 text-center text-slate-400 font-medium">لم يتم مسح أي قطع في هذا الجرد.</div>`;
+                if (window.lucide) lucide.createIcons();
                 return;
             }
 
-            let html = `
+            html += `
                 <table class="w-full text-right border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
                             <th class="py-2.5 px-3">الباركود</th>
                             <th class="py-2.5 px-3">اسم المنتج/الموديل</th>
                             <th class="py-2.5 px-3 text-center">الكمية الممسوحة</th>
+                            ${isAdminSubmitted ? '<th class="py-2.5 px-3 text-center">الإجراءات</th>' : ''}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium">
@@ -14078,17 +14190,266 @@
             scanned.forEach(item => {
                 const catalogItem = getProductCatalogItem(item.barcode);
                 const name = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+                
+                let qtyCol = `<span class="text-indigo-600 font-extrabold">${item.quantity} قطع</span>`;
+                let actionCol = '';
+                
+                if (isAdminSubmitted) {
+                    qtyCol = `
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="changeAuditItemQtyStep('${item.barcode}', -1)" class="w-6 h-6 rounded bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200">-</button>
+                            <input type="number" id="audit-item-input-${item.barcode}" value="${item.quantity}" min="1" 
+                                   onchange="updateAuditItemQty('${item.barcode}', this.value)" 
+                                   class="w-14 text-center border border-slate-200 rounded px-1 py-0.5 font-bold text-slate-800 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                            <button onclick="changeAuditItemQtyStep('${item.barcode}', 1)" class="w-6 h-6 rounded bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200">+</button>
+                        </div>
+                    `;
+                    actionCol = `
+                        <td class="py-3 px-3 text-center">
+                            <button onclick="deleteAuditItem('${item.barcode}')" class="text-rose-600 hover:text-rose-800 transition p-1" title="حذف المنتج من الجرد">
+                                <i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i>
+                            </button>
+                        </td>
+                    `;
+                }
+
                 html += `
                     <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                         <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
                         <td class="py-3 px-3 text-slate-800 font-bold">${name}</td>
-                        <td class="py-3 px-3 text-center text-indigo-600 font-extrabold">${item.quantity} قطع</td>
+                        <td class="py-3 px-3 text-center">${qtyCol}</td>
+                        ${actionCol}
                     </tr>
                 `;
             });
 
             html += `</tbody></table>`;
             container.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Auxiliary functions for Audit Editor
+        function changeAuditItemQtyStep(barcode, step) {
+            const input = document.getElementById(`audit-item-input-${barcode}`);
+            if (!input) return;
+            const current = Number(input.value) || 0;
+            const target = Math.max(1, current + step);
+            input.value = target;
+            updateAuditItemQty(barcode, target);
+        }
+
+        async function updateAuditItemQty(barcode, newQty) {
+            if (!activeAuditDetails) return;
+            newQty = Number(newQty);
+            if (isNaN(newQty) || newQty < 1) return;
+
+            const items = activeAuditDetails.scanned_items || [];
+            const itemIndex = items.findIndex(i => i.barcode === barcode);
+            if (itemIndex > -1) {
+                items[itemIndex].quantity = newQty;
+            } else {
+                return;
+            }
+
+            await saveAndRecalculateAudit(items);
+        }
+
+        async function deleteAuditItem(barcode) {
+            if (!activeAuditDetails) return;
+            const confirmDelete = confirm("هل أنت متأكد من إزالة هذا الباركود من الجرد؟");
+            if (!confirmDelete) return;
+
+            const items = activeAuditDetails.scanned_items || [];
+            const updatedItems = items.filter(i => i.barcode !== barcode);
+
+            await saveAndRecalculateAudit(updatedItems);
+        }
+
+        async function adminAddAuditItemSubmit() {
+            const barcodeInput = document.getElementById('admin-add-audit-barcode');
+            const qtyInput = document.getElementById('admin-add-audit-qty');
+            if (!barcodeInput || !qtyInput) return;
+
+            const barcode = barcodeInput.value.trim();
+            const qty = Number(qtyInput.value);
+
+            if (!barcode || isNaN(qty) || qty < 1) {
+                alert("يرجى إدخال باركود المنتج وكمية صالحة أولاً!");
+                return;
+            }
+
+            await addAuditItem(barcode, qty);
+            barcodeInput.value = '';
+            qtyInput.value = '1';
+        }
+
+        async function addAuditItem(barcode, qty) {
+            if (!activeAuditDetails) return;
+            const items = [...(activeAuditDetails.scanned_items || [])];
+            const existing = items.find(i => i.barcode === barcode);
+            if (existing) {
+                existing.quantity += qty;
+            } else {
+                items.push({ barcode: barcode, quantity: qty });
+            }
+
+            await saveAndRecalculateAudit(items);
+        }
+
+        async function saveAndRecalculateAudit(updatedScannedItems) {
+            if (!activeAuditDetails || !supabaseClient) return;
+
+            try {
+                const branch = activeAuditDetails.location_id;
+                
+                // Fetch the current system inventory for the branch
+                const { data: currentInv, error: invErr } = await supabaseClient
+                    .from('warehouse_inventory')
+                    .select('barcode, quantity')
+                    .eq('location_id', branch);
+
+                if (invErr) throw invErr;
+
+                const systemInvMap = {};
+                if (currentInv) {
+                    currentInv.forEach(item => { systemInvMap[item.barcode] = item.quantity; });
+                }
+
+                const scannedMap = {};
+                updatedScannedItems.forEach(item => { scannedMap[item.barcode] = item.quantity; });
+
+                const allBarcodes = new Set([
+                    ...Object.keys(systemInvMap),
+                    ...Object.keys(scannedMap)
+                ]);
+
+                let matchedCount = 0;
+                const deficit = [];
+                const excess = [];
+
+                allBarcodes.forEach(bc => {
+                    const sysQty = systemInvMap[bc] || 0;
+                    const scanQty = scannedMap[bc] || 0;
+                    const diff = scanQty - sysQty;
+
+                    if (diff === 0) {
+                        matchedCount++;
+                    } else if (diff < 0) {
+                        deficit.push({
+                            barcode: bc,
+                            system_qty: sysQty,
+                            scanned_qty: scanQty,
+                            discrepancy: diff
+                        });
+                    } else {
+                        excess.push({
+                            barcode: bc,
+                            system_qty: sysQty,
+                            scanned_qty: scanQty,
+                            discrepancy: diff
+                        });
+                    }
+                });
+
+                const discrepancies = {
+                    matched_count: matchedCount,
+                    deficit: deficit,
+                    excess: excess
+                };
+
+                // Update Supabase
+                const { error: updateErr } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({
+                        scanned_items: updatedScannedItems,
+                        discrepancies: discrepancies
+                    })
+                    .eq('id', activeAuditDetails.id);
+
+                if (updateErr) throw updateErr;
+
+                // Sync local memory state
+                activeAuditDetails.scanned_items = updatedScannedItems;
+                activeAuditDetails.discrepancies = discrepancies;
+
+                // Re-render UI Stats
+                document.getElementById('audit-stat-matched').textContent = matchedCount.toLocaleString('ar-EG');
+                document.getElementById('audit-stat-deficit').textContent = deficit.length.toLocaleString('ar-EG');
+                document.getElementById('audit-stat-excess').textContent = excess.length.toLocaleString('ar-EG');
+
+                const totalBc = matchedCount + deficit.length + excess.length;
+                const accuracy = totalBc > 0 ? Math.round((matchedCount / totalBc) * 100) : 100;
+                document.getElementById('audit-stat-accuracy').textContent = accuracy + "%";
+
+                // Re-render tables
+                if (activeDetailsTab === 'discrepancies') {
+                    renderAuditDiscrepanciesTable();
+                } else {
+                    renderAuditAllScannedTable();
+                }
+
+                logToConsole("success", "تم تعديل كميات الجرد وإعادة حساب الفروقات وتحديث قاعدة البيانات.");
+            } catch (err) {
+                console.error("Error recalculating audit:", err);
+                alert("فشل تحديث الجرد: " + err.message);
+            }
+        }
+
+        // Export adjusted discrepancies to Excel
+        function exportAdjustedAuditDiscrepancies() {
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة SheetJS غير متوفرة.");
+                return;
+            }
+            if (!activeAuditDetails) return;
+
+            const disc = activeAuditDetails.discrepancies || {};
+            const deficit = disc.deficit || [];
+            const excess = disc.excess || [];
+
+            const dataToExport = [];
+
+            // Add Deficit
+            deficit.forEach(d => {
+                const catalogItem = getProductCatalogItem(d.barcode);
+                const name = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+                dataToExport.push({
+                    "الباركود": d.barcode,
+                    "اسم المنتج": name,
+                    "الكمية النظامية": d.system_qty,
+                    "الكمية الفعلية الممسوحة": d.scanned_qty,
+                    "الفارق الجردي": d.discrepancy,
+                    "نوع الاختلاف": "عجز 🚨"
+                });
+            });
+
+            // Add Excess
+            excess.forEach(e => {
+                const catalogItem = getProductCatalogItem(e.barcode);
+                const name = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+                dataToExport.push({
+                    "الباركود": e.barcode,
+                    "اسم المنتج": name,
+                    "الكمية النظامية": e.system_qty,
+                    "الكمية الفعلية الممسوحة": e.scanned_qty,
+                    "الفارق الجردي": e.discrepancy,
+                    "نوع الاختلاف": "زيادة ⚠️"
+                });
+            });
+
+            if (dataToExport.length === 0) {
+                alert("لا توجد اختلافات (عجز أو زيادة) لتصديرها لهذا الجرد!");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            worksheet["!dir"] = "rtl";
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "الاختلافات المحدثة");
+            
+            const filename = `اختلافات_جرد_معدل_${activeAuditDetails.location_id}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+            logToConsole('success', `تم تصدير ملف إكسيل بالاختلافات المحدثة بنجاح: ${filename}`);
         }
 
         // Admin Reconcile inventory audit
