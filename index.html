@@ -9791,7 +9791,7 @@
                 
                 const checkboxHtml = isZeroAbees
                     ? `<input type="checkbox" disabled class="w-4 h-4 rounded text-slate-400 border-slate-300 bg-slate-100 cursor-not-allowed">`
-                    : `<input type="checkbox" id="low-stock-chk-${item.barcode}" data-barcode="${item.barcode}" class="low-stock-select-chk w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">`;
+                    : `<input type="checkbox" id="low-stock-chk-${item.barcode}" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" class="low-stock-checkbox low-stock-select-chk w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">`;
                 
                 const inputHtml = isZeroAbees
                     ? `<input type="number" disabled value="0" class="w-16 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs font-bold text-slate-400 bg-slate-50 cursor-not-allowed">`
