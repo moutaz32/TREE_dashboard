@@ -11104,7 +11104,7 @@
                 }
 
                 let selectorHtml = '';
-                const canViewAll = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'quality' || currentUser.role === 'online' || normalizeLocationId(currentUser.branch) === 'مخزن ابيس'));
+                const canViewAll = !(currentUser && currentUser.role === 'branch' && currentUser.branch && normalizeLocationId(currentUser.branch) !== 'مخزن ابيس');
                 if (canViewAll) {
                     selectorHtml += `
                         <button onclick="onBranchFilterChange('all')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition duration-200 flex items-center gap-1.5 ml-3">
@@ -11147,21 +11147,47 @@
                     const itemsOnShelf = shelfItemsMap[shelfId];
                     const qty = itemsOnShelf.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-                    let colorClass = 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100/70'; 
+                    let colorClass = 'bg-slate-50/40 border-dashed border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300';
+                    let barColor = 'from-slate-300 to-slate-400';
+                    let utilizationText = 'فارغ';
+                    
                     if (qty > 0 && qty <= 50) {
-                        colorClass = 'bg-rose-50/50 border-rose-200 text-rose-700 hover:bg-rose-100/70'; 
+                        colorClass = 'bg-amber-50/55 border-amber-200 text-amber-800 hover:bg-amber-100/50 hover:border-amber-300';
+                        barColor = 'from-amber-400 to-amber-500';
+                        utilizationText = `${Math.round(qty / 10)}% إشغال`;
                     } else if (qty > 50 && qty <= 500) {
-                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100/70'; 
-                    } else if (qty > 500) {
-                        colorClass = 'bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70'; 
+                        colorClass = 'bg-blue-50/50 border-blue-200 text-blue-800 hover:bg-blue-100/50 hover:border-blue-300';
+                        barColor = 'from-blue-400 to-blue-500';
+                        utilizationText = `${Math.round(qty / 10)}% إشغال`;
+                    } else if (qty > 500 && qty <= 1000) {
+                        colorClass = 'bg-emerald-50/50 border-emerald-200 text-emerald-800 hover:bg-emerald-100/50 hover:border-emerald-300';
+                        barColor = 'from-emerald-400 to-emerald-500';
+                        utilizationText = `${Math.round(qty / 10)}% إشغال`;
+                    } else if (qty > 1000) {
+                        colorClass = 'bg-indigo-50/55 border-indigo-200 text-indigo-900 hover:bg-indigo-100/50 hover:border-indigo-300';
+                        barColor = 'from-indigo-400 to-indigo-500';
+                        utilizationText = `${Math.round(qty / 10)}% سعة قصوى ⚠️`;
                     }
+
+                    const pct = Math.min(100, Math.round(qty / 10));
 
                     mapHtml += `
                         <button onclick="showVirtualShelfDetails('${branchName}', '${selectedMapZone}', ${s})" 
-                                class="flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03]">
+                                class="flex flex-col p-4 rounded-2xl border text-right transition cursor-pointer shadow-sm ${colorClass} hover:scale-[1.03] hover:shadow duration-200 relative overflow-hidden group">
+                            <!-- Visual indication dot -->
+                            <div class="absolute top-3 left-3 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full ${qty > 0 ? (qty > 1000 ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500') : 'bg-slate-300'}"></span>
+                            </div>
                             <span class="text-xs font-black tracking-tight text-slate-800">${shelfId}</span>
-                            <span class="text-[10px] font-extrabold mt-1 text-slate-500">${qty.toLocaleString('ar-EG')} قطعة</span>
-                            <span class="text-[9px] font-semibold mt-0.5 opacity-70">${itemsOnShelf.length} صنف</span>
+                            <div class="mt-2 flex items-baseline justify-between w-full">
+                                <span class="text-[13px] font-black text-slate-800 font-mono">${qty.toLocaleString('ar-EG')} <span class="text-[9px] font-normal text-slate-400">قطعة</span></span>
+                                <span class="text-[8px] font-bold text-slate-400">${itemsOnShelf.length} أصناف</span>
+                            </div>
+                            <!-- Density bar -->
+                            <div class="w-full bg-slate-200/50 rounded-full h-1 mt-2.5 overflow-hidden">
+                                <div class="bg-gradient-to-r ${barColor} h-1 rounded-full transition-all duration-300" style="width: ${pct}%;"></div>
+                            </div>
+                            <span class="text-[8px] font-bold text-slate-400 mt-1.5 block">${utilizationText}</span>
                         </button>
                     `;
                 }
