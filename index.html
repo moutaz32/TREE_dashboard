@@ -232,7 +232,7 @@
             <!-- Logo & Brand -->
             <div class="flex flex-col items-center gap-3 mb-8">
                 <div class="bg-white p-3 rounded-2xl shadow-2xl shadow-emerald-500/30 w-20 h-20 flex items-center justify-center overflow-hidden">
-                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<i data-lucide=\'sprout\' class=\'w-10 h-10 text-brand-deep\'></i>'};" alt="Logo" class="max-w-full max-h-full object-contain">
+                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'w-10 h-10 text-brand-deep\'><path d=\'M2 22h20\'/><path d=\'M12 22V12\'/><path d=\'M12 12a5 5 0 1 0-5-5\'/><path d=\'M12 18a6 6 0 1 0 6-6\'/></svg>'};" alt="Logo" class="max-w-full max-h-full object-contain">
                 </div>
                 <div class="text-center">
                     <h1 class="text-2xl font-black text-white tracking-tight">OMNI System</h1>
@@ -282,7 +282,7 @@
             <!-- Header Brand -->
             <div class="px-6 py-5 flex items-center gap-3 border-b border-brand-900/55">
                 <div id="sidebar-logo-container" class="bg-white p-1.5 rounded-xl text-brand-deep flex items-center justify-center shadow-lg shadow-emerald-500/25 w-10 h-10 overflow-hidden">
-                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<i data-lucide=\'sprout\' class=\'w-6 h-6 text-brand-deep\'></i>'};" alt="Logo" class="max-w-full max-h-full object-contain">
+                    <img src="logo.png" onerror="this.onerror=null; this.src='logo.png.jpg'; this.onerror=function(){this.outerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'w-6 h-6 text-brand-deep\'><path d=\'M2 22h20\'/><path d=\'M12 22V12\'/><path d=\'M12 12a5 5 0 1 0-5-5\'/><path d=\'M12 18a6 6 0 1 0 6-6\'/></svg>'};" alt="Logo" class="max-w-full max-h-full object-contain">
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight uppercase leading-none">نظام OMNI</h1>
@@ -2568,7 +2568,7 @@
                     </div>
 
                     <!-- Discrepancies statistics grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                         <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between text-emerald-800">
                             <div>
                                 <span class="text-[10px] font-bold block uppercase">القطع المتطابقة تماماً</span>
@@ -2590,12 +2590,22 @@
                             </div>
                             <i data-lucide="plus-circle" class="w-8 h-8 opacity-40"></i>
                         </div>
-                        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between text-indigo-800">
+                        <div class="bg-rose-100/50 border border-rose-200/60 rounded-2xl p-4 flex items-center justify-between text-rose-900">
                             <div>
+                                <span class="text-[10px] font-bold block uppercase">القيمة المالية للفاقد</span>
+                                <h4 id="audit-stat-financial-loss" class="text-2xl font-black mt-1">0 ج.م</h4>
+                            </div>
+                            <i data-lucide="trending-down" class="w-8 h-8 opacity-40"></i>
+                        </div>
+                        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between text-indigo-800">
+                            <div class="flex-1">
                                 <span class="text-[10px] font-bold block uppercase">دقة مطابقة المخزون</span>
                                 <h4 id="audit-stat-accuracy" class="text-2xl font-black mt-1">100%</h4>
+                                <div class="w-full bg-indigo-100/70 rounded-full h-1.5 mt-2 overflow-hidden">
+                                    <div id="audit-stat-accuracy-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style="width: 100%"></div>
+                                </div>
                             </div>
-                            <i data-lucide="gauge" class="w-8 h-8 opacity-40"></i>
+                            <i data-lucide="gauge" class="w-8 h-8 opacity-40 mr-2"></i>
                         </div>
                     </div>
 
@@ -2617,6 +2627,12 @@
                     <!-- Discrepancies Table -->
                     <div id="audit-details-table-container" class="overflow-x-auto max-h-[400px]">
                         <!-- Dynamic details table -->
+                    </div>
+
+                    <!-- General Audit Notes Panel -->
+                    <div id="audit-general-notes-panel" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2">
+                        <label class="text-xs font-bold text-slate-700 block">ملاحظات وتقرير عملية الجرد العامة:</label>
+                        <textarea id="audit-general-notes-input" onchange="updateAuditGeneralNote(this.value)" rows="2" placeholder="اكتب ملاحظات عامة حول عملية الجرد الحالية هنا..." class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
                     </div>
 
                     <!-- Reconcile Action Bar -->
@@ -5056,22 +5072,42 @@
 
         function updateBadge(status, text) {
             const badge = document.getElementById('connection-badge');
-            if (!badge) return;
-
-            badge.className = "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold";
-            
-            let dotHtml = '';
-            if (status === 'connecting') {
-                badge.classList.add('bg-amber-500/20', 'text-amber-300');
-                dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>';
-            } else if (status === 'connected') {
-                badge.classList.add('bg-emerald-500/20', 'text-emerald-400');
-                dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>';
-            } else {
-                badge.classList.add('bg-rose-500/20', 'text-rose-400');
-                dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>';
+            if (badge) {
+                badge.className = "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold";
+                let dotHtml = '';
+                if (status === 'connecting') {
+                    badge.classList.add('bg-amber-500/20', 'text-amber-300');
+                    dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>';
+                } else if (status === 'connected') {
+                    badge.classList.add('bg-emerald-500/20', 'text-emerald-400');
+                    dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>';
+                } else {
+                    badge.classList.add('bg-rose-500/20', 'text-rose-400');
+                    dotHtml = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>';
+                }
+                badge.innerHTML = dotHtml + text;
             }
-            badge.innerHTML = dotHtml + text;
+
+            // Update top header connection indicator dynamically
+            const headerIndicator = document.getElementById('secret-admin-trigger-header');
+            if (headerIndicator) {
+                if (status === 'connecting') {
+                    headerIndicator.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-amber-600">جاري الاتصال بالسحابة...</span>
+                    `;
+                } else if (status === 'connected') {
+                    headerIndicator.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="text-[10px] font-bold text-slate-700">المزامنة السحابية النشطة</span>
+                    `;
+                } else {
+                    headerIndicator.innerHTML = `
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                        <span class="text-[10px] font-bold text-rose-600">انقطع الاتصال بالسحابة</span>
+                    `;
+                }
+            }
         }
 
         // ================= TAB ROUTING LOGIC =================
@@ -6623,6 +6659,15 @@
         }
 
         function changeHeatmapPerspective(p) {
+            if (p === 'branches') {
+                const isBranchUser = currentUser && currentUser.role === 'branch';
+                if (!isBranchUser) {
+                    onBranchFilterChange('all');
+                } else {
+                    alert("عذراً، لا يمكنك الانتقال لعرض كافة الفروع بصفتك موظف فرع.");
+                    return;
+                }
+            }
             activeHeatmapPerspective = p;
             
             // Update button styles
@@ -9709,6 +9754,549 @@
                 });
             }
 
+            let gridHtml = '';
+            lowStockItems.forEach(item => {
+                const abeesQty = abeesQtyMap.get(item.barcode) || 0;
+                const sales30 = barcodeSales[item.barcode] || 0;
+                const runRate = Math.round((sales30 / daysDiff) * 10) / 10;
+                
+                const isZeroAbees = abeesQty <= 0;
+                const abeesStockText = isZeroAbees 
+                    ? `<span class="text-rose-600 font-bold text-[10px] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">[رصيد أبيس 0 - لا يمكن الطلب]</span>`
+                    : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">متاح بأبيس: ${abeesQty}</span>`;
+                
+                const checkboxHtml = isZeroAbees
+                    ? `<input type="checkbox" disabled class="w-4 h-4 rounded text-slate-400 border-slate-300 bg-slate-100 cursor-not-allowed">`
+                    : `<input type="checkbox" id="low-stock-chk-${item.barcode}" data-barcode="${item.barcode}" class="low-stock-select-chk w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">`;
+                
+                const inputHtml = isZeroAbees
+                    ? `<input type="number" disabled value="0" class="w-16 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs font-bold text-slate-400 bg-slate-50 cursor-not-allowed">`
+                    : `<input type="number" id="low-stock-qty-${item.barcode}" value="${Math.max(1, lowStockThreshold - item.physicalQty)}" min="1" max="${abeesQty}" class="w-16 px-1.5 py-0.5 border border-slate-300 rounded text-center text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none">`;
+
+                gridHtml += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between gap-2.5 hover:shadow-md transition">
+                        <div class="flex gap-2">
+                            <img src="${item.imageUrl}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&q=80'" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-slate-100">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[11px] font-bold text-slate-800 truncate">${item.name}</div>
+                                <div class="text-[9px] font-mono text-slate-500 mt-0.5">${item.barcode}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-600 font-bold border-t border-slate-100 pt-2">
+                            <div>رصيد الفرع: <span class="text-indigo-600">${item.physicalQty}</span></div>
+                            <div>بيع/يوم: <span class="text-amber-600">${runRate}</span></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2 gap-2">
+                            <div class="flex items-center gap-1.5">
+                                ${checkboxHtml}
+                                ${abeesStockText}
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-400 font-bold">الكمية:</span>
+                                ${inputHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = gridHtml;
+            const exportWrapper = document.getElementById('export-wrapper');
+            if (exportWrapper) {
+                exportWrapper.style.display = lowStockItems.length > 0 ? 'flex' : 'none';
+            }
+        }
+
+      async function updateBranchOrderStatus(orderId, status) {
+          if (!supabaseClient) return;
+          
+          const order = branchOrdersCache.find(o => o.id === orderId);
+          if (!order) return;
+          
+          let confirmationMessage = '';
+          if (status === 'preparing') {
+              confirmationMessage = 'هل تريد البدء في تحضير هذه الطلبية وتغيير حالتها إلى "جاري التحضير"؟';
+          } else if (status === 'shipped') {
+              confirmationMessage = 'هل أنت متأكد من اعتماد كميات الشحن هذه وتغيير حالتها إلى "تم الشحن"؟ سيتم خصم الكميات من مخزن ورفوف أبيس وتوليد إذن شحن الفروع تلقائياً.';
+          } else if (status === 'delivered') {
+              confirmationMessage = 'هل تؤكد استلام بضائع هذه الطلبية بالكامل وتحديث مخزون الفرع؟';
+          } else if (status === 'cancelled') {
+              confirmationMessage = 'هل أنت متأكد من إلغاء هذه الطلبية؟';
+          }
+          
+          const confirmAction = confirm(confirmationMessage);
+          if (!confirmAction) return;
+          
+          try {
+              if (status === 'shipped') {
+                  // Verify and deduct stock
+                  for (const item of order.items) {
+                      const barcode = item.barcode;
+                      const decrQty = Number(item.approved_qty || 0);
+                      if (decrQty <= 0) continue;
+                      
+                      // 1. Deduct from general Abees inventory
+                      const { data: invItems, error: findError } = await supabaseClient
+                          .from('warehouse_inventory')
+                          .select('id, quantity')
+                          .eq('barcode', barcode)
+                          .like('location_id', '%ابيس%');
+                          
+                      if (findError) throw findError;
+                      
+                      if (invItems && invItems.length > 0) {
+                          const invItem = invItems[0];
+                          const newQty = Math.max(0, Number(invItem.quantity || 0) - decrQty);
+                          
+                          const { error: updateError } = await supabaseClient
+                              .from('warehouse_inventory')
+                              .update({ quantity: newQty })
+                              .eq('id', invItem.id);
+                              
+                          if (updateError) throw updateError;
+                      }
+                      
+                      // 2. Deduct sequentially from WMS storage (abeese_wms_storage)
+                      let remainingToDeduct = decrQty;
+                      const { data: wmsBins, error: wmsError } = await supabaseClient
+                          .from('abeese_wms_storage')
+                          .select('*')
+                          .eq('barcode', barcode)
+                          .order('quantity', { ascending: false });
+                          
+                      if (wmsError) throw wmsError;
+                      
+                      if (wmsBins && wmsBins.length > 0) {
+                          for (const bin of wmsBins) {
+                              if (remainingToDeduct <= 0) break;
+                              const binQty = Number(bin.quantity || 0);
+                              if (binQty <= remainingToDeduct) {
+                                  remainingToDeduct -= binQty;
+                                  const { error: delErr } = await supabaseClient
+                                      .from('abeese_wms_storage')
+                                      .delete()
+                                      .eq('id', bin.id);
+                                  if (delErr) throw delErr;
+                              } else {
+                                  const newBinQty = binQty - remainingToDeduct;
+                                  remainingToDeduct = 0;
+                                  const { error: upErr } = await supabaseClient
+                                      .from('abeese_wms_storage')
+                                      .update({ quantity: newBinQty })
+                                      .eq('id', bin.id);
+                                  if (upErr) throw upErr;
+                              }
+                          }
+                      }
+                      
+                      // 3. Create a transfer request log and immediately mark it as SHIPPED
+                      const detailsObj = {
+                          barcode: item.barcode,
+                          productName: item.product_name,
+                          qty: decrQty,
+                          sourceBranch: "مخزن ابيس",
+                          targetBranch: order.branch_name,
+                          status: 'SHIPPED',
+                          already_deducted: true,
+                          date: new Date().toISOString()
+                      };
+                      
+                      await supabaseClient.from('activity_logs').insert([
+                          { action: 'طلب تحويل مخزون', details: JSON.stringify(detailsObj) }
+                      ]);
+                  }
+                  logToConsole('success', `تم خصم كميات الطلبية رقم ${orderId} من رفوف ومخزن أبيس، وتم توليد تحويلات الشحن.`);
+              }
+              
+              if (status === 'delivered') {
+                  for (const item of order.items) {
+                      const barcode = item.barcode;
+                      const addQty = Number(item.approved_qty || 0);
+                      if (addQty <= 0) continue;
+                      
+                      // Add to target branch warehouse_inventory
+                      const normTarget = normalizeLocationId(order.branch_name);
+                      const targetItem = liveInventoryData.find(inv => inv.barcode === barcode && normalizeLocationId(inv.location_id) === normTarget);
+                      if (targetItem) {
+                          const currentQty = Number(targetItem.quantity || 0);
+                          const newQty = currentQty + addQty;
+                          await supabaseClient.from('warehouse_inventory').update({ quantity: newQty }).eq('barcode', barcode).eq('location_id', targetItem.location_id);
+                      } else {
+                          await supabaseClient.from('warehouse_inventory').insert([
+                              { barcode: barcode, location_id: order.branch_name, quantity: addQty }
+                          ]);
+                      }
+                      
+                      // Log the delivery completion
+                      const detailsObj = {
+                          barcode: item.barcode,
+                          productName: item.product_name,
+                          qty: addQty,
+                          sourceBranch: "مخزن ابيس",
+                          targetBranch: order.branch_name,
+                          status: 'COMPLETED',
+                          date: new Date().toISOString()
+                      };
+                      
+                      await supabaseClient.from('activity_logs').insert([
+                          { action: 'استلام تحويل مخزون', details: JSON.stringify(detailsObj) }
+                      ]);
+                  }
+                  logToConsole('success', `تم تسليم الطلبية رقم ${orderId} وتحديث رصيد فرع ${order.branch_name}.`);
+              }
+              
+              const { error } = await supabaseClient
+                  .from('branch_prep_orders')
+                  .update({ status: status })
+                  .eq('id', orderId);
+                  
+              if (error) throw error;
+              
+              let alertMsg = "تم تحديث حالة الطلبية بنجاح! ✓";
+              if (status === 'preparing') alertMsg = "تم وضع الطلبية في حالة التحضير! 📦";
+              else if (status === 'shipped') alertMsg = "تم شحن الطلبية وتوليد التحويلات المخصومة بنجاح! 🚚";
+              else if (status === 'delivered') alertMsg = "تم تأكيد استلام الطلبية وتحديث مخزون الفرع! ✓";
+              else if (status === 'cancelled') alertMsg = "تم إلغاء الطلبية بنجاح. ✗";
+              
+              alert(alertMsg);
+              
+              // Close modal if open
+              const modal = document.getElementById('branch-order-modal');
+              if (modal) modal.classList.add('hidden');
+              
+              fetchAndRenderBranchOrders();
+              
+              if (typeof fetchInventoryData === 'function') {
+                  fetchInventoryData();
+              }
+              if (typeof loadWMSStorageData === 'function') {
+                  loadWMSStorageData();
+              }
+          } catch (err) {
+              console.error("Failed to update status:", err);
+              alert("حدث خطأ أثناء التحديث: " + err.message);
+          }
+      }
+
+      function getAisleFromLocation(locId) {
+          if (!locId) return 'Z';
+          const cleanLoc = locId.trim().toUpperCase();
+          if (cleanLoc.startsWith('A')) return 'A';
+          if (cleanLoc.startsWith('B')) return 'B';
+          if (cleanLoc.startsWith('C')) return 'C';
+          if (cleanLoc.startsWith('D')) return 'D';
+          if (cleanLoc.startsWith('E')) return 'E';
+          return 'Z';
+      }
+
+      function getItemSortingKey(item) {
+          const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
+          if (wmsLocations.length === 0) return 'Z';
+          const locs = wmsLocations.map(w => w.location_id).sort();
+          return getAisleFromLocation(locs[0]);
+      }
+
+      async function saveBranchOrderApprovedQuantities(orderId) {
+          if (!supabaseClient) return;
+          const order = branchOrdersCache.find(o => o.id === orderId);
+          if (!order) return;
+          
+          const updatedItems = order.items.map(item => {
+              const input = document.getElementById(`approved-input-${item.barcode}`);
+              if (input) {
+                  item.approved_qty = Math.max(0, Number(input.value) || 0);
+              }
+              return item;
+          });
+          
+          try {
+              const { error } = await supabaseClient
+                  .from('branch_prep_orders')
+                  .update({ items: updatedItems })
+                  .eq('id', orderId);
+                  
+              if (error) throw error;
+              
+              alert("تم حفظ الكميات المعتمدة المعدلة بنجاح! ✓");
+              logToConsole("success", `تم تعديل كميات الشحن المعتمدة للطلبية رقم ${orderId}`);
+              
+              // Refresh orders local cache and modal
+              await fetchAndRenderBranchOrders();
+              showBranchOrderDetails(orderId);
+          } catch (err) {
+              console.error("Error saving approved quantities:", err);
+              alert("فشل حفظ الكميات: " + err.message);
+          }
+      }
+
+      function printPickingSlip(orderId) {
+          const order = branchOrdersCache.find(o => o.id === orderId);
+          if (!order) return;
+          
+          const sortedItems = [...order.items].sort((a, b) => {
+              return getItemSortingKey(a).localeCompare(getItemSortingKey(b));
+          });
+
+          const printWindow = window.open('', '_blank');
+          let itemsHtml = '';
+          
+          sortedItems.forEach((item, idx) => {
+              const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
+              let locsStr = wmsLocations.map(w => `${w.location_id} (${w.quantity} قطعة)`).join(', ') || 'غير مسكن رفوف';
+              
+              itemsHtml += `
+                  <tr>
+                      <td style="text-align: center; border: 1px solid #ddd; padding: 10px;">[ ]</td>
+                      <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${idx + 1}</td>
+                      <td style="border: 1px solid #ddd; padding: 10px; font-family: monospace;">${item.barcode}</td>
+                      <td style="border: 1px solid #ddd; padding: 10px;">${item.product_name}</td>
+                      <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold; color: #0d9488;">${locsStr}</td>
+                      <td style="text-align: center; border: 1px solid #ddd; padding: 10px; font-weight: bold;">${item.required_qty}</td>
+                      <td style="text-align: center; border: 1px solid #ddd; padding: 10px; font-weight: bold; color: #dc2626;">${item.approved_qty}</td>
+                  </tr>
+              `;
+          });
+
+          printWindow.document.write(`
+              <html>
+              <head>
+                  <title>إذن صرف ومسار تحضير بضائع - مستودع الشجرة</title>
+                  <style>
+                      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; padding: 30px; color: #333; }
+                      .header { border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+                      .title { font-size: 22px; font-weight: bold; }
+                      .info { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }
+                      table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+                      th { background-color: #f3f4f6; border: 1px solid #ddd; padding: 10px; text-align: right; }
+                      @media print {
+                          button { display: none; }
+                      }
+                  </style>
+              </head>
+              <body onload="window.print();">
+                  <div class="header">
+                      <div class="title">إذن تحضير وصرف بضائع (Picking Slip)</div>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">مستودع الشجرة الموحد - TREE Warehouse</div>
+                  </div>
+                  <div class="info">
+                      <div><strong>رقم الطلبية:</strong> ${order.id.slice(0, 8)}...</div>
+                      <div><strong>الفرع المستهدف:</strong> ${order.branch_name}</div>
+                      <div><strong>تاريخ الطلب:</strong> ${new Date(order.created_at).toLocaleString('ar-EG')}</div>
+                  </div>
+                  <table>
+                      <thead>
+                          <tr>
+                              <th style="width: 40px; text-align: center;">تم</th>
+                              <th style="width: 40px;">م</th>
+                              <th>الباركود</th>
+                              <th>اسم المنتج</th>
+                              <th>الرفوف المتوفرة (أبيس)</th>
+                              <th style="width: 60px; text-align: center;">العجز</th>
+                              <th style="width: 60px; text-align: center;">المعتمد</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          ${itemsHtml}
+                      </tbody>
+                  </table>
+                  <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+                      <div>تحضير الموظف: _________________</div>
+                      <div>اعتماد أمين المستودع: _________________</div>
+                  </div>
+              </body>
+              </html>
+          `);
+          printWindow.document.close();
+      }
+
+      function showBranchOrderDetails(orderId) {
+          const order = branchOrdersCache.find(o => o.id === orderId);
+          if (!order) return;
+          
+          const modal = document.getElementById('branch-order-modal');
+          const modalTitle = document.getElementById('branch-order-modal-title');
+          const modalBody = document.getElementById('branch-order-modal-body');
+          
+          if (!modal || !modalTitle || !modalBody) return;
+          
+          modalTitle.textContent = `تفاصيل طلبية فرع: ${order.branch_name}`;
+          
+          // Sort items by Aisle/Shelf
+          const sortedItems = [...order.items].sort((a, b) => {
+              return getItemSortingKey(a).localeCompare(getItemSortingKey(b));
+          });
+          
+          // Calculate fill rates
+          let totalRequired = 0;
+          let totalApproved = 0;
+          let totalPotential = 0;
+          
+          sortedItems.forEach(item => {
+              totalRequired += Number(item.required_qty || 0);
+              totalApproved += Number(item.approved_qty || 0);
+              totalPotential += Math.min(Number(item.required_qty || 0), Number(item.abees_qty || 0));
+          });
+          
+          const currentFillRate = totalRequired > 0 ? Math.round((totalApproved / totalRequired) * 100) : 100;
+          const potentialFillRate = totalRequired > 0 ? Math.round((totalPotential / totalRequired) * 100) : 100;
+          
+          const isPendingOrPreparing = order.status === 'pending' || order.status === 'preparing';
+          const isAbeesOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.location_id === 'مخزن ابيس');
+          const isTargetBranch = currentUser && (normalizeLocationId(currentUser.location_id) === normalizeLocationId(order.branch_name));
+          
+          let itemsHtml = `
+              <!-- Order Header Info -->
+              <div class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div>
+                      <span class="text-slate-500 font-bold block mb-1">حالة الطلبية:</span>
+                      <span class="px-2.5 py-1 rounded font-black ${
+                          order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                          order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                          order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                          'bg-red-100 text-red-800'
+                      }">
+                          ${
+                              order.status === 'pending' ? 'قيد الانتظار ⏳' :
+                              order.status === 'preparing' ? 'جاري التحضير 📦' :
+                              order.status === 'shipped' ? 'تم الشحن 🚚' :
+                              order.status === 'delivered' ? 'تم الاستلام ✓' :
+                              'ملغي ❌'
+                          }
+                      </span>
+                  </div>
+                  <div>
+                      <span class="text-slate-500 font-bold block mb-1">نسبة التلبية الحالية:</span>
+                      <span class="text-sm font-black ${currentFillRate >= 80 ? 'text-emerald-600' : currentFillRate >= 40 ? 'text-amber-600' : 'text-rose-600'}">
+                          ${currentFillRate}%
+                      </span>
+                  </div>
+                  <div>
+                      <span class="text-slate-500 font-bold block mb-1">نسبة التلبية الممكنة:</span>
+                      <span class="text-sm font-black text-slate-700">${potentialFillRate}%</span>
+                  </div>
+                  <div>
+                      <span class="text-slate-500 font-bold block mb-1">تاريخ الطلب:</span>
+                      <span class="text-slate-600 font-bold">${new Date(order.created_at).toLocaleString('ar-EG')}</span>
+                  </div>
+              </div>
+              
+              <div class="overflow-x-auto mb-4">
+                  <table class="w-full text-right border-collapse">
+                      <thead>
+                          <tr class="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200">
+                              <th class="p-2">موقع التحضير</th>
+                              <th class="p-2">الباركود</th>
+                              <th class="p-2">اسم المنتج</th>
+                              <th class="p-2">رصيد الفرع</th>
+                              <th class="p-2 text-amber-600">العجز المطلوب</th>
+                              <th class="p-2">متاح بأبيس</th>
+                              <th class="p-2 text-rose-600 w-24">الكمية المعتمدة</th>
+                          </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 text-xs text-slate-800">
+          `;
+          
+          sortedItems.forEach(item => {
+              // Find matching WMS locations
+              const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
+              const locsStr = wmsLocations.map(w => `${w.location_id} (${w.quantity} ق)`).join(' | ') || 'غير مسكن رفوف';
+              const aisle = getItemSortingKey(item);
+              
+              itemsHtml += `
+                  <tr class="hover:bg-slate-50 border-b border-slate-100">
+                      <td class="p-2 font-bold text-teal-700">
+                          <span class="bg-teal-50 px-2 py-0.5 rounded border border-teal-200">ممر ${aisle}</span>
+                      </td>
+                      <td class="p-2 font-mono">${item.barcode}</td>
+                      <td class="p-2 font-bold">
+                          <div>${item.product_name}</div>
+                          <div class="text-[10px] text-slate-400 mt-0.5">📍 رفوف: ${locsStr}</div>
+                      </td>
+                      <td class="p-2">${item.branch_qty}</td>
+                      <td class="p-2 text-amber-600 font-bold">${item.required_qty}</td>
+                      <td class="p-2">${item.abees_qty}</td>
+                      <td class="p-2 text-rose-600 font-bold">
+                          ${isPendingOrPreparing && isAbeesOrAdmin ? `
+                              <input type="number" id="approved-input-${item.barcode}" 
+                                     value="${item.approved_qty}" min="0" max="${item.abees_qty}" 
+                                     class="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center focus:ring-1 focus:ring-rose-500 outline-none">
+                          ` : `
+                              <span>${item.approved_qty}</span>
+                          `}
+                      </td>
+                  </tr>
+              `;
+          });
+          
+          itemsHtml += `
+                      </tbody>
+                  </table>
+              </div>
+          `;
+          
+          // Action Buttons Section
+          itemsHtml += `<div class="flex flex-wrap gap-2 justify-end border-t border-slate-100 pt-4">`;
+          
+          if (isPendingOrPreparing && isAbeesOrAdmin) {
+              itemsHtml += `
+                  <button onclick="saveBranchOrderApprovedQuantities('${order.id}')" 
+                          class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-xs transition flex items-center gap-1">
+                      💾 حفظ كميات الشحن المعدلة
+                  </button>
+              `;
+          }
+          
+          if (order.status === 'pending' && isAbeesOrAdmin) {
+              itemsHtml += `
+                  <button onclick="updateBranchOrderStatus('${order.id}', 'preparing')" 
+                          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      📦 بدء التحضير
+                  </button>
+                  <button onclick="updateBranchOrderStatus('${order.id}', 'cancelled')" 
+                          class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      ❌ إلغاء الطلبية
+                  </button>
+              `;
+          } else if (order.status === 'preparing' && isAbeesOrAdmin) {
+              itemsHtml += `
+                  <button onclick="updateBranchOrderStatus('${order.id}', 'shipped')" 
+                          class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      🚚 شحن الطلبية واعتماد
+                  </button>
+                  <button onclick="printPickingSlip('${order.id}')" 
+                          class="bg-slate-600 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      🖨️ طباعة مسار التحضير
+                  </button>
+                  <button onclick="updateBranchOrderStatus('${order.id}', 'cancelled')" 
+                          class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      ❌ إلغاء الطلبية
+                  </button>
+              `;
+          } else if (order.status === 'shipped' && (isTargetBranch || currentUser.role === 'admin')) {
+              itemsHtml += `
+                  <button onclick="updateBranchOrderStatus('${order.id}', 'delivered')" 
+                          class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-xs transition">
+                      ✅ تأكيد استلام الشحنة
+                  </button>
+              `;
+          }
+          
+          itemsHtml += `
+              <button onclick="closeBranchOrderModal()" 
+                      class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded text-xs transition font-bold">
+                  إغلاق
+              </button>
+          </div>
+          `;
+          
+          modalBody.innerHTML = itemsHtml;
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+      }
+
             let html = '';
             
             // Build branch quantity map
@@ -10224,63 +10812,6 @@
         if (window.lucide) lucide.createIcons();
     }
      
-     async function updateBranchOrderStatus(orderId, status) {
-         if (!supabaseClient) return;
-         
-         const order = branchOrdersCache.find(o => o.id === orderId);
-         if (!order) return;
-         
-         const confirmAction = confirm(status === 'completed' ? 'هل أنت متأكد من اعتماد وتحضير هذه الطلبية بالكامل وتحديث أرصدة الكتالوج؟' : 'هل أنت متأكد من إلغاء هذه الطلبية؟');
-         if (!confirmAction) return;
-         
-         try {
-             if (status === 'completed') {
-                 for (const item of order.items) {
-                     const barcode = item.barcode;
-                     const decrQty = Number(item.approved_qty || 0);
-                     if (decrQty <= 0) continue;
-                     
-                     const { data: invItems, error: findError } = await supabaseClient
-                         .from('warehouse_inventory')
-                         .select('id, quantity')
-                         .eq('barcode', barcode)
-                         .like('location_id', '%ابيس%');
-                         
-                     if (findError) throw findError;
-                     
-                     if (invItems && invItems.length > 0) {
-                         const invItem = invItems[0];
-                         const newQty = Math.max(0, Number(invItem.quantity || 0) - decrQty);
-                         
-                         const { error: updateError } = await supabaseClient
-                             .from('warehouse_inventory')
-                             .update({ quantity: newQty })
-                             .eq('id', invItem.id);
-                             
-                         if (updateError) throw updateError;
-                     }
-                 }
-                 logToConsole('success', `تم خصم كميات الطلبية رقم ${orderId} من رصيد مخزن أبيس.`);
-             }
-             
-             const { error } = await supabaseClient
-                 .from('branch_prep_orders')
-                 .update({ status: status })
-                 .eq('id', orderId);
-                 
-             if (error) throw error;
-             
-             alert(status === 'completed' ? "تم اعتماد وتحضير الطلبية بنجاح وتحديث المخزون! ✓" : "تم إلغاء الطلبية بنجاح. ✗");
-             fetchAndRenderBranchOrders();
-             
-             if (typeof fetchInventoryData === 'function') {
-                 fetchInventoryData();
-             }
-         } catch (err) {
-             console.error("Failed to update status:", err);
-             alert("حدث خطأ أثناء التحديث: " + err.message);
-         }
-     }
      
      function showBranchOrderDetails(orderId) {
          const order = branchOrdersCache.find(o => o.id === orderId);
@@ -12088,13 +12619,15 @@
                 
                 if (!confirm("تأكيد استلام عدد " + parsed.qty + " قطعة من الصنف (" + parsed.productName + ")؟ سيتم تحديث رصيد الفرعين تلقائياً.")) return;
                 
-                // 1. Subtract from source branch
-                const normSource = normalizeLocationId(parsed.sourceBranch);
-                const sourceItem = liveInventoryData.find(item => item.barcode === parsed.barcode && normalizeLocationId(item.location_id) === normSource);
-                if (sourceItem) {
-                    const currentQty = Number(sourceItem.quantity || 0);
-                    const newQty = Math.max(0, currentQty - parsed.qty);
-                    await supabaseClient.from('warehouse_inventory').update({ quantity: newQty }).eq('barcode', parsed.barcode).eq('location_id', sourceItem.location_id);
+                // 1. Subtract from source branch (skip if already deducted at shipment)
+                if (!parsed.already_deducted) {
+                    const normSource = normalizeLocationId(parsed.sourceBranch);
+                    const sourceItem = liveInventoryData.find(item => item.barcode === parsed.barcode && normalizeLocationId(item.location_id) === normSource);
+                    if (sourceItem) {
+                        const currentQty = Number(sourceItem.quantity || 0);
+                        const newQty = Math.max(0, currentQty - parsed.qty);
+                        await supabaseClient.from('warehouse_inventory').update({ quantity: newQty }).eq('barcode', parsed.barcode).eq('location_id', sourceItem.location_id);
+                    }
                 }
                 
                 // 2. Add to target branch
@@ -12333,10 +12866,11 @@
                 const btn = document.getElementById(`btn-perspective-${btnId}`);
                 if (!btn) return;
                 
-                // Hide branches button if not viewing all branches
+                // Hide branches button only for regular branch users who are locked to one branch
                 if (btnId === 'branches') {
-                    if (isAll) btn.classList.remove('hidden');
-                    else btn.classList.add('hidden');
+                    const isBranchUser = currentUser && currentUser.role === 'branch';
+                    if (isBranchUser) btn.classList.add('hidden');
+                    else btn.classList.remove('hidden');
                 }
                 
                 if (btnId === activeHeatmapPerspective) {
@@ -14035,12 +14569,37 @@
                 const totalBc = (disc.matched_count || 0) + (disc.deficit ? disc.deficit.length : 0) + (disc.excess ? disc.excess.length : 0);
                 const accuracy = totalBc > 0 ? Math.round(((disc.matched_count || 0) / totalBc) * 100) : 100;
                 document.getElementById('audit-stat-accuracy').textContent = accuracy + "%";
+                const accuracyBar = document.getElementById('audit-stat-accuracy-bar');
+                if (accuracyBar) {
+                    accuracyBar.style.width = accuracy + "%";
+                    accuracyBar.className = 'h-1.5 rounded-full transition-all duration-300 ' + 
+                        (accuracy >= 85 ? 'bg-emerald-600' : accuracy >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+                }
 
                 const actionBar = document.getElementById('audit-reconciliation-action-bar');
                 if (currentUser && currentUser.role === 'admin' && audit.status === 'submitted') {
                     actionBar.classList.remove('hidden');
                 } else {
                     actionBar.classList.add('hidden');
+                }
+
+                // Calculate financial loss from deficit items
+                let totalLoss = 0;
+                if (disc.deficit) {
+                    disc.deficit.forEach(item => {
+                        const catalogItem = getProductCatalogItem(item.barcode);
+                        const price = catalogItem ? (Number(catalogItem.regular_price) || 0) : 0;
+                        totalLoss += Math.abs(item.discrepancy) * price;
+                    });
+                }
+                const lossEl = document.getElementById('audit-stat-financial-loss');
+                if (lossEl) lossEl.textContent = totalLoss.toLocaleString('ar-EG') + ' ج.م';
+
+                // Populate and toggle general notes textarea
+                const generalNotesInput = document.getElementById('audit-general-notes-input');
+                if (generalNotesInput) {
+                    generalNotesInput.value = (disc.general_note || '');
+                    generalNotesInput.disabled = (audit.status === 'reconciled' || (currentUser && currentUser.role !== 'admin'));
                 }
 
                 switchAuditDetailsTab('discrepancies');
@@ -14098,7 +14657,10 @@
                             <th class="py-2.5 px-3 text-center">الرصيد بالسيستم</th>
                             <th class="py-2.5 px-3 text-center">الواقع الممسوح</th>
                             <th class="py-2.5 px-3 text-center">الفروقات</th>
+                            <th class="py-2.5 px-3 text-center">سعر القطعة</th>
+                            <th class="py-2.5 px-3 text-center">تكلفة الفرق</th>
                             <th class="py-2.5 px-3 text-center">نوع الفرق</th>
+                            <th class="py-2.5 px-3 text-center">ملاحظات الصنف</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 font-medium">
@@ -14107,6 +14669,11 @@
             deficits.forEach(item => {
                 const catalogItem = getProductCatalogItem(item.barcode);
                 const name = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+                const price = catalogItem ? (Number(catalogItem.regular_price) || 0) : 0;
+                const cost = Math.abs(item.discrepancy) * price;
+                const noteVal = (disc.item_notes && disc.item_notes[item.barcode]) || '';
+                const isNotesDisabled = (activeAuditDetails.status === 'reconciled' || (currentUser && currentUser.role !== 'admin'));
+
                 html += `
                     <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                         <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
@@ -14114,7 +14681,12 @@
                         <td class="py-3 px-3 text-center text-slate-600">${item.system_qty}</td>
                         <td class="py-3 px-3 text-center text-slate-700">${item.scanned_qty}</td>
                         <td class="py-3 px-3 text-center text-rose-600 font-extrabold">${item.discrepancy}</td>
+                        <td class="py-3 px-3 text-center text-slate-600">${price.toLocaleString('ar-EG')} ج.م</td>
+                        <td class="py-3 px-3 text-center text-rose-700 font-bold">${cost.toLocaleString('ar-EG')} ج.م</td>
                         <td class="py-3 px-3 text-center"><span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[10px]">عجز 🚨</span></td>
+                        <td class="py-3 px-3 text-center">
+                            <input type="text" value="${noteVal}" onchange="updateAuditItemNote('${item.barcode}', this.value)" ${isNotesDisabled ? 'disabled' : ''} placeholder="أضف ملاحظة..." class="w-full border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                        </td>
                     </tr>
                 `;
             });
@@ -14122,6 +14694,11 @@
             excesses.forEach(item => {
                 const catalogItem = getProductCatalogItem(item.barcode);
                 const name = catalogItem ? catalogItem.product_name : 'منتج غير معروف';
+                const price = catalogItem ? (Number(catalogItem.regular_price) || 0) : 0;
+                const cost = Math.abs(item.discrepancy) * price;
+                const noteVal = (disc.item_notes && disc.item_notes[item.barcode]) || '';
+                const isNotesDisabled = (activeAuditDetails.status === 'reconciled' || (currentUser && currentUser.role !== 'admin'));
+
                 html += `
                     <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                         <td class="py-3 px-3 font-mono font-bold text-slate-600">${item.barcode}</td>
@@ -14129,7 +14706,12 @@
                         <td class="py-3 px-3 text-center text-slate-600">${item.system_qty}</td>
                         <td class="py-3 px-3 text-center text-slate-700">${item.scanned_qty}</td>
                         <td class="py-3 px-3 text-center text-purple-600 font-extrabold">+${item.discrepancy}</td>
+                        <td class="py-3 px-3 text-center text-slate-600">${price.toLocaleString('ar-EG')} ج.م</td>
+                        <td class="py-3 px-3 text-center text-purple-700 font-bold">${cost.toLocaleString('ar-EG')} ج.م</td>
                         <td class="py-3 px-3 text-center"><span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">زيادة ⚠️</span></td>
+                        <td class="py-3 px-3 text-center">
+                            <input type="text" value="${noteVal}" onchange="updateAuditItemNote('${item.barcode}', this.value)" ${isNotesDisabled ? 'disabled' : ''} placeholder="أضف ملاحظة..." class="w-full border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                        </td>
                     </tr>
                 `;
             });
@@ -14265,6 +14847,41 @@
             await saveAndRecalculateAudit(updatedItems);
         }
 
+        async function updateAuditItemNote(barcode, noteText) {
+            if (!activeAuditDetails || !supabaseClient) return;
+            if (!activeAuditDetails.discrepancies) activeAuditDetails.discrepancies = {};
+            if (!activeAuditDetails.discrepancies.item_notes) activeAuditDetails.discrepancies.item_notes = {};
+
+            activeAuditDetails.discrepancies.item_notes[barcode] = noteText;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({ discrepancies: activeAuditDetails.discrepancies })
+                    .eq('id', activeAuditDetails.id);
+                if (error) throw error;
+            } catch (err) {
+                console.error("Failed to save item note:", err);
+            }
+        }
+
+        async function updateAuditGeneralNote(noteText) {
+            if (!activeAuditDetails || !supabaseClient) return;
+            if (!activeAuditDetails.discrepancies) activeAuditDetails.discrepancies = {};
+            
+            activeAuditDetails.discrepancies.general_note = noteText;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('inventory_audits')
+                    .update({ discrepancies: activeAuditDetails.discrepancies })
+                    .eq('id', activeAuditDetails.id);
+                if (error) throw error;
+            } catch (err) {
+                console.error("Failed to save general note:", err);
+            }
+        }
+
         async function adminAddAuditItemSubmit() {
             const barcodeInput = document.getElementById('admin-add-audit-barcode');
             const qtyInput = document.getElementById('admin-add-audit-qty');
@@ -14380,6 +14997,12 @@
                 const totalBc = matchedCount + deficit.length + excess.length;
                 const accuracy = totalBc > 0 ? Math.round((matchedCount / totalBc) * 100) : 100;
                 document.getElementById('audit-stat-accuracy').textContent = accuracy + "%";
+                const accuracyBar = document.getElementById('audit-stat-accuracy-bar');
+                if (accuracyBar) {
+                    accuracyBar.style.width = accuracy + "%";
+                    accuracyBar.className = 'h-1.5 rounded-full transition-all duration-300 ' + 
+                        (accuracy >= 85 ? 'bg-emerald-600' : accuracy >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+                }
 
                 // Re-render tables
                 if (activeDetailsTab === 'discrepancies') {
