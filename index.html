@@ -9640,6 +9640,10 @@
             const panel = document.getElementById('low-stock-alert-panel');
             if (!grid || !panel) return;
 
+            const searchVal = document.getElementById('low-stock-search-input') ? document.getElementById('low-stock-search-input').value.toLowerCase().trim() : '';
+            const seasonFilter = document.getElementById('export-season-filter') ? document.getElementById('export-season-filter').value : 'all';
+            const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
+
             const lowStockItems = [];
             const maxAlerts = 50;
             
@@ -9648,18 +9652,19 @@
             
             if (activeBranchFilter && activeBranchFilter !== 'all') {
                 const branchInventory = getBranchFilteredInventory();
-                const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
-                targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
                 
                 qtyMap = new Map();
                 branchInventory.forEach(item => {
                     qtyMap.set(item.barcode, (qtyMap.get(item.barcode) || 0) + Number(item.quantity || 0));
                 });
-            }
 
-            const seasonFilter = document.getElementById('export-season-filter') ? document.getElementById('export-season-filter').value : 'all';
-            const categoryFilter = document.getElementById('export-category-filter') ? document.getElementById('export-category-filter').value : 'all';
-            const searchVal = document.getElementById('low-stock-search-input') ? document.getElementById('low-stock-search-input').value.toLowerCase().trim() : '';
+                if (!searchVal) {
+                    const branchBarcodes = new Set(branchInventory.map(item => item.barcode));
+                    targetCatalog = liveCatalogData.filter(item => branchBarcodes.has(item.barcode));
+                } else {
+                    targetCatalog = liveCatalogData;
+                }
+            }
 
             const winterKeywords = ['شتوي', 'شتا', 'شتوى', 'بلوفر', 'سويتر', 'جاكيت', 'بالطو', 'winter', 'hoodie', 'jacket', 'sweat', 'pullover', 'سويت شيرت', 'هودى', 'هودي', 'بليزر'];
             const summerKeywords = ['صيفي', 'نص كم', 'صيفى', 'كات', 'شورت', 'summer', 't-shirt', 'short', 'تي شيرت'];
@@ -9677,9 +9682,15 @@
                 
                 const name = (product.product_name || '').toLowerCase();
                 const barcode = (product.barcode || '').toLowerCase();
+                const cleanProdBarcode = cleanBarcode(product.barcode);
+                const cleanSearch = cleanBarcode(searchVal);
                 
-                if (searchVal && !name.includes(searchVal) && !barcode.includes(searchVal)) {
-                    continue;
+                if (searchVal) {
+                    const matchesName = name.includes(searchVal);
+                    const matchesBarcode = barcode.includes(searchVal) || (cleanSearch && cleanProdBarcode.includes(cleanSearch));
+                    if (!matchesName && !matchesBarcode) {
+                        continue;
+                    }
                 }
                 
                 if (seasonFilter === 'winter') {
@@ -9694,7 +9705,11 @@
                 }
 
                 const physicalQty = qtyMap.get(product.barcode) || 0;
-                if (physicalQty < lowStockThreshold) {
+                const isBelowThreshold = physicalQty < lowStockThreshold;
+                
+                const shouldShow = searchVal ? true : isBelowThreshold;
+
+                if (shouldShow) {
                     lowStockItems.push({
                         barcode: product.barcode,
                         name: product.product_name,
@@ -9706,8 +9721,17 @@
             }
 
             if (lowStockItems.length === 0) {
-                panel.classList.add('hidden');
-                grid.innerHTML = '';
+                if (searchVal) {
+                    panel.classList.remove('hidden');
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-8 text-slate-400 font-bold text-xs">
+                            🔍 لا توجد منتجات مطابقة للبحث في الكتالوج
+                        </div>
+                    `;
+                } else {
+                    panel.classList.add('hidden');
+                    grid.innerHTML = '';
+                }
                 return;
             }
 
