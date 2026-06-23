@@ -9994,7 +9994,8 @@
       function getItemSortingKey(item) {
           const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
           if (wmsLocations.length === 0) return 'Z';
-          const locs = wmsLocations.map(w => w.location_id).sort();
+          const locs = wmsLocations.map(w => w.bin_location).filter(Boolean).sort();
+          if (locs.length === 0) return 'Z';
           return getAisleFromLocation(locs[0]);
       }
 
@@ -10044,7 +10045,7 @@
           
           sortedItems.forEach((item, idx) => {
               const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
-              let locsStr = wmsLocations.map(w => `${w.location_id} (${w.quantity} قطعة)`).join(', ') || 'غير مسكن رفوف';
+              let locsStr = wmsLocations.map(w => `${w.bin_location} (${w.quantity} قطعة)`).join(', ') || 'غير مسكن رفوف';
               
               itemsHtml += `
                   <tr>
@@ -10143,8 +10144,8 @@
           const potentialFillRate = totalRequired > 0 ? Math.round((totalPotential / totalRequired) * 100) : 100;
           
           const isPendingOrPreparing = order.status === 'pending' || order.status === 'preparing';
-          const isAbeesOrAdmin = currentUser && (currentUser.role === 'admin' || currentUser.location_id === 'مخزن ابيس');
-          const isTargetBranch = currentUser && (normalizeLocationId(currentUser.location_id) === normalizeLocationId(order.branch_name));
+          const isAbeesOrAdmin = currentUser && (currentUser.role === 'admin' || normalizeLocationId(currentUser.branch) === 'مخزن ابيس');
+          const isTargetBranch = currentUser && (normalizeLocationId(currentUser.branch) === normalizeLocationId(order.branch_name));
           
           let itemsHtml = `
               <!-- Order Header Info -->
@@ -10202,7 +10203,7 @@
           sortedItems.forEach(item => {
               // Find matching WMS locations
               const wmsLocations = liveWMSStorageData.filter(w => cleanBarcode(w.barcode) === cleanBarcode(item.barcode));
-              const locsStr = wmsLocations.map(w => `${w.location_id} (${w.quantity} ق)`).join(' | ') || 'غير مسكن رفوف';
+              const locsStr = wmsLocations.map(w => `${w.bin_location} (${w.quantity} ق)`).join(' | ') || 'غير مسكن رفوف';
               const aisle = getItemSortingKey(item);
               
               itemsHtml += `
