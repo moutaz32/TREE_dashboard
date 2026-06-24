@@ -332,6 +332,12 @@
                     مرتجعات الفروع
                 </button>
 
+                <button onclick="switchTab('customer-reservations')" id="tab-customer-reservations" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="ticket" class="w-5 h-5 text-indigo-300"></i>
+                    <span>حجوزات العملاء 🎫</span>
+                    <span id="badge-customer-reservations-count" class="hidden bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full animate-bounce">0</span>
+                </button>
+
                 <button onclick="switchTab('seasonal')" id="tab-seasonal" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="box" class="w-5 h-5 text-teal-300"></i>
                     مرتجعات المواسم 📦
@@ -419,6 +425,10 @@
         <button onclick="switchTab('branch-returns')" id="mobile-tab-branch-returns" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="corner-down-left" class="w-5 h-5"></i>
             <span>مرتجع فرع</span>
+        </button>
+        <button onclick="switchTab('customer-reservations')" id="mobile-tab-customer-reservations" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="ticket" class="w-5 h-5"></i>
+            <span>الحجوزات</span>
         </button>
         <button onclick="switchTab('branch-orders')" id="mobile-tab-branch-orders" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="inbox" class="w-5 h-5"></i>
@@ -2022,6 +2032,78 @@
                             <div class="relative h-64 w-full flex items-center justify-center">
                                 <canvas id="qcTopDefectiveProductsChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= CUSTOMER RESERVATIONS SECTION ================= -->
+            <section id="section-customer-reservations" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Welcome Banner -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">حجوزات بضائع العملاء 🎫</h3>
+                        <p class="text-sm text-slate-500">إدارة طلبات حجز الأصناف والقطع لعملائنا عبر الفروع المختلفة وتأكيدها لحظياً.</p>
+                    </div>
+                    <div class="bg-indigo-50 text-indigo-800 border border-indigo-100 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <i data-lucide="ticket" class="w-4 h-4 text-indigo-600"></i>
+                        حجوزات نشطة
+                    </div>
+                </div>
+
+                <!-- Grid Layout for Tables -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Incoming Reservations Panel -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="corner-left-down" class="w-4 h-4 text-indigo-600"></i>
+                            طلبات حجز واردة إلينا (مخزون فرعنا المطلوب حجزه) 📥
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-3 px-3">التاريخ</th>
+                                        <th class="py-3 px-3">الفرع طالب الحجز</th>
+                                        <th class="py-3 px-3">اسم المنتج</th>
+                                        <th class="py-3 px-3">الباركود</th>
+                                        <th class="py-3 px-3 text-center">المقاس</th>
+                                        <th class="py-3 px-3">بيانات العميل</th>
+                                        <th class="py-3 px-3 text-center">الحالة</th>
+                                        <th class="py-3 px-3 text-center">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reservations-incoming-tbody">
+                                    <tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">لا توجد طلبات حجز واردة حالياً.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Outgoing Reservations Panel -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="corner-right-up" class="w-4 h-4 text-brand-accent"></i>
+                            طلبات حجز صادرة منا (حجوزات عملائنا في الفروع الأخرى) 📤
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                        <th class="py-3 px-3">التاريخ</th>
+                                        <th class="py-3 px-3">الفرع المُراد الحجز منه</th>
+                                        <th class="py-3 px-3">اسم المنتج</th>
+                                        <th class="py-3 px-3">الباركود</th>
+                                        <th class="py-3 px-3 text-center">المقاس</th>
+                                        <th class="py-3 px-3">بيانات العميل</th>
+                                        <th class="py-3 px-3 text-center">الحالة</th>
+                                        <th class="py-3 px-3 text-center">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reservations-outgoing-tbody">
+                                    <tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">لا توجد طلبات حجز صادرة حالياً.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -3657,7 +3739,8 @@
             activityLogs: null,
             branchReturns: null,
             inboundQCBatches: null,
-            wmsStorage: null
+            wmsStorage: null,
+            customerReservations: null
         };
 
         // Branch Filter State
@@ -5376,7 +5459,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'returns', 'branch-returns', 'branch-orders', 'analytics', 'logs', 'formatter', 'audits', 'seasonal', 'inbound'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'returns', 'branch-returns', 'branch-orders', 'analytics', 'logs', 'formatter', 'audits', 'seasonal', 'inbound', 'customer-reservations'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -5418,6 +5501,7 @@
                 returns: 'إدارة مرتجعات شوبيفاي (Reverse Logistics)',
                 analytics: 'تحليلات الأداء ودقة المستودعات (WMS)',
                 'branch-returns': 'إدارة مرتجعات الفروع للفحص والتدقيق (Branch Returns)',
+                'customer-reservations': 'حجوزات بضائع العملاء عبر الفروع',
                 'branch-orders': 'طلبات تحضير فروع التجزئة (Branch Prep Orders)',
                 formatter: 'أداة معالجة وتهيئة الملفات (File Formatter Tool)',
                 audits: 'نظام جرد الفروع الدوري والمطابقة (Store Inventory Audit)',
@@ -5506,6 +5590,7 @@
             if (activeChannels.branchReturns) supabaseClient.removeChannel(activeChannels.branchReturns);
             if (activeChannels.inboundQCBatches) supabaseClient.removeChannel(activeChannels.inboundQCBatches);
             if (activeChannels.wmsStorage) supabaseClient.removeChannel(activeChannels.wmsStorage);
+            if (activeChannels.customerReservations) supabaseClient.removeChannel(activeChannels.customerReservations);
 
             // 1. Load Initial Data
             await loadCatalogData();
@@ -5517,6 +5602,7 @@
             await loadBranchReturnsData();
             await loadInboundQCData();
             await loadWMSStorageData();
+            await loadReservationsData();
 
             // 2. Set Up Realtime WebSockets - Smart Patch Mode (لا يعيد جلب الجداول بالكامل)
             // بدلاً من refetch كامل، نُعدّل المصفوفات المحلية مباشرةً من الـ payload
@@ -5707,6 +5793,34 @@
                             openWMSBinModal(activeWMSBin);
                         }
                     }
+                })
+                .subscribe();
+
+            activeChannels.customerReservations = supabaseClient.channel('realtime-customer-reservations')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'customer_reservations' }, payload => {
+                    liveReservationsData.push(payload.new);
+                    renderReservationsTable();
+                    updateReservationBadgesCount();
+                    
+                    const currentBranch = (currentUser && currentUser.branch) ? currentUser.branch : '';
+                    const isAdmin = currentUser && currentUser.role === 'admin';
+                    const isTarget = normalizeLocationId(payload.new.target_location) === normalizeLocationId(currentBranch);
+                    if (payload.new.status === 'pending_confirmation' && (isAdmin || isTarget)) {
+                        showTemporaryToast(`🎫 طلب حجز جديد من فرع ${payload.new.source_location} للمنتج: ${payload.new.product_name}`);
+                    }
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'customer_reservations' }, payload => {
+                    const idx = liveReservationsData.findIndex(r => r.id === payload.new.id);
+                    if (idx !== -1) liveReservationsData[idx] = payload.new;
+                    else liveReservationsData.push(payload.new);
+                    
+                    renderReservationsTable();
+                    updateReservationBadgesCount();
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'customer_reservations' }, payload => {
+                    liveReservationsData = liveReservationsData.filter(r => r.id !== payload.old.id);
+                    renderReservationsTable();
+                    updateReservationBadgesCount();
                 })
                 .subscribe();
         }
@@ -9667,6 +9781,18 @@
                     const isSpecificBranch = activeBranchFilter && activeBranchFilter !== 'all';
                     const isDifferentBranch = isSpecificBranch && normalizeLocationId(activeBranchFilter) !== normalizeLocationId(item.name);
                     
+                    const currentBranch = (currentUser && currentUser.branch) ? currentUser.branch : '';
+                    const isDifferent = normalizeLocationId(currentBranch) !== normalizeLocationId(item.name);
+                    let reserveBtnHtml = '';
+                    if (isDifferent) {
+                        reserveBtnHtml = `
+                            <button onclick="openCustomerReservationForm('${item.name.replace(/'/g, "\\'")}')" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition shadow shadow-indigo-600/10 whitespace-nowrap">
+                                حجز لعميل 🎫
+                            </button>
+                        `;
+                    }
+
                     if (isSpecificBranch) {
                         if (isDifferentBranch) {
                             actionBtnHtml = `
@@ -9684,20 +9810,26 @@
                             </button>
                         `;
                     }
+                    if (reserveBtnHtml) {
+                        actionBtnHtml = `<div class="flex items-center gap-1.5">${reserveBtnHtml}${actionBtnHtml}</div>`;
+                    }
                 }
                 
                 return `
-                <div class="p-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-200/50 rounded-2xl transition flex items-center justify-between gap-4">
-                    <div class="flex-grow min-w-0">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-black text-slate-700 truncate">${item.name}</span>
-                            ${stockBadge}
+                <div class="p-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-200/50 rounded-2xl transition flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-black text-slate-700 truncate">${item.name}</span>
+                                ${stockBadge}
+                            </div>
+                            <div class="w-full bg-slate-200/60 rounded-full h-1.5 overflow-hidden">
+                                <div class="h-full ${progressColor} transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
                         </div>
-                        <div class="w-full bg-slate-200/60 rounded-full h-1.5 overflow-hidden">
-                            <div class="h-full ${progressColor} transition-all duration-500" style="width: ${percentage}%"></div>
-                        </div>
+                        ${actionBtnHtml ? `<div class="flex-shrink-0">${actionBtnHtml}</div>` : ''}
                     </div>
-                    ${actionBtnHtml ? `<div class="flex-shrink-0">${actionBtnHtml}</div>` : ''}
+                    <div id="reserve-form-container-${item.name.replace(/\s+/g, '-')}"></div>
                 </div>
                 `;
             }).join('');
@@ -17372,6 +17504,328 @@ CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes 
             `;
             alert("⚠️ تنبيه: جدول كراتين المواسم (seasonal_boxes) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتمريره لمدير النظام لتشغيله في لوحة تحكم السيرفر:\n\n" + sqlQuery);
         }
+        
+        // =========================================================================
+        // ================= CUSTOMER RESERVATIONS SCRIPT LOGIC =================
+        // =========================================================================
+        let liveReservationsData = [];
+        
+        function openCustomerReservationForm(branchName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const formContainerId = `reserve-form-container-${safeId}`;
+            let container = document.getElementById(formContainerId);
+            if (!container) return;
+            
+            if (!container.innerHTML) {
+                // Collapse any other open reservation forms
+                const data = window.currentBranchModalData;
+                if (data) {
+                    data.branches.forEach(br => {
+                        const otherSafeId = br.name.replace(/\s+/g, '-');
+                        const otherContainer = document.getElementById(`reserve-form-container-${otherSafeId}`);
+                        if (otherContainer && otherSafeId !== safeId) otherContainer.innerHTML = '';
+                    });
+                }
+
+                container.innerHTML = `
+                    <div class="mt-3 p-4 bg-white border border-slate-200 rounded-2xl space-y-3 text-right" dir="rtl">
+                        <div class="text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-2 flex justify-between items-center">
+                            <span>طلب حجز لعميل لدى فرع ${branchName} 🎫</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">المقاس المطلوب *</label>
+                                <input type="text" id="reserve-size-${safeId}" placeholder="L, XL, 32..." class="w-full border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">اسم العميل *</label>
+                                <input type="text" id="reserve-cust-name-${safeId}" placeholder="اسم العميل..." class="w-full border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">رقم الهاتف *</label>
+                                <input type="text" id="reserve-cust-phone-${safeId}" placeholder="01xxxxxxxxx" class="w-full border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold text-center focus:outline-none focus:border-brand-accent">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">ملاحظات إضافية</label>
+                                <input type="text" id="reserve-notes-${safeId}" placeholder="ألوان أو مواصفات..." class="w-full border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button onclick="cancelReservationForm('${branchName}')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[10px] rounded-xl transition">إلغاء</button>
+                            <button onclick="submitCustomerReservation('${branchName}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-xl transition flex items-center gap-1">
+                                تأكيد طلب الحجز 💾
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+        
+        function cancelReservationForm(branchName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const container = document.getElementById(`reserve-form-container-${safeId}`);
+            if (container) container.innerHTML = '';
+        }
+        
+        async function submitCustomerReservation(branchName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const sizeInput = document.getElementById(`reserve-size-${safeId}`);
+            const nameInput = document.getElementById(`reserve-cust-name-${safeId}`);
+            const phoneInput = document.getElementById(`reserve-cust-phone-${safeId}`);
+            const notesInput = document.getElementById(`reserve-notes-${safeId}`);
+            
+            const size = sizeInput ? sizeInput.value.trim() : '';
+            const custName = nameInput ? nameInput.value.trim() : '';
+            const custPhone = phoneInput ? phoneInput.value.trim() : '';
+            const notes = notesInput ? notesInput.value.trim() : '';
+            
+            if (!size || !custName || !custPhone) {
+                alert("⚠️ يرجى ملء الحقول المطلوبة: المقاس، اسم العميل، ورقم الهاتف.");
+                return;
+            }
+            
+            const data = window.currentBranchModalData;
+            if (!data) return;
+            
+            const sourceBranch = (currentUser && currentUser.branch) ? currentUser.branch : 'الإدارة العامة';
+            const barcode = data.barcode;
+            const productName = data.productName;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('customer_reservations')
+                    .insert([{
+                        barcode: barcode,
+                        product_name: productName,
+                        size: size,
+                        customer_name: custName,
+                        customer_phone: custPhone,
+                        source_location: sourceBranch,
+                        target_location: branchName,
+                        notes: notes,
+                        status: 'pending_confirmation',
+                        created_by: (currentUser && currentUser.username) ? currentUser.username : 'موظف'
+                    }]);
+                
+                if (error) {
+                    if (error.code === '42P01') {
+                        showReservationTableErrorModal();
+                        return;
+                    }
+                    throw error;
+                }
+                
+                alert(`✅ تم إرسال طلب الحجز بنجاح إلى فرع ${branchName} بانتظار الموافقة.`);
+                cancelReservationForm(branchName);
+                closeProductBranchesModal();
+                
+                loadReservationsData();
+            } catch (err) {
+                console.error("Submit customer reservation error:", err);
+                alert("❌ فشل إرسال طلب الحجز: " + err.message);
+            }
+        }
+        
+        async function loadReservationsData() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('customer_reservations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) {
+                    if (error.code === '42P01') {
+                        liveReservationsData = [];
+                        return;
+                    }
+                    throw error;
+                }
+                liveReservationsData = data || [];
+                renderReservationsTable();
+                updateReservationBadgesCount();
+            } catch (err) {
+                console.error("Load reservations error:", err);
+            }
+        }
+        
+        function renderReservationsTable() {
+            const incomingTbody = document.getElementById('reservations-incoming-tbody');
+            const outgoingTbody = document.getElementById('reservations-outgoing-tbody');
+            if (!incomingTbody || !outgoingTbody) return;
+            
+            const currentBranch = (currentUser && currentUser.branch) ? currentUser.branch : '';
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            
+            const incoming = liveReservationsData.filter(r => {
+                if (isAdmin) return true;
+                return normalizeLocationId(r.target_location) === normalizeLocationId(currentBranch);
+            });
+            
+            const outgoing = liveReservationsData.filter(r => {
+                if (isAdmin) return true;
+                return normalizeLocationId(r.source_location) === normalizeLocationId(currentBranch);
+            });
+            
+            if (incoming.length === 0) {
+                incomingTbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">لا توجد طلبات حجز واردة حالياً.</td></tr>`;
+            } else {
+                incomingTbody.innerHTML = incoming.map(r => {
+                    const dateStr = new Date(r.created_at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+                    
+                    let statusBadge = '';
+                    if (r.status === 'pending_confirmation') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">⏳ قيد الانتظار</span>`;
+                    } else if (r.status === 'confirmed') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">✅ مؤكد</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">❌ ملغى</span>`;
+                    }
+                    
+                    let actionsHtml = '-';
+                    if (r.status === 'pending_confirmation') {
+                        const canApprove = isAdmin || normalizeLocationId(r.target_location) === normalizeLocationId(currentBranch);
+                        if (canApprove) {
+                            actionsHtml = `
+                                <div class="flex items-center justify-center gap-1">
+                                    <button onclick="handleReservationAction('${r.id}', 'confirmed')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition">تأكيد ✅</button>
+                                    <button onclick="handleReservationAction('${r.id}', 'cancelled')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition">إلغاء ❌</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    return `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                            <td class="py-3 px-3">${dateStr}</td>
+                            <td class="py-3 px-3 font-bold text-slate-800">${r.source_location}</td>
+                            <td class="py-3 px-3 font-medium text-slate-700">${r.product_name}</td>
+                            <td class="py-3 px-3 font-mono tracking-wide">${r.barcode}</td>
+                            <td class="py-3 px-3 text-center"><span class="badge-size">${r.size}</span></td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">${r.customer_name}<br><span class="text-[10px] text-slate-400 font-mono">${r.customer_phone}</span></td>
+                            <td class="py-3 px-3 text-center">${statusBadge}</td>
+                            <td class="py-3 px-3 text-center">${actionsHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            if (outgoing.length === 0) {
+                outgoingTbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">لا توجد طلبات حجز صادرة حالياً.</td></tr>`;
+            } else {
+                outgoingTbody.innerHTML = outgoing.map(r => {
+                    const dateStr = new Date(r.created_at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+                    
+                    let statusBadge = '';
+                    if (r.status === 'pending_confirmation') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">⏳ قيد الانتظار</span>`;
+                    } else if (r.status === 'confirmed') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">✅ مؤكد</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">❌ ملغى</span>`;
+                    }
+                    
+                    let actionsHtml = '-';
+                    if (r.status === 'pending_confirmation') {
+                        const canCancel = isAdmin || normalizeLocationId(r.source_location) === normalizeLocationId(currentBranch);
+                        if (canCancel) {
+                            actionsHtml = `
+                                <button onclick="handleReservationAction('${r.id}', 'cancelled')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg transition">سحب الطلب ❌</button>
+                            `;
+                        }
+                    }
+                    
+                    return `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                            <td class="py-3 px-3">${dateStr}</td>
+                            <td class="py-3 px-3 font-bold text-slate-800">${r.target_location}</td>
+                            <td class="py-3 px-3 font-medium text-slate-700">${r.product_name}</td>
+                            <td class="py-3 px-3 font-mono tracking-wide">${r.barcode}</td>
+                            <td class="py-3 px-3 text-center"><span class="badge-size">${r.size}</span></td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">${r.customer_name}<br><span class="text-[10px] text-slate-400 font-mono">${r.customer_phone}</span></td>
+                            <td class="py-3 px-3 text-center">${statusBadge}</td>
+                            <td class="py-3 px-3 text-center">${actionsHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+        
+        async function handleReservationAction(id, newStatus) {
+            const actionText = newStatus === 'confirmed' ? 'تأكيد الحجز' : 'إلغاء الحجز';
+            if (!confirm(`هل أنت متأكد من ${actionText}؟`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('customer_reservations')
+                    .update({ status: newStatus, updated_at: new Date().toISOString() })
+                    .eq('id', id);
+                    
+                if (error) throw error;
+                
+                alert(`✅ تم ${actionText} بنجاح.`);
+                
+                const res = liveReservationsData.find(r => r.id === id);
+                if (res) {
+                    let logText = `${newStatus === 'confirmed' ? 'تأكيد حجز صنف' : 'إلغاء حجز صنف'} للعميل ${res.customer_name} (مقاس: ${res.size}) من فرع ${res.target_location} لفرع ${res.source_location}. المنتج: ${res.product_name} (${res.barcode})`;
+                    await insertActivityLog('حجوزات العملاء', logText);
+                }
+                
+                loadReservationsData();
+            } catch (err) {
+                console.error("Update reservation action error:", err);
+                alert("❌ فشل تحديث حالة الحجز: " + err.message);
+            }
+        }
+        
+        function updateReservationBadgesCount() {
+            const badge = document.getElementById('badge-customer-reservations-count');
+            if (!badge) return;
+            
+            const currentBranch = (currentUser && currentUser.branch) ? currentUser.branch : '';
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            
+            const pendingCount = liveReservationsData.filter(r => {
+                if (r.status !== 'pending_confirmation') return false;
+                if (isAdmin) return true;
+                return normalizeLocationId(r.target_location) === normalizeLocationId(currentBranch);
+            }).length;
+            
+            if (pendingCount > 0) {
+                badge.textContent = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function showReservationTableErrorModal() {
+            const sqlQuery = `
+CREATE TABLE IF NOT EXISTS public.customer_reservations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    barcode TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    size TEXT NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    source_location TEXT NOT NULL,
+    target_location TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending_confirmation',
+    notes TEXT,
+    created_by TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.customer_reservations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public select reservations" ON public.customer_reservations FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow write reservations" ON public.customer_reservations FOR ALL TO authenticated USING (true) WITH CHECK (true);
+            `;
+            alert("⚠️ تنبيه: جدول حجوزات العملاء (customer_reservations) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتمريره لمدير النظام لتشغيله في لوحة تحكم السيرفر:\n\n" + sqlQuery);
+        }
+
     </script>
     <!-- Shipping Carrier Modal -->
     <div id="shipping-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
