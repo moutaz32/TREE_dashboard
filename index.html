@@ -17372,9 +17372,6 @@ CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes 
             `;
             alert("⚠️ تنبيه: جدول كراتين المواسم (seasonal_boxes) غير موجود بقاعدة البيانات بعد!\n\nيرجى نسخ هذا الاستعلام وتمريره لمدير النظام لتشغيله في لوحة تحكم السيرفر:\n\n" + sqlQuery);
         }
-
-        // Restoring the original stray download code block safely
-        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
     </script>
     <!-- Shipping Carrier Modal -->
     <div id="shipping-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
