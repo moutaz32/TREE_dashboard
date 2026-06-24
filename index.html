@@ -3060,7 +3060,7 @@
                                     <!-- Drag and Drop Excel -->
                                     <div id="inbound-excel-dropzone" onclick="document.getElementById('inbound-excel-file').click()" class="border-2 border-dashed border-slate-200 hover:border-brand-accent rounded-xl p-4 text-center cursor-pointer transition bg-slate-50/50 flex flex-col items-center justify-center">
                                         <input type="file" id="inbound-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleInboundExcelSelect(event)">
-                                        <i data-lucide="file-spreadsheets" class="w-8 h-8 text-slate-400 mb-2"></i>
+                                        <i data-lucide="file-spreadsheet" class="w-8 h-8 text-slate-400 mb-2"></i>
                                         <span class="text-[10px] font-bold text-slate-600">اسحب وأفلت كشف بضاعة المورد هنا</span>
                                         <span class="text-[9px] text-slate-400 mt-1">امتدادات ملفات Excel مدعومة</span>
                                     </div>
@@ -14188,6 +14188,15 @@
             });
 
             const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "TREE_Shopify_Liquidation_Plan_" + new Date().toISOString().slice(0, 10) + ".csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
 
         // =========================================================================
@@ -15018,16 +15027,6 @@
                 console.error(e);
                 alert("حدث خطأ أثناء جلب التفاصيل.");
             }
-        }
-
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "TREE_Shopify_Liquidation_Plan_" + new Date().toISOString().slice(0, 10) + ".csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
         // =========================================================================
