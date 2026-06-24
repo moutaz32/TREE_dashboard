@@ -9630,6 +9630,47 @@
         }
 
         // 3. LOW STOCK ALERTS
+        let selectedLowStockItems = {}; // key: barcode, value: { barcode, name, qty }
+
+        function handleLowStockCheckboxChange(cb) {
+            const barcode = cb.getAttribute('data-barcode');
+            const name = cb.getAttribute('data-name');
+            const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
+            const qty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+            
+            if (cb.checked) {
+                selectedLowStockItems[barcode] = { barcode, name, qty };
+            } else {
+                delete selectedLowStockItems[barcode];
+            }
+            
+            const exportWrapper = document.getElementById('export-wrapper');
+            if (exportWrapper) {
+                const isSpecificBranch = activeBranchFilter && activeBranchFilter !== 'all';
+                const hasSelected = Object.keys(selectedLowStockItems).length > 0;
+                exportWrapper.style.display = (isSpecificBranch && hasSelected) ? 'flex' : 'none';
+            }
+        }
+        
+        function handleLowStockQtyChange(input) {
+            const barcode = input.id.replace('low-stock-qty-', '');
+            const qty = Math.max(1, Number(input.value) || 0);
+            
+            if (selectedLowStockItems[barcode]) {
+                selectedLowStockItems[barcode].qty = qty;
+            }
+            
+            const cb = document.getElementById(`low-stock-chk-${barcode}`);
+            if (cb && cb.checked) {
+                if (!selectedLowStockItems[barcode]) {
+                    const name = cb.getAttribute('data-name');
+                    selectedLowStockItems[barcode] = { barcode, name, qty };
+                } else {
+                    selectedLowStockItems[barcode].qty = qty;
+                }
+            }
+        }
+
         function updateLowStockThreshold(val) {
             lowStockThreshold = Number(val) || 5;
             renderLowStockAlerts();
@@ -9789,13 +9830,16 @@
                     ? `<span class="text-rose-600 font-bold text-[10px] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">[رصيد أبيس 0 - لا يمكن الطلب]</span>`
                     : `<span class="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">متاح بأبيس: ${abeesQty}</span>`;
                 
+                const isSelected = !!selectedLowStockItems[item.barcode];
+                const savedQty = isSelected ? selectedLowStockItems[item.barcode].qty : Math.max(1, lowStockThreshold - item.physicalQty);
+
                 const checkboxHtml = isZeroAbees
                     ? `<input type="checkbox" disabled class="w-4 h-4 rounded text-slate-400 border-slate-300 bg-slate-100 cursor-not-allowed">`
-                    : `<input type="checkbox" id="low-stock-chk-${item.barcode}" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" class="low-stock-checkbox low-stock-select-chk w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">`;
+                    : `<input type="checkbox" id="low-stock-chk-${item.barcode}" data-barcode="${item.barcode}" data-name="${item.name.replace(/"/g, '&quot;')}" ${isSelected ? 'checked' : ''} onchange="handleLowStockCheckboxChange(this)" class="low-stock-checkbox low-stock-select-chk w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">`;
                 
                 const inputHtml = isZeroAbees
                     ? `<input type="number" disabled value="0" class="w-16 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs font-bold text-slate-400 bg-slate-50 cursor-not-allowed">`
-                    : `<input type="number" id="low-stock-qty-${item.barcode}" value="${Math.max(1, lowStockThreshold - item.physicalQty)}" min="1" max="${abeesQty}" class="w-16 px-1.5 py-0.5 border border-slate-300 rounded text-center text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none">`;
+                    : `<input type="number" id="low-stock-qty-${item.barcode}" value="${savedQty}" min="1" max="${abeesQty}" oninput="handleLowStockQtyChange(this)" class="w-16 px-1.5 py-0.5 border border-slate-300 rounded text-center text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none">`;
 
                 gridHtml += `
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between gap-2.5 hover:shadow-md transition">
@@ -9829,7 +9873,9 @@
             grid.innerHTML = gridHtml;
             const exportWrapper = document.getElementById('export-wrapper');
             if (exportWrapper) {
-                exportWrapper.style.display = lowStockItems.length > 0 ? 'flex' : 'none';
+                const isSpecificBranch = activeBranchFilter && activeBranchFilter !== 'all';
+                const hasSelected = Object.keys(selectedLowStockItems).length > 0;
+                exportWrapper.style.display = (isSpecificBranch && hasSelected) ? 'flex' : 'none';
             }
         }
 
@@ -10375,7 +10421,25 @@
             const checkboxes = document.querySelectorAll('.low-stock-checkbox');
             checkboxes.forEach(cb => {
                 cb.checked = checked;
+                
+                const barcode = cb.getAttribute('data-barcode');
+                const name = cb.getAttribute('data-name');
+                const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
+                const qty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+                
+                if (checked) {
+                    selectedLowStockItems[barcode] = { barcode, name, qty };
+                } else {
+                    delete selectedLowStockItems[barcode];
+                }
             });
+            
+            const exportWrapper = document.getElementById('export-wrapper');
+            if (exportWrapper) {
+                const isSpecificBranch = activeBranchFilter && activeBranchFilter !== 'all';
+                const hasSelected = Object.keys(selectedLowStockItems).length > 0;
+                exportWrapper.style.display = (isSpecificBranch && hasSelected) ? 'flex' : 'none';
+            }
         }
 
         function exportShortagesOrder() {
@@ -10390,9 +10454,8 @@
             }
 
             const branchName = activeBranchFilter;
-
-            const checkedCheckboxes = document.querySelectorAll('.low-stock-checkbox:checked');
-            if (checkedCheckboxes.length === 0) {
+            const selectedKeys = Object.keys(selectedLowStockItems);
+            if (selectedKeys.length === 0) {
                 alert("يرجى تحديد موديل واحد على الأقل لتصدير الطلبية.");
                 return;
             }
@@ -10414,12 +10477,10 @@
 
             const shortages = [];
 
-            for (const checkbox of checkedCheckboxes) {
-                const barcode = checkbox.getAttribute('data-barcode');
-                const productName = checkbox.getAttribute('data-name') || "غير مسجل";
-                
-                const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
-                const requestedQty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+            for (const barcode of selectedKeys) {
+                const item = selectedLowStockItems[barcode];
+                const productName = item.name || "غير مسجل";
+                const requestedQty = item.qty;
                 
                 const physicalQty = branchQtyMap.get(barcode) || 0;
                 const abeesAvailableQty = abeesQtyMap.get(barcode) || 0;
@@ -10467,9 +10528,8 @@
             }
             
             const branchName = activeBranchFilter;
-
-            const checkedCheckboxes = document.querySelectorAll('.low-stock-checkbox:checked');
-            if (checkedCheckboxes.length === 0) {
+            const selectedKeys = Object.keys(selectedLowStockItems);
+            if (selectedKeys.length === 0) {
                 alert("يرجى تحديد موديل واحد على الأقل لإرسال الطلبية.");
                 return;
             }
@@ -10489,12 +10549,10 @@
 
             const shortages = [];
             
-            for (const checkbox of checkedCheckboxes) {
-                const barcode = checkbox.getAttribute('data-barcode');
-                const productName = checkbox.getAttribute('data-name') || "غير مسجل";
-                
-                const qtyInput = document.getElementById(`low-stock-qty-${barcode}`);
-                const requestedQty = qtyInput ? Math.max(1, Number(qtyInput.value) || 0) : 1;
+            for (const barcode of selectedKeys) {
+                const item = selectedLowStockItems[barcode];
+                const productName = item.name || "غير مسجل";
+                const requestedQty = item.qty;
                 
                 const physicalQty = branchQtyMap.get(barcode) || 0;
                 const abeesAvailableQty = abeesQtyMap.get(barcode) || 0;
@@ -10559,6 +10617,9 @@
 
                 alert("تم إرسال طلبية النواقص المحددة بنجاح إلى مخزن أبيس! 🚀");
                 logToConsole("success", `تم إرسال طلبية نواقص جديدة لفرع ${branchName} بنجاح.`);
+                
+                selectedLowStockItems = {};
+                renderLowStockAlerts();
             } catch (err) {
                 console.error("Failed to send order:", err);
                 alert("فشل إرسال الطلبية: " + err.message);
