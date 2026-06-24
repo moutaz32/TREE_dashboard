@@ -8928,12 +8928,23 @@
                     let itemsList = '';
                     shelves.forEach(shelf => {
                         itemsList += `
-                            <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
-                                    الرف / الفرع: ${shelf.location_id}
-                                </span>
-                                <span class="text-xs font-extrabold text-brand-deep font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
+                            <div class="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                <div class="flex justify-between items-center w-full">
+                                    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        الرف / الفرع: ${shelf.location_id}
+                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-extrabold text-brand-deep font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
+                                        ${Number(shelf.quantity) > 0 ? `
+                                            <button onclick="openDirectReservationForm('${shelf.location_id.replace(/'/g, "\\'")}', '${barcode}', '${name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" 
+                                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg transition shadow shadow-indigo-600/10">
+                                                حجز لعميل 🎫
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div id="query-reserve-form-container-${shelf.location_id.replace(/\s+/g, '-')}"></div>
                             </div>
                         `;
                     });
@@ -8945,12 +8956,23 @@
                     let itemsList = '';
                     otherShelves.forEach(shelf => {
                         itemsList += `
-                            <div class="flex justify-between items-center p-2.5 bg-amber-50/40 border border-amber-100/50 rounded-xl text-slate-700">
-                                <span class="text-[11px] font-bold flex items-center gap-1.5">
-                                    <i data-lucide="store" class="w-3.5 h-3.5 text-amber-500"></i>
-                                    فرع: ${shelf.location_id}
-                                </span>
-                                <span class="text-[11px] font-extrabold text-slate-800 font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
+                            <div class="flex flex-col gap-2 p-2.5 bg-amber-50/40 border border-amber-100/50 rounded-xl text-slate-700">
+                                <div class="flex justify-between items-center w-full">
+                                    <span class="text-[11px] font-bold flex items-center gap-1.5">
+                                        <i data-lucide="store" class="w-3.5 h-3.5 text-amber-500"></i>
+                                        فرع: ${shelf.location_id}
+                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] font-extrabold text-slate-800 font-mono">${Number(shelf.quantity).toLocaleString('ar-EG')} قطعة</span>
+                                        ${Number(shelf.quantity) > 0 ? `
+                                            <button onclick="openDirectReservationForm('${shelf.location_id.replace(/'/g, "\\'")}', '${barcode}', '${name.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" 
+                                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg transition shadow shadow-indigo-600/10">
+                                                حجز لعميل 🎫
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div id="query-reserve-form-container-${shelf.location_id.replace(/\s+/g, '-')}"></div>
                             </div>
                         `;
                     });
@@ -17798,6 +17820,110 @@ CREATE POLICY "Allow public access for seasonal boxes" ON public.seasonal_boxes 
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
+            }
+        }
+
+        function openDirectReservationForm(branchName, barcode, productName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const formContainerId = `query-reserve-form-container-${safeId}`;
+            let container = document.getElementById(formContainerId);
+            if (!container) return;
+            
+            if (!container.innerHTML) {
+                container.innerHTML = `
+                    <div class="mt-2 p-3 bg-white border border-slate-200 rounded-xl space-y-3 text-right w-full" dir="rtl">
+                        <div class="text-[11px] font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1.5 flex justify-between items-center">
+                            <span>طلب حجز لعميل لدى فرع ${branchName} 🎫</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-400 mb-0.5">المقاس المطلوب *</label>
+                                <input type="text" id="query-reserve-size-${safeId}" placeholder="L, XL, 32..." class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-400 mb-0.5">اسم العميل *</label>
+                                <input type="text" id="query-reserve-cust-name-${safeId}" placeholder="اسم العميل..." class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-400 mb-0.5">رقم الهاتف *</label>
+                                <input type="text" id="query-reserve-cust-phone-${safeId}" placeholder="01xxxxxxxxx" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-center focus:outline-none focus:border-brand-accent">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-400 mb-0.5">ملاحظات إضافية</label>
+                                <input type="text" id="query-reserve-notes-${safeId}" placeholder="ألوان أو مواصفات..." class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button onclick="cancelDirectReservationForm('${branchName}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[9px] rounded-lg transition">إلغاء</button>
+                            <button onclick="submitDirectReservation('${branchName}', '${barcode}', '${productName.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[9px] rounded-lg transition flex items-center gap-1">
+                                تأكيد طلب الحجز 💾
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+        
+        function cancelDirectReservationForm(branchName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const container = document.getElementById(`query-reserve-form-container-${safeId}`);
+            if (container) container.innerHTML = '';
+        }
+        
+        async function submitDirectReservation(branchName, barcode, productName) {
+            const safeId = branchName.replace(/\s+/g, '-');
+            const sizeInput = document.getElementById(`query-reserve-size-${safeId}`);
+            const nameInput = document.getElementById(`query-reserve-cust-name-${safeId}`);
+            const phoneInput = document.getElementById(`query-reserve-cust-phone-${safeId}`);
+            const notesInput = document.getElementById(`query-reserve-notes-${safeId}`);
+            
+            const size = sizeInput ? sizeInput.value.trim() : '';
+            const custName = nameInput ? nameInput.value.trim() : '';
+            const custPhone = phoneInput ? phoneInput.value.trim() : '';
+            const notes = notesInput ? notesInput.value.trim() : '';
+            
+            if (!size || !custName || !custPhone) {
+                alert("⚠️ يرجى ملء الحقول المطلوبة: المقاس، اسم العميل، ورقم الهاتف.");
+                return;
+            }
+            
+            const sourceBranch = (currentUser && currentUser.branch) ? currentUser.branch : 'الإدارة العامة';
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('customer_reservations')
+                    .insert([{
+                        barcode: barcode,
+                        product_name: productName,
+                        size: size,
+                        customer_name: custName,
+                        customer_phone: custPhone,
+                        source_location: sourceBranch,
+                        target_location: branchName,
+                        notes: notes,
+                        status: 'pending_confirmation',
+                        created_by: (currentUser && currentUser.username) ? currentUser.username : 'موظف'
+                    }]);
+                
+                if (error) {
+                    if (error.code === '42P01') {
+                        showReservationTableErrorModal();
+                        return;
+                    }
+                    throw error;
+                }
+                
+                alert(`✅ تم إرسال طلب الحجز بنجاح إلى فرع ${branchName} بانتظار الموافقة.`);
+                cancelDirectReservationForm(branchName);
+                
+                loadReservationsData();
+            } catch (err) {
+                console.error("Submit direct reservation error:", err);
+                alert("❌ فشل إرسال طلب الحجز: " + err.message);
             }
         }
 
