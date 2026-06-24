@@ -342,6 +342,11 @@
                     طلبات الفروع 📥
                 </button>
 
+                <button onclick="switchTab('inbound')" id="tab-inbound" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
+                    <i data-lucide="download-cloud" class="w-5 h-5 text-sky-300"></i>
+                    إدارة الوارد بالمستودع 📥
+                </button>
+
                 <button onclick="switchTab('query')" id="tab-query" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-brand-200 hover:text-white hover:bg-brand-900/30">
                     <i data-lucide="scan-line" class="w-5 h-5"></i>
                     استعلام الباركود الفوري
@@ -418,6 +423,10 @@
         <button onclick="switchTab('branch-orders')" id="mobile-tab-branch-orders" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="inbox" class="w-5 h-5"></i>
             <span>طلبات الفروع</span>
+        </button>
+        <button onclick="switchTab('inbound')" id="mobile-tab-inbound" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
+            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+            <span>الوارد بالمستودع</span>
         </button>
         <button onclick="switchTab('analytics')" id="mobile-tab-analytics" data-role="admin,online" class="flex flex-col items-center justify-center gap-1 flex-1 h-full py-1 text-[10px] font-medium text-brand-200">
             <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
@@ -2919,6 +2928,243 @@
                     </div>
                 </div>
             </section>
+
+
+            <!-- ================= WAREHOUSE INBOUND OPERATIONS SECTION ================= -->
+            <section id="section-inbound" class="hidden space-y-6 text-right" dir="rtl">
+                <!-- Header Banner -->
+                <div class="bg-gradient-to-r from-sky-900 to-indigo-950 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-extrabold tracking-tight">إدارة حركة الوارد والفرز بالمستودع 📥</h3>
+                        <p class="text-sm text-sky-100 font-medium">تسجيل استلام شحنات الموردين، فحص الجودة الفني، وتسكين الكميات المقبولة على الأرفف والمسارات بالـ WMS.</p>
+                    </div>
+                </div>
+
+                <!-- Sub-tabs Navigation -->
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-px">
+                    <button id="subtab-inbound-receiving" onclick="switchInboundSubTab('receiving')" class="px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap">
+                        1. استلام التوريدات 📦
+                    </button>
+                    <button id="subtab-inbound-qc" onclick="switchInboundSubTab('qc')" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap flex items-center gap-2">
+                        2. فحص الجودة 🔍
+                        <span id="badge-inbound-qc-count" class="hidden bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button id="subtab-inbound-putaway" onclick="switchInboundSubTab('putaway')" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap flex items-center gap-2">
+                        3. تسكين الأرفف ⚙️
+                        <span id="badge-inbound-putaway-count" class="hidden bg-amber-100 text-amber-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button id="subtab-inbound-history" onclick="switchInboundSubTab('history')" class="px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap">
+                        4. سجل التوريدات 📊
+                    </button>
+                </div>
+
+                <!-- Sub-tab Content Containers -->
+                <div id="inbound-content-receiving" class="space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Voucher Information Form -->
+                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                            <h4 class="text-sm font-extrabold text-slate-800 border-b pb-2">بيانات إذن الاستلام الجديد</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">رقم إذن الاستلام:</label>
+                                    <input type="text" id="inbound-voucher-no" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-accent bg-slate-50" readonly>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">اسم المورد:</label>
+                                    <input type="text" id="inbound-supplier-name" placeholder="أدخل اسم الشركة الموردة..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-accent">
+                                </div>
+                                <div class="pt-4 border-t space-y-3">
+                                    <span class="text-xs font-bold text-slate-500 block">إدخال سريع للملفات (اختياري)</span>
+                                    <!-- Drag and Drop Excel -->
+                                    <div id="inbound-excel-dropzone" onclick="document.getElementById('inbound-excel-file').click()" class="border-2 border-dashed border-slate-200 hover:border-brand-accent rounded-xl p-4 text-center cursor-pointer transition bg-slate-50/50 flex flex-col items-center justify-center">
+                                        <input type="file" id="inbound-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleInboundExcelSelect(event)">
+                                        <i data-lucide="file-spreadsheets" class="w-8 h-8 text-slate-400 mb-2"></i>
+                                        <span class="text-[10px] font-bold text-slate-600">اسحب وأفلت كشف بضاعة المورد هنا</span>
+                                        <span class="text-[9px] text-slate-400 mt-1">امتدادات ملفات Excel مدعومة</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scan & Add Barcode Column -->
+                        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-6">
+                            <div class="space-y-4">
+                                <div class="flex flex-col sm:flex-row items-center gap-3">
+                                    <div class="flex-1 w-full relative">
+                                        <input type="text" id="inbound-barcode-input" placeholder="امسح الباركود بالاسكانر أو اكتبه يدوياً..." class="w-full border border-slate-200 rounded-xl pr-10 pl-3 py-2.5 text-xs font-bold focus:outline-none focus:border-brand-accent" onkeypress="if(event.key === 'Enter') handleInboundBarcodeSubmit()">
+                                        <i data-lucide="scan-line" class="w-4 h-4 text-slate-400 absolute right-3.5 top-3"></i>
+                                    </div>
+                                    <div class="w-full sm:w-28">
+                                        <input type="number" id="inbound-qty-input" value="1" min="1" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-center focus:outline-none focus:border-brand-accent">
+                                    </div>
+                                    <button onclick="handleInboundBarcodeSubmit()" class="w-full sm:w-auto bg-brand-deep hover:bg-brand-950 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center justify-center gap-1">
+                                        إضافة ➕
+                                    </button>
+                                </div>
+
+                                <!-- Received Items Table -->
+                                <div class="overflow-x-auto border rounded-xl max-h-[300px]">
+                                    <table class="w-full text-right border-collapse text-xs">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                                                <th class="p-3">الباركود</th>
+                                                <th class="p-3">اسم المنتج</th>
+                                                <th class="p-3 text-center">الكمية المستلمة</th>
+                                                <th class="p-3 text-center">إجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inbound-receiving-tbody" class="divide-y divide-slate-100 font-medium">
+                                            <tr>
+                                                <td colspan="4" class="p-6 text-center text-slate-400">لا توجد أصناف مضافة في هذا إذن الاستلام بعد. ابدأ بمسح الباركود أو رفع كشف البضاعة.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Footer Save Button -->
+                            <div class="flex justify-end gap-3 pt-4 border-t">
+                                <button onclick="resetInboundReceivingForm()" class="text-slate-500 hover:text-slate-700 font-bold text-xs px-4 py-2 rounded-xl transition">إلغاء وتفريغ الشاشة</button>
+                                <button id="btn-inbound-submit" onclick="submitInboundVoucher()" class="bg-brand-accent hover:bg-emerald-600 text-brand-deep font-black text-xs px-6 py-3 rounded-xl transition shadow-lg">
+                                    ترحيل إذن الاستلام وتأكيد الشحنة 🚀
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="inbound-content-qc" class="hidden space-y-6">
+                    <!-- QC Vouchers Dashboard -->
+                    <div id="inbound-qc-vouchers-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Vouchers will populate here dynamically -->
+                    </div>
+
+                    <!-- QC Details & Inspection Panel -->
+                    <div id="inbound-qc-inspection-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                        <div class="flex items-center justify-between border-b pb-4">
+                            <div>
+                                <h4 class="text-sm font-extrabold text-slate-800">فحص الجودة الفني لإذن الاستلام: <span id="qc-inspect-voucher-no" class="text-sky-600"></span></h4>
+                                <span class="text-[10px] text-slate-500 block mt-1">المورد: <span id="qc-inspect-supplier" class="font-bold"></span></span>
+                            </div>
+                            <button onclick="closeQCInspectionPanel()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition">الرجوع للقائمة ✖</button>
+                        </div>
+
+                        <!-- Inspection items list -->
+                        <div class="overflow-x-auto border rounded-xl">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                                        <th class="p-3">الباركود</th>
+                                        <th class="p-3">اسم المنتج</th>
+                                        <th class="p-3 text-center">الكمية المستلمة</th>
+                                        <th class="p-3 text-center">الكمية المقبولة (QC Passed)</th>
+                                        <th class="p-3 text-center">الكمية المرفوضة (QC Failed)</th>
+                                        <th class="p-3">سبب الرفض والعيوب</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inbound-qc-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <!-- Items will populate dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Submit QC -->
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button onclick="closeQCInspectionPanel()" class="text-slate-500 hover:text-slate-700 font-bold text-xs px-4 py-2 rounded-xl transition">إلغاء</button>
+                            <button onclick="submitQCReport()" class="bg-brand-accent hover:bg-emerald-600 text-brand-deep font-black text-xs px-6 py-3 rounded-xl transition shadow-lg">
+                                اعتماد تقرير الجودة وإرسالها للتسكين ✔
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="inbound-content-putaway" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Putaway Selection Info -->
+                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                            <h4 class="text-sm font-extrabold text-slate-800 border-b pb-2">تفاصيل تسكين المنتج بالرف</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">المنتج المحدد:</label>
+                                    <span id="putaway-selected-name" class="text-xs font-bold text-slate-800 block p-2 bg-slate-50 rounded-xl">اختر صنفاً من القائمة الجانبية...</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-600 block mb-1">الكمية المتبقية للتسكين:</label>
+                                        <input type="text" id="putaway-remaining-qty" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none bg-slate-50" readonly>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-600 block mb-1">الكمية المراد تسكينها:</label>
+                                        <input type="number" id="putaway-action-qty" min="1" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-brand-accent">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">رف التسكين المستهدف (Bin Location):</label>
+                                    <select id="putaway-target-shelf" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-accent">
+                                        <!-- Will populate with WMS bin list -->
+                                    </select>
+                                </div>
+                                <div class="pt-4 border-t">
+                                    <button id="btn-confirm-putaway" onclick="executePutawayAction()" class="w-full bg-brand-deep hover:bg-brand-950 text-white font-bold text-xs py-3 rounded-xl transition shadow-lg" disabled>
+                                        تأكيد تسكين كمية الرف 📥
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Putaway Queue List -->
+                        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                            <h4 class="text-sm font-extrabold text-slate-800 border-b pb-2">طابور التسكين الفوري بالمسارات</h4>
+                            <div class="overflow-x-auto border rounded-xl max-h-[400px]">
+                                <table class="w-full text-right border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                                            <th class="p-3">باركود</th>
+                                            <th class="p-3">اسم المنتج</th>
+                                            <th class="p-3 text-center">الكمية المقبولة</th>
+                                            <th class="p-3 text-center">المسكن بالفعل</th>
+                                            <th class="p-3 text-center">المتبقي للتسكين</th>
+                                            <th class="p-3 text-center">رقم الإذن</th>
+                                            <th class="p-3 text-center">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inbound-putaway-tbody" class="divide-y divide-slate-100 font-medium">
+                                        <tr>
+                                            <td colspan="7" class="p-8 text-center text-slate-400">لا توجد بضائع بانتظار التسكين على الأرفف حالياً.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="inbound-content-history" class="hidden space-y-6">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <h4 class="text-sm font-extrabold text-slate-800 border-b pb-2">أرشيف أذونات استلام وتوريدات المستودع التاريخي</h4>
+                        <div class="overflow-x-auto border rounded-xl">
+                            <table class="w-full text-right border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                                        <th class="p-3">رقم إذن الاستلام</th>
+                                        <th class="p-3">المورد</th>
+                                        <th class="p-3 text-center">الحالة</th>
+                                        <th class="p-3 text-center">تاريخ التوريد</th>
+                                        <th class="p-3 text-center">المستلم</th>
+                                        <th class="p-3 text-center">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inbound-history-tbody" class="divide-y divide-slate-100 font-medium text-center">
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-slate-400">جاري تحميل سجل التوريدات...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </div>
     </main>
 
@@ -3719,7 +3965,7 @@
                     } else if (user.role === 'online') {
                         defaultTab = 'dashboard';
                     } else if (user.role === 'quality') {
-                        defaultTab = 'branch-returns';
+                        defaultTab = 'inbound';
                     } else if (user.role === 'sorting') {
                         defaultTab = 'seasonal';
                     } else { // admin
@@ -4251,7 +4497,7 @@
 
         function applyRBACRules(role, branch) {
             // إعادة ضبط ظهور جميع التبويبات أولاً
-            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits', 'seasonal'];
+            const allTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'logs', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits', 'seasonal', 'inbound'];
             allTabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 if (btn) btn.style.display = 'flex';
@@ -4265,11 +4511,14 @@
             let roleClass = '';
 
             if (role === 'online') {
-                hiddenTabs = ['executive', 'logs', 'branch-returns', 'branch-orders', 'audits', 'seasonal'];
+                hiddenTabs = ['executive', 'logs', 'branch-returns', 'branch-orders', 'audits', 'seasonal', 'inbound'];
                 roleLabel = '💻 قسم الأونلاين';
                 roleClass = 'bg-blue-100 text-blue-700 border-blue-200';
             } else if (role === 'branch') {
                 hiddenTabs = ['executive', 'upload', 'logs', 'analytics', 'picker', 'returns', 'branch-orders', 'formatter'];
+                if (normalizeLocationId(branch) !== 'مخزن ابيس') {
+                    hiddenTabs.push('inbound');
+                }
                 roleLabel = '🏪 موظف الفرع';
                 roleClass = 'bg-amber-100 text-amber-700 border-amber-200';
             } else if (role === 'quality') {
@@ -4277,7 +4526,7 @@
                 roleLabel = '🔍 إدارة الجودة';
                 roleClass = 'bg-purple-100 text-purple-700 border-purple-200';
             } else if (role === 'sorting') {
-                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits'];
+                hiddenTabs = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'returns', 'query', 'analytics', 'logs', 'branch-orders', 'formatter', 'audits', 'inbound'];
                 roleLabel = '📦 إدارة الفرز والتعبئة';
                 roleClass = 'bg-teal-100 text-teal-700 border-teal-200';
             } else { // admin
@@ -5127,7 +5376,7 @@
             }
 
             activeTab = tabId;
-            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'picker', 'query', 'logs', 'transfers', 'returns', 'analytics', 'branch-returns', 'branch-orders', 'formatter', 'audits', 'seasonal'];
+            const sections = ['executive', 'dashboard', 'upload', 'inventory', 'transfers', 'picker', 'query', 'returns', 'branch-returns', 'branch-orders', 'analytics', 'logs', 'formatter', 'audits', 'seasonal', 'inbound'];
             
             sections.forEach(s => {
                 const sect = document.getElementById(`section-${s}`);
@@ -5206,6 +5455,9 @@
                 fetchAndRenderBranchOrders();
             } else if (tabId === 'seasonal') {
                 loadSeasonalBoxes();
+            }
+            if (tabId === 'inbound') {
+                renderInboundSection();
             }
         }
 
@@ -9902,6 +10154,7 @@
           try {
               if (status === 'shipped') {
                   // Verify and deduct stock
+                  const shippedItemsSummary = [];
                   for (const item of order.items) {
                       const barcode = item.barcode;
                       const decrQty = Number(item.approved_qty || 0);
@@ -9961,26 +10214,20 @@
                           }
                       }
                       
-                      // 3. Create a transfer request log and immediately mark it as SHIPPED
-                      const detailsObj = {
-                          barcode: item.barcode,
-                          productName: item.product_name,
-                          qty: decrQty,
-                          sourceBranch: "مخزن ابيس",
-                          targetBranch: order.branch_name,
-                          status: 'SHIPPED',
-                          already_deducted: true,
-                          date: new Date().toISOString()
-                      };
-                      
+                      shippedItemsSummary.push(`${item.product_name || item.barcode} (${item.barcode}) x${decrQty}`);
+                  }
+                  
+                  if (shippedItemsSummary.length > 0) {
+                      const detailsStr = `تم شحن طلبية النواقص رقم ${orderId} لفرع ${order.branch_name}. الأصناف المشحونة:\n` + shippedItemsSummary.join('\n');
                       await supabaseClient.from('activity_logs').insert([
-                          { action: 'طلب تحويل مخزون', details: JSON.stringify(detailsObj) }
+                          { action: 'شحن طلبية نواقص', details: detailsStr }
                       ]);
                   }
                   logToConsole('success', `تم خصم كميات الطلبية رقم ${orderId} من رفوف ومخزن أبيس، وتم توليد تحويلات الشحن.`);
               }
               
               if (status === 'delivered') {
+                  const deliveredItemsSummary = [];
                   for (const item of order.items) {
                       const barcode = item.barcode;
                       const addQty = Number(item.approved_qty || 0);
@@ -9999,19 +10246,13 @@
                           ]);
                       }
                       
-                      // Log the delivery completion
-                      const detailsObj = {
-                          barcode: item.barcode,
-                          productName: item.product_name,
-                          qty: addQty,
-                          sourceBranch: "مخزن ابيس",
-                          targetBranch: order.branch_name,
-                          status: 'COMPLETED',
-                          date: new Date().toISOString()
-                      };
-                      
+                      deliveredItemsSummary.push(`${item.product_name || item.barcode} (${item.barcode}) x${addQty}`);
+                  }
+                  
+                  if (deliveredItemsSummary.length > 0) {
+                      const detailsStr = `تم استلام طلبية النواقص رقم ${orderId} في فرع ${order.branch_name}. الأصناف المستلمة:\n` + deliveredItemsSummary.join('\n');
                       await supabaseClient.from('activity_logs').insert([
-                          { action: 'استلام تحويل مخزون', details: JSON.stringify(detailsObj) }
+                          { action: 'استلام طلبية نواقص', details: detailsStr }
                       ]);
                   }
                   logToConsole('success', `تم تسليم الطلبية رقم ${orderId} وتحديث رصيد فرع ${order.branch_name}.`);
@@ -10597,20 +10838,15 @@
                 const orderId = insertedOrder ? insertedOrder.id : null;
 
                 if (orderId) {
+                    const shortagesSummary = [];
                     for (const item of shortages) {
-                        const detailsObj = {
-                            barcode: item.barcode,
-                            productName: item.product_name || "غير مسجل",
-                            qty: item.required_qty,
-                            sourceBranch: "مخزن ابيس",
-                            targetBranch: branchName,
-                            status: 'PENDING',
-                            prep_order_id: orderId,
-                            date: new Date().toISOString()
-                        };
-                        
+                        shortagesSummary.push(`${item.product_name || "غير مسجل"} (${item.barcode}) x${item.required_qty}`);
+                    }
+                    
+                    if (shortagesSummary.length > 0) {
+                        const detailsStr = `تم إرسال طلبية نواقص جديدة رقم ${orderId} من فرع ${branchName}. الأصناف المطلوبة:\n` + shortagesSummary.join('\n');
                         await supabaseClient.from('activity_logs').insert([
-                            { action: 'طلب تحويل مخزون', details: JSON.stringify(detailsObj) }
+                            { action: 'طلب نواقص فروع', details: detailsStr }
                         ]);
                     }
                 }
@@ -13820,6 +14056,838 @@
             });
 
             const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+
+        // =========================================================================
+        // ================= WAREHOUSE INBOUND OPERATIONS SCRIPT LOGIC =================
+        // =========================================================================
+        let activeInboundSubTab = 'receiving';
+        let currentReceivingDraft = [];
+        let currentQCVoucherId = null;
+        let currentQCItems = [];
+        let currentPutawayQueue = [];
+        let selectedPutawayItemIdx = null;
+
+        function switchInboundSubTab(subTabId) {
+            activeInboundSubTab = subTabId;
+            const subTabs = ['receiving', 'qc', 'putaway', 'history'];
+            subTabs.forEach(t => {
+                const btn = document.getElementById('subtab-inbound-' + t);
+                const container = document.getElementById('inbound-content-' + t);
+                if (btn) {
+                    if (t === subTabId) {
+                        btn.className = "px-5 py-2.5 font-bold text-sm border-b-2 border-brand-accent text-brand-deep transition-all whitespace-nowrap";
+                    } else {
+                        btn.className = "px-5 py-2.5 font-bold text-sm text-slate-500 hover:text-brand-deep transition-all whitespace-nowrap";
+                    }
+                }
+                if (container) {
+                    if (t === subTabId) container.classList.remove('hidden');
+                    else container.classList.add('hidden');
+                }
+            });
+
+            if (subTabId === 'receiving') {
+                if (!document.getElementById('inbound-voucher-no').value) {
+                    generateNewInboundVoucherNo();
+                }
+                renderReceivingDraftTable();
+            } else if (subTabId === 'qc') {
+                loadInboundQCData();
+            } else if (subTabId === 'putaway') {
+                loadInboundPutawayData();
+            } else if (subTabId === 'history') {
+                loadInboundHistoryData();
+            }
+        }
+
+        function generateNewInboundVoucherNo() {
+            const d = new Date();
+            const yyyymmdd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('inbound-voucher-no').value = "RCV-" + yyyymmdd + "-" + rand;
+        }
+
+        function renderInboundSection() {
+            // Default sub-tab by role
+            if (currentUser && currentUser.role === 'quality') {
+                switchInboundSubTab('qc');
+                // Hide other tabs for QC
+                document.getElementById('subtab-inbound-receiving').style.display = 'none';
+                document.getElementById('subtab-inbound-putaway').style.display = 'none';
+            } else {
+                document.getElementById('subtab-inbound-receiving').style.display = 'inline-block';
+                document.getElementById('subtab-inbound-putaway').style.display = 'inline-block';
+                switchInboundSubTab('receiving');
+            }
+            
+            // Check counts for badges
+            updateInboundBadgesCount();
+        }
+
+        async function updateInboundBadgesCount() {
+            if (!supabaseClient) return;
+            try {
+                // QC count
+                const { count: qcCount } = await supabaseClient
+                    .from('receiving_vouchers')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'under_qc');
+                const qcBadge = document.getElementById('badge-inbound-qc-count');
+                if (qcBadge) {
+                    if (qcCount > 0) {
+                        qcBadge.textContent = qcCount;
+                        qcBadge.classList.remove('hidden');
+                    } else {
+                        qcBadge.classList.add('hidden');
+                    }
+                }
+
+                // Putaway count
+                const { data: items } = await supabaseClient
+                    .from('receiving_items')
+                    .select('approved_qty, putaway_qty')
+                    .gt('approved_qty', 0)
+                    .filter('status', 'eq', 'qc_passed');
+                const putawayQueue = (items || []).filter(item => (item.putaway_qty || 0) < item.approved_qty);
+                const putawayBadge = document.getElementById('badge-inbound-putaway-count');
+                if (putawayBadge) {
+                    if (putawayQueue.length > 0) {
+                        putawayBadge.textContent = putawayQueue.length;
+                        putawayBadge.classList.remove('hidden');
+                    } else {
+                        putawayBadge.classList.add('hidden');
+                    }
+                }
+            } catch (err) {
+                console.warn("Badge count failed:", err);
+            }
+        }
+
+        function handleInboundBarcodeSubmit() {
+            const barInput = document.getElementById('inbound-barcode-input');
+            const qtyInput = document.getElementById('inbound-qty-input');
+            const rawVal = barInput.value.trim();
+            if (!rawVal) return;
+            
+            const barcode = cleanBarcode(rawVal);
+            const qty = Math.max(1, Number(qtyInput.value) || 1);
+
+            const existing = currentReceivingDraft.find(i => i.barcode === barcode);
+            if (existing) {
+                existing.quantity += qty;
+                renderReceivingDraftTable();
+                barInput.value = '';
+                qtyInput.value = '1';
+                barInput.focus();
+                return;
+            }
+
+            const catProd = liveCatalogData.find(c => cleanBarcode(c.barcode) === barcode);
+            if (catProd) {
+                currentReceivingDraft.push({
+                    barcode: barcode,
+                    product_name: catProd.product_name,
+                    quantity: qty
+                });
+                renderReceivingDraftTable();
+                barInput.value = '';
+                qtyInput.value = '1';
+                barInput.focus();
+            } else {
+                const pName = prompt("⚠️ هذا الباركود غير مسجل بالكتالوج. يرجى إدخال اسم هذا المنتج الجديد لتسجيله:");
+                if (pName && pName.trim()) {
+                    currentReceivingDraft.push({
+                        barcode: barcode,
+                        product_name: pName.trim(),
+                        quantity: qty
+                    });
+                    renderReceivingDraftTable();
+                    barInput.value = '';
+                    qtyInput.value = '1';
+                }
+                barInput.focus();
+            }
+        }
+
+        function renderReceivingDraftTable() {
+            const tbody = document.getElementById('inbound-receiving-tbody');
+            if (!tbody) return;
+
+            if (currentReceivingDraft.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400 font-semibold">لا توجد أصناف مضافة في هذا إذن الاستلام بعد. ابدأ بمسح الباركود أو رفع كشف البضاعة.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            currentReceivingDraft.forEach((item, idx) => {
+                html += `
+                    <tr class="hover:bg-slate-50/50">
+                        <td class="p-3 font-semibold text-slate-700 font-mono">${item.barcode}</td>
+                        <td class="p-3 font-semibold text-slate-800">
+                            <input type="text" value="${item.product_name}" onchange="updateInboundDraftName(${idx}, this.value)" class="w-full border-b border-dashed border-slate-200 hover:border-brand-accent focus:border-brand-accent focus:outline-none bg-transparent px-1 py-0.5 font-semibold text-slate-800" placeholder="أدخل اسم المنتج...">
+                        </td>
+                        <td class="p-3 text-center">
+                            <input type="number" value="${item.quantity}" min="1" onchange="updateInboundDraftQty(${idx}, this.value)" class="w-16 border border-slate-200 rounded-lg px-2 py-1 text-center font-bold">
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="removeInboundDraftItem(${idx})" class="text-rose-600 hover:text-rose-800 font-bold">حذف 🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function updateInboundDraftQty(idx, val) {
+            const qty = Math.max(1, Number(val) || 1);
+            currentReceivingDraft[idx].quantity = qty;
+        }
+
+        function updateInboundDraftName(idx, val) {
+            if (val && val.trim()) {
+                currentReceivingDraft[idx].product_name = val.trim();
+            }
+        }
+
+        function removeInboundDraftItem(idx) {
+            currentReceivingDraft.splice(idx, 1);
+            renderReceivingDraftTable();
+        }
+
+        function handleInboundExcelSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+                    
+                    let importedCount = 0;
+                    rows.forEach(row => {
+                        const barcodeKey = Object.keys(row).find(k => k.toLowerCase().includes('bar') || k.includes('باركود') || k.toLowerCase() === 'sku' || k.toLowerCase() === 'ean');
+                        const nameKey = Object.keys(row).find(k => k.toLowerCase().includes('name') || k.includes('اسم') || k.toLowerCase().includes('product'));
+                        const qtyKey = Object.keys(row).find(k => k.toLowerCase().includes('qty') || k.includes('كمية') || k.toLowerCase().includes('quantity') || k.toLowerCase() === 'count' || k.toLowerCase() === 'العدد');
+
+                        if (barcodeKey) {
+                            const barcode = cleanBarcode(String(row[barcodeKey]).trim());
+                            if (!barcode) return;
+                            const qty = qtyKey ? Math.max(1, Number(row[qtyKey]) || 1) : 1;
+                            let name = nameKey ? String(row[nameKey]).trim() : '';
+                            
+                            if (!name) {
+                                const catItem = liveCatalogData.find(c => cleanBarcode(c.barcode) === barcode);
+                                name = catItem ? catItem.product_name : 'منتج غير مسجل';
+                            }
+                            
+                            const existing = currentReceivingDraft.find(i => i.barcode === barcode);
+                            if (existing) {
+                                existing.quantity += qty;
+                            } else {
+                                currentReceivingDraft.push({
+                                    barcode: barcode,
+                                    product_name: name,
+                                    quantity: qty
+                                });
+                            }
+                            importedCount++;
+                        }
+                    });
+                    
+                    if (importedCount > 0) {
+                        renderReceivingDraftTable();
+                        alert(`✅ تم استيراد عدد ${importedCount} صنف من ملف Excel بنجاح!`);
+                    } else {
+                        alert("⚠️ لم نجد أي أعمدة تحتوي على باركود أو SKU صالح في الملف.");
+                    }
+                } catch(err) {
+                    console.error("Excel import error:", err);
+                    alert("فشل قراءة ملف Excel: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+        function resetInboundReceivingForm() {
+            currentReceivingDraft = [];
+            document.getElementById('inbound-supplier-name').value = '';
+            document.getElementById('inbound-barcode-input').value = '';
+            document.getElementById('inbound-qty-input').value = '1';
+            generateNewInboundVoucherNo();
+            renderReceivingDraftTable();
+        }
+
+        async function submitInboundVoucher() {
+            const voucherNo = document.getElementById('inbound-voucher-no').value.trim();
+            const supplierName = document.getElementById('inbound-supplier-name').value.trim();
+            if (!supplierName) {
+                alert("يرجى إدخال اسم المورد أولاً.");
+                return;
+            }
+            if (currentReceivingDraft.length === 0) {
+                alert("قائمة الأصناف فارغة. الرجاء إدخال أصناف أولاً.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-inbound-submit');
+            btn.disabled = true;
+            logToConsole('system', `جاري حفظ وإرسال إذن الاستلام ${voucherNo} لقسم فحص الجودة...`);
+
+            try {
+                const creator = (currentUser && currentUser.username) ? currentUser.username : 'موظف';
+                
+                // 1. Insert Voucher
+                const { data: voucherData, error: vErr } = await supabaseClient
+                    .from('receiving_vouchers')
+                    .insert([{
+                        voucher_no: voucherNo,
+                        supplier_name: supplierName,
+                        status: 'under_qc',
+                        created_by: creator
+                    }])
+                    .select();
+                if (vErr) throw vErr;
+                
+                const voucherId = voucherData[0].id;
+                
+                // 2. Insert Items
+                const itemsToInsert = currentReceivingDraft.map(item => ({
+                    voucher_id: voucherId,
+                    barcode: item.barcode,
+                    product_name: item.product_name,
+                    received_qty: item.quantity,
+                    approved_qty: item.quantity, // Default to full received before QC modifies it
+                    rejected_qty: 0,
+                    status: 'received'
+                }));
+                
+                const { error: itemsErr } = await supabaseClient
+                    .from('receiving_items')
+                    .insert(itemsToInsert);
+                if (itemsErr) throw itemsErr;
+
+                // 3. Log Activity
+                const logDetails = `تم ترحيل إذن استلام وارد رقم ${voucherNo} من المورد (${supplierName}) يحتوي على ${itemsToInsert.length} صنف.`;
+                await addActivityLog("استلام شحنة وارد", logDetails);
+                
+                alert(`✅ تم ترحيل إذن الاستلام رقم ${voucherNo} بنجاح وإرساله لقسم فحص الجودة!`);
+                resetInboundReceivingForm();
+                updateInboundBadgesCount();
+            } catch (err) {
+                console.error("Voucher submit failed:", err);
+                alert("فشل ترحيل الإذن: " + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function loadInboundQCData() {
+            const container = document.getElementById('inbound-qc-vouchers-container');
+            if (!container) return;
+            
+            try {
+                const { data: vouchers, error } = await supabaseClient
+                    .from('receiving_vouchers')
+                    .select('*')
+                    .eq('status', 'under_qc')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                
+                // Update badge
+                const badge = document.getElementById('badge-inbound-qc-count');
+                if (badge) {
+                    if (vouchers && vouchers.length > 0) {
+                        badge.textContent = vouchers.length;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+                
+                let html = '';
+                if (!vouchers || vouchers.length === 0) {
+                    html = '<div class="col-span-full bg-slate-50 border border-dashed rounded-2xl p-8 text-center text-slate-400 font-semibold">لا توجد أذونات استلام قيد فحص الجودة حالياً.</div>';
+                } else {
+                    vouchers.forEach(v => {
+                        const dateStr = new Date(v.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+                        html += `
+                            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-brand-accent transition">
+                                <div class="flex items-center justify-between border-b pb-2">
+                                    <span class="text-xs font-black text-slate-800 font-mono">${v.voucher_no}</span>
+                                    <span class="bg-rose-50 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded-full">بانتظار الفحص</span>
+                                </div>
+                                <div class="space-y-1 text-xs">
+                                    <span class="text-slate-500 block">المورد: <strong class="text-slate-700">${v.supplier_name}</strong></span>
+                                    <span class="text-slate-500 block">تاريخ الوصول: <strong class="text-slate-700 font-mono">${dateStr}</strong></span>
+                                    <span class="text-slate-500 block">بواسطة: <strong class="text-slate-700">${v.created_by}</strong></span>
+                                </div>
+                                <button onclick="openQCForVoucher('${v.id}')" class="w-full bg-brand-deep hover:bg-brand-950 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1 shadow-sm">
+                                    فحص الشحنة الآن 🔍
+                                </button>
+                            </div>
+                        `;
+                    });
+                }
+                container.innerHTML = html;
+                document.getElementById('inbound-qc-inspection-panel').classList.add('hidden');
+                container.classList.remove('hidden');
+            } catch (err) {
+                console.error("Load QC vouchers error:", err);
+            }
+        }
+
+        async function openQCForVoucher(voucherId) {
+            currentQCVoucherId = voucherId;
+            try {
+                const { data: vouchers } = await supabaseClient.from('receiving_vouchers').select('*').eq('id', voucherId);
+                const voucher = vouchers[0];
+                
+                document.getElementById('qc-inspect-voucher-no').textContent = voucher.voucher_no;
+                document.getElementById('qc-inspect-supplier').textContent = voucher.supplier_name;
+                
+                const { data: items, error } = await supabaseClient
+                    .from('receiving_items')
+                    .select('*')
+                    .eq('voucher_id', voucherId);
+                if (error) throw error;
+                
+                currentQCItems = items || [];
+                
+                const tbody = document.getElementById('inbound-qc-tbody');
+                let html = '';
+                currentQCItems.forEach((item, idx) => {
+                    const appQty = item.approved_qty !== null ? item.approved_qty : item.received_qty;
+                    const rejQty = item.rejected_qty !== null ? item.rejected_qty : 0;
+                    const defReason = item.defect_reason || '';
+                    
+                    html += `
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="p-3 font-semibold text-slate-700 font-mono">${item.barcode}</td>
+                            <td class="p-3 font-semibold text-slate-800">${item.product_name}</td>
+                            <td class="p-3 text-center font-extrabold text-slate-600">${item.received_qty}</td>
+                            <td class="p-3 text-center">
+                                <input type="number" id="qc-app-qty-${idx}" value="${appQty}" min="0" max="${item.received_qty}" oninput="updateQCQtyCalculations(&quot;${idx}&quot;)" class="w-20 border border-slate-200 rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-brand-accent">
+                            </td>
+                            <td class="p-3 text-center">
+                                <input type="number" id="qc-rej-qty-${idx}" value="${rejQty}" class="w-20 border border-slate-200 rounded-lg px-2 py-1 text-center font-bold bg-slate-50" readonly>
+                            </td>
+                            <td class="p-3">
+                                <select id="qc-reason-${idx}" class="border border-slate-200 rounded-lg px-2 py-1 font-semibold ${rejQty > 0 ? '' : 'hidden'}">
+                                    <option value="">اختر السبب...</option>
+                                    <option value="عيب خياطة" ${defReason === 'عيب خياطة' ? 'selected' : ''}>عيب خياطة</option>
+                                    <option value="عيب نسيج/قماش" ${defReason === 'عيب نسيج/قماش' ? 'selected' : ''}>عيب نسيج/قماش</option>
+                                    <option value="اتساخ بالقطعة" ${defReason === 'اتساخ بالقطعة' ? 'selected' : ''}>اتساخ بالقطعة</option>
+                                    <option value="عيب طباعة/تطريز" ${defReason === 'عيب طباعة/تطريز' ? 'selected' : ''}>عيب طباعة/تطريز</option>
+                                    <option value="أخرى" ${defReason === 'أخرى' ? 'selected' : ''}>أخرى</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+                
+                document.getElementById('inbound-qc-vouchers-container').classList.add('hidden');
+                document.getElementById('inbound-qc-inspection-panel').classList.remove('hidden');
+            } catch(err) {
+                console.error("Open QC error:", err);
+            }
+        }
+
+        function updateQCQtyCalculations(idx) {
+            const received = currentQCItems[idx].received_qty;
+            const appInput = document.getElementById("qc-app-qty-" + idx);
+            let appVal = Number(appInput.value) || 0;
+            if (appVal > received) appVal = received;
+            if (appVal < 0) appVal = 0;
+            appInput.value = appVal;
+            
+            const rejVal = received - appVal;
+            const rejInput = document.getElementById("qc-rej-qty-" + idx);
+            rejInput.value = rejVal;
+            
+            const reasonSelect = document.getElementById("qc-reason-" + idx);
+            if (rejVal > 0) {
+                reasonSelect.classList.remove('hidden');
+            } else {
+                reasonSelect.classList.add('hidden');
+                reasonSelect.value = '';
+            }
+        }
+
+        function closeQCInspectionPanel() {
+            document.getElementById('inbound-qc-inspection-panel').classList.add('hidden');
+            document.getElementById('inbound-qc-vouchers-container').classList.remove('hidden');
+            currentQCVoucherId = null;
+            currentQCItems = [];
+        }
+
+        async function submitQCReport() {
+            if (!currentQCVoucherId) return;
+            if (!confirm("تأكيد اعتماد نتائج فحص الجودة وإحالة البضائع المقبولة للتسكين؟")) return;
+
+            logToConsole('system', "جاري ترحيل تقرير فحص الجودة...");
+            try {
+                for (let i = 0; i < currentQCItems.length; i++) {
+                    const item = currentQCItems[i];
+                    const approved = Number(document.getElementById("qc-app-qty-" + i).value) || 0;
+                    const rejected = Number(document.getElementById("qc-rej-qty-" + i).value) || 0;
+                    const reason = document.getElementById("qc-reason-" + i).value;
+                    
+                    const itemStatus = approved > 0 ? 'qc_passed' : 'qc_rejected';
+                    
+                    const { error } = await supabaseClient
+                        .from('receiving_items')
+                        .update({
+                            approved_qty: approved,
+                            rejected_qty: rejected,
+                            defect_reason: rejected > 0 ? reason : null,
+                            status: itemStatus
+                        })
+                        .eq('id', item.id);
+                    if (error) throw error;
+                    
+                    // Register barcode to catalog if it's new
+                    const inCatalog = liveCatalogData.some(c => cleanBarcode(c.barcode) === cleanBarcode(item.barcode));
+                    if (!inCatalog) {
+                        const { error: insCatError } = await supabaseClient
+                            .from('products_catalog')
+                            .insert([{
+                                barcode: cleanBarcode(item.barcode),
+                                product_name: item.product_name,
+                                category: 'وارد جديد',
+                                price: 0
+                            }]);
+                        if (insCatError) console.warn("Failed to register new product in catalog:", insCatError);
+                    }
+                }
+                
+                // Update voucher status
+                const { error: vErr } = await supabaseClient
+                    .from('receiving_vouchers')
+                    .update({ status: 'qc_completed' })
+                    .eq('id', currentQCVoucherId);
+                if (vErr) throw vErr;
+                
+                const vNo = document.getElementById('qc-inspect-voucher-no').textContent;
+                await addActivityLog("فحص جودة الوارد", `تم فحص واعتماد جودة شحنة إذن الاستلام رقم ${vNo}.`);
+                
+                alert("✅ تم اعتماد تقرير الجودة بنجاح! الأصناف المقبولة جاهزة الآن للتسكين بالمستودع.");
+                closeQCInspectionPanel();
+                loadInboundQCData();
+                updateInboundBadgesCount();
+                
+                // Reload catalog data locally
+                if (typeof loadCatalogData === 'function') loadCatalogData();
+            } catch(err) {
+                console.error("Submit QC report failed:", err);
+                alert("فشل ترحيل تقرير الجودة: " + err.message);
+            }
+        }
+
+        async function loadInboundPutawayData() {
+            const tbody = document.getElementById('inbound-putaway-tbody');
+            if (!tbody) return;
+            
+            try {
+                const { data: items, error } = await supabaseClient
+                    .from('receiving_items')
+                    .select('*, receiving_vouchers(voucher_no)')
+                    .gt('approved_qty', 0)
+                    .filter('status', 'eq', 'qc_passed');
+                if (error) throw error;
+                
+                currentPutawayQueue = (items || []).filter(item => (item.putaway_qty || 0) < item.approved_qty);
+                
+                const badge = document.getElementById('badge-inbound-putaway-count');
+                if (badge) {
+                    if (currentPutawayQueue.length > 0) {
+                        badge.textContent = currentPutawayQueue.length;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+                
+                let html = '';
+                if (currentPutawayQueue.length === 0) {
+                    html = '<tr><td colspan="7" class="p-8 text-center text-slate-400 font-semibold">لا توجد بضائع بانتظار التسكين على الأرفف حالياً.</td></tr>';
+                } else {
+                    currentPutawayQueue.forEach((item, idx) => {
+                        const remaining = item.approved_qty - (item.putaway_qty || 0);
+                        const vNo = item.receiving_vouchers ? item.receiving_vouchers.voucher_no : 'غير معروف';
+                        html += `
+                            <tr class="hover:bg-slate-50/50">
+                                <td class="p-3 font-semibold text-slate-700 font-mono">${item.barcode}</td>
+                                <td class="p-3 font-semibold text-slate-800">${item.product_name}</td>
+                                <td class="p-3 text-center font-extrabold text-slate-600">${item.approved_qty}</td>
+                                <td class="p-3 text-center font-extrabold text-emerald-600">${item.putaway_qty || 0}</td>
+                                <td class="p-3 text-center font-extrabold text-amber-600">${remaining}</td>
+                                <td class="p-3 text-center font-bold text-slate-500 font-mono">${vNo}</td>
+                                <td class="p-3 text-center">
+                                    <button onclick="selectItemForPutaway(${idx})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-indigo-200">
+                                        تسكين الآن 📥
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                tbody.innerHTML = html;
+                resetPutawaySelectionForm();
+            } catch(err) {
+                console.error("Load putaway error:", err);
+            }
+        }
+
+        function resetPutawaySelectionForm() {
+            selectedPutawayItemIdx = null;
+            document.getElementById('putaway-selected-name').textContent = "اختر صنفاً من القائمة الجانبية...";
+            document.getElementById('putaway-remaining-qty').value = '';
+            document.getElementById('putaway-action-qty').value = '';
+            document.getElementById('putaway-target-shelf').innerHTML = '<option value="">اختر رف المستودع المستهدف...</option>';
+            document.getElementById('btn-confirm-putaway').disabled = true;
+        }
+
+        function selectItemForPutaway(idx) {
+            selectedPutawayItemIdx = idx;
+            const item = currentPutawayQueue[idx];
+            const remaining = item.approved_qty - (item.putaway_qty || 0);
+            
+            document.getElementById('putaway-selected-name').textContent = item.product_name + " (" + item.barcode + ")";
+            document.getElementById('putaway-remaining-qty').value = remaining;
+            
+            const actionInput = document.getElementById('putaway-action-qty');
+            actionInput.value = remaining;
+            actionInput.max = remaining;
+            
+            document.getElementById('btn-confirm-putaway').disabled = false;
+            populatePutawayTargetShelves();
+        }
+
+        function populatePutawayTargetShelves() {
+            const select = document.getElementById('putaway-target-shelf');
+            if (!select) return;
+            
+            const uniqueShelves = new Set();
+            for (let row = 1; row <= 5; row++) {
+                const letter = 'A';
+                for (let col = 1; col <= 10; col++) {
+                    const shelf = letter + "-" + String(row).padStart(2, '0') + "-" + String(col).padStart(2, '0');
+                    uniqueShelves.add(shelf);
+                }
+            }
+            
+            if (typeof liveWMSStorageData !== 'undefined' && liveWMSStorageData) {
+                liveWMSStorageData.forEach(item => {
+                    if (item.bin_location) uniqueShelves.add(item.bin_location);
+                });
+            }
+            
+            const sorted = Array.from(uniqueShelves).sort();
+            select.innerHTML = '<option value="">اختر رف المستودع المستهدف...</option>';
+            sorted.forEach(s => {
+                select.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+        }
+
+        async function executePutawayAction() {
+            if (selectedPutawayItemIdx === null) return;
+            const item = currentPutawayQueue[selectedPutawayItemIdx];
+            const targetShelf = document.getElementById('putaway-target-shelf').value;
+            const qty = Number(document.getElementById('putaway-action-qty').value) || 0;
+            const remaining = item.approved_qty - (item.putaway_qty || 0);
+
+            if (!targetShelf) {
+                alert("يرجى اختيار رف التسكين المستهدف.");
+                return;
+            }
+            if (qty <= 0 || qty > remaining) {
+                alert("الكمية المدخلة غير صالحة.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-confirm-putaway');
+            btn.disabled = true;
+            logToConsole('system', `جاري تسكين عدد ${qty} قطعة بالرف ${targetShelf}...\n`);
+
+            try {
+                // 1. Check if shelf already has barcode
+                const existingRecord = liveWMSStorageData.find(r => r.bin_location === targetShelf && cleanBarcode(r.barcode) === cleanBarcode(item.barcode));
+                let newQty = qty;
+                if (existingRecord) {
+                    newQty += Number(existingRecord.quantity || 0);
+                }
+
+                const record = {
+                    bin_location: targetShelf,
+                    barcode: cleanBarcode(item.barcode),
+                    quantity: newQty,
+                    updated_at: new Date().toISOString()
+                };
+                if (existingRecord) {
+                    record.id = existingRecord.id;
+                }
+
+                const { error: wmsErr } = await supabaseClient
+                    .from('abeese_wms_storage')
+                    .upsert(record);
+                if (wmsErr) throw wmsErr;
+
+                // 2. Update putaway quantity in receiving_items
+                const newPutawayTotal = (item.putaway_qty || 0) + qty;
+                const putawayStatus = newPutawayTotal >= item.approved_qty ? 'putaway_completed' : 'qc_passed';
+                
+                const { error: itemErr } = await supabaseClient
+                    .from('receiving_items')
+                    .update({
+                        putaway_qty: newPutawayTotal,
+                        status: putawayStatus
+                    })
+                    .eq('id', item.id);
+                if (itemErr) throw itemErr;
+
+                // 3. Log Activity
+                const vNo = item.receiving_vouchers ? item.receiving_vouchers.voucher_no : 'غير معروف';
+                await addActivityLog("تسكين بضائع الوارد (WMS)", `تم تسكين عدد ${qty} قطعة من المنتج (${item.product_name}) بالرف ${targetShelf} من إذن الاستلام رقم ${vNo}.`);
+                
+                // 4. Update general inventory for مخزن ابيس too
+                const normAbees = normalizeLocationId("مخزن ابيس");
+                const generalItem = liveInventoryData.find(inv => cleanBarcode(inv.barcode) === cleanBarcode(item.barcode) && normalizeLocationId(inv.location_id) === normAbees);
+                if (generalItem) {
+                    const newGeneralQty = Number(generalItem.quantity || 0) + qty;
+                    await supabaseClient.from('warehouse_inventory').update({ quantity: newGeneralQty }).eq('id', generalItem.id);
+                } else {
+                    await supabaseClient.from('warehouse_inventory').insert([{
+                        barcode: cleanBarcode(item.barcode),
+                        location_id: "مخزن ابيس",
+                        quantity: qty
+                    }]);
+                }
+
+                alert(`✅ تم تسكين البضاعة بنجاح بالرف ${targetShelf} وتحديث أرصدة المستودع!`);
+                
+                // 5. Check if voucher completely finished
+                await checkAndUpdateVoucherPutawayStatus(item.voucher_id);
+                
+                // Reload local data
+                await loadWMSStorageData();
+                await loadInventoryData();
+                loadInboundPutawayData();
+            } catch(err) {
+                console.error("Putaway execution failed:", err);
+                alert("فشل تسكين البضائع: " + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function checkAndUpdateVoucherPutawayStatus(voucherId) {
+            try {
+                const { data: items } = await supabaseClient
+                    .from('receiving_items')
+                    .select('approved_qty, putaway_qty')
+                    .eq('voucher_id', voucherId);
+                    
+                const allPutaway = items && items.every(item => (item.putaway_qty || 0) >= item.approved_qty);
+                if (allPutaway) {
+                    await supabaseClient
+                        .from('receiving_vouchers')
+                        .update({ status: 'putaway_completed' })
+                        .eq('id', voucherId);
+                }
+            } catch(e) {
+                console.error("Check voucher putaway status failed:", e);
+            }
+        }
+
+        async function loadInboundHistoryData() {
+            const tbody = document.getElementById('inbound-history-tbody');
+            if (!tbody) return;
+            
+            try {
+                const { data: vouchers, error } = await supabaseClient
+                    .from('receiving_vouchers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                
+                let html = '';
+                if (!vouchers || vouchers.length === 0) {
+                    html = '<tr><td colspan="6" class="p-8 text-center text-slate-400 font-semibold">لا توجد سجلات استلام بضائع مؤرشفة بعد.</td></tr>';
+                } else {
+                    vouchers.forEach(v => {
+                        const dateStr = new Date(v.created_at).toLocaleString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        
+                        let statusLabel = '';
+                        let badgeClass = '';
+                        if (v.status === 'under_qc') {
+                            statusLabel = 'قيد الفحص';
+                            badgeClass = 'bg-rose-100 text-rose-800';
+                        } else if (v.status === 'qc_completed') {
+                            statusLabel = 'مفحوصة - بانتظار التسكين';
+                            badgeClass = 'bg-amber-100 text-amber-800';
+                        } else if (v.status === 'putaway_completed') {
+                            statusLabel = 'مسكنة بالكامل';
+                            badgeClass = 'bg-emerald-100 text-emerald-800';
+                        }
+                        
+                        html += `
+                            <tr class="hover:bg-slate-50/50">
+                                <td class="p-3 font-extrabold text-slate-700 font-mono">${v.voucher_no}</td>
+                                <td class="p-3 font-semibold text-slate-800">${v.supplier_name}</td>
+                                <td class="p-3 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[9px] font-black ${badgeClass}">${statusLabel}</span>
+                                </td>
+                                <td class="p-3 text-center font-medium text-slate-500 font-mono">${dateStr}</td>
+                                <td class="p-3 text-center font-semibold text-slate-600">${v.created_by}</td>
+                                <td class="p-3 text-center">
+                                    <button onclick="viewInboundVoucherDetails('${v.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-[10px] transition border border-slate-200 shadow-sm">
+                                        تفاصيل 📃
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                tbody.innerHTML = html;
+            } catch(err) {
+                console.error("Load inbound history error:", err);
+            }
+        }
+
+        async function viewInboundVoucherDetails(voucherId) {
+            try {
+                const { data: voucher } = await supabaseClient.from('receiving_vouchers').select('*').eq('id', voucherId).single();
+                const { data: items } = await supabaseClient.from('receiving_items').select('*').eq('voucher_id', voucherId);
+                
+                let details = "📄 تفاصيل إذن الاستلام: " + voucher.voucher_no + "\n";
+                details += "🏢 المورد: " + voucher.supplier_name + "\n";
+                details += "👤 المستلم: " + voucher.created_by + "\n\n";
+                details += "📦 أصناف الشحنة:\n";
+                
+                items.forEach(item => {
+                    details += "- " + item.product_name + " (" + item.barcode + "):\n";
+                    details += "  الكمية الواردة: " + item.received_qty;
+                    details += " | المقبولة: " + item.approved_qty;
+                    details += " | المرفوضة: " + item.rejected_qty;
+                    if (item.rejected_qty > 0) {
+                        details += " (السبب: " + (item.defect_reason || "غير محدد") + ")";
+                    }
+                    details += " | المسكنة: " + (item.putaway_qty || 0) + "\n";
+                });
+                
+                alert(details);
+            } catch(e) {
+                console.error(e);
+                alert("حدث خطأ أثناء جلب التفاصيل.");
+            }
+        }
+
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
