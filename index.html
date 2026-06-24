@@ -10528,11 +10528,34 @@
                     status: 'pending'
                 };
 
-                const { data, error } = await supabaseClient
+                const { data: insertedData, error } = await supabaseClient
                     .from('branch_prep_orders')
-                    .insert([orderData]);
+                    .insert([orderData])
+                    .select();
 
                 if (error) throw error;
+
+                const insertedOrder = insertedData && insertedData[0];
+                const orderId = insertedOrder ? insertedOrder.id : null;
+
+                if (orderId) {
+                    for (const item of shortages) {
+                        const detailsObj = {
+                            barcode: item.barcode,
+                            productName: item.product_name || "غير مسجل",
+                            qty: item.required_qty,
+                            sourceBranch: "مخزن ابيس",
+                            targetBranch: branchName,
+                            status: 'PENDING',
+                            prep_order_id: orderId,
+                            date: new Date().toISOString()
+                        };
+                        
+                        await supabaseClient.from('activity_logs').insert([
+                            { action: 'طلب تحويل مخزون', details: JSON.stringify(detailsObj) }
+                        ]);
+                    }
+                }
 
                 alert("تم إرسال طلبية النواقص المحددة بنجاح إلى مخزن أبيس! 🚀");
                 logToConsole("success", `تم إرسال طلبية نواقص جديدة لفرع ${branchName} بنجاح.`);
@@ -12331,7 +12354,7 @@
                     const parsed = parseTransferDetails(log);
                     if (!parsed) return;
                     
-                    const status = transferStates[log.id] || 'PENDING';
+                    const status = transferStates[log.id] || parsed.status || 'PENDING';
                     parsed.id = log.id;
                     parsed.status = status;
                     parsed.created_at = log.created_at || log.timestamp;
@@ -12512,6 +12535,17 @@
                 await supabaseClient.from('activity_logs').insert([
                     { action: 'استلام تحويل مخزون', details: JSON.stringify(detailsObj) }
                 ]);
+                
+                if (parsed.prep_order_id) {
+                    try {
+                        await supabaseClient
+                            .from('branch_prep_orders')
+                            .update({ status: 'delivered' })
+                            .eq('id', parsed.prep_order_id);
+                    } catch(e) {
+                        console.error("Failed to update prep order status on transfer receipt:", e);
+                    }
+                }
                 
                 alert('تم تأكيد الاستلام وتعديل مخزون الفروع بنجاح!');
                 renderTransfersWorkspace();
